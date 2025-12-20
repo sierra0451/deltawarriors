@@ -1,0 +1,41 @@
+class DeltaSoul : Actor
+{
+	double alpha;
+	
+	Default
+	{
+		+NOGRAVITY;
+		+BRIGHT;
+	}
+	
+	States
+	{
+		Spawn:
+			DRSL A floor(TICRATE * 0.75);
+			DRSL B TICRATE A_StartSound("delta/soul_break");
+			TNT1 A 0
+			{
+				A_StartSound("delta/soul_shatter");
+				
+				let ang = cfrandom(0, 89);
+				
+				for (int i = 0; i < 360; i += 60)
+				{
+					A_SpawnParticleEx(
+						"",													// Color
+						TexMan.CheckForTexture("SSRDA0"),					// Texture
+						STYLE_Normal,										// Style
+						SPF_REPLACE | SPF_FULLBRIGHT | SPF_FACECAMERA |
+						SPF_LOCAL_ANIM | SPF_RELVEL | SPF_RELPOS,			// Flags
+						TICRATE * 2,										// Lifetime
+						10, 												// Size
+						ang + i,											// Angle offset
+						0, 5, 0,											// Position offset
+						cfrandom(-1, 1), cfrandom(-5, -3), cfrandom(3, 6),	// Initial velocity
+						0, 0, -.5											// Acceleration
+					);
+				}
+			}
+			Stop;
+	}
+}

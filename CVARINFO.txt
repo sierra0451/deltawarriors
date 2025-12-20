@@ -1,0 +1,4 @@
+// HUD options
+nosave bool delta_showHud = true;
+nosave int delta_heartbeatSound = 1;
+nosave bool delta_lowHealthVignette = true;

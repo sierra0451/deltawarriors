@@ -1,0 +1,2 @@
+unbind x
+bind q +offhand

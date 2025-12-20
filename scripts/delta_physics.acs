@@ -1,0 +1,6 @@
+#include "zcommon.acs"
+
+script "AirControl" OPEN
+{
+	SetAirControl(0.6);
+}

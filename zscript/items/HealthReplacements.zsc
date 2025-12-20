@@ -1,0 +1,53 @@
+class DeltaSoulsphere : Soulsphere replaces Soulsphere
+{
+	override bool TryPickup(in out Actor toucher)
+	{
+		toucher.GiveBody(toucher.GetMaxHealth(), toucher.GetMaxHealth() * 2);
+		GoAwayAndDie();
+		return true;
+	}
+}
+
+class DeltaMegasphere : Megasphere replaces Megasphere
+{
+	Default
+	{
+		-INVENTORY.ISARMOR; // this isn't an armor pickup anymore, it doesn't give us armor
+	}
+	
+	States
+	{
+		Spawn:
+			Goto Super::Spawn;
+		Pickup:
+			TNT1 A 0 A_GiveInventory("DeltaTensionMax", 250);
+			TNT1 A 0 A_GiveInventory("DeltaMegasphereHealth", 1);
+			Stop;
+	}
+}
+
+class DeltaMegasphereHealth : Health replaces MegasphereHealth
+{
+	Default
+	{
+		+INVENTORY.ALWAYSPICKUP;
+	}
+	
+	States
+	{
+		Pickup:
+			Stop;
+	}
+	
+	// making sure no matter who picks this thing up, we always give double their normal max health!
+	override bool TryPickup(in out Actor toucher)
+	{
+		if (toucher.GiveBody(toucher.GetMaxHealth() * 2, toucher.GetMaxHealth() * 2))
+		{
+			GoAwayAndDie();
+			return true;
+		}
+		
+		return false;
+	}
+}

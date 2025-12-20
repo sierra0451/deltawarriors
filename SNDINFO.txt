@@ -1,0 +1,180 @@
+// Delta menu sounds
+	$pitchshiftrange 0
+	delta/menu_back 	=	"sounds/menu/menu_back.wav"
+	delta/menu_change 	= 	"sounds/menu/menu_change.wav"
+	delta/menu_confirm 	= 	"sounds/menu/menu_confirm.wav"
+
+// Delta player sounds
+	// Shared
+		// Generic weapon sounds
+		delta/generic_attack = "sounds/weapons/generic_attack.wav"
+		delta/generic_hit = "sounds/weapons/generic_hit.wav"
+		delta/generic_pullweapon = "sounds/weapons/generic_pullweapon.wav"
+		
+		// Jumping/landing
+		delta/jump1 = "sounds/player/shared/jump/player_jump1.wav"
+		delta/jump2 = "sounds/player/shared/jump/player_jump2.wav"
+		delta/jump3 = "sounds/player/shared/jump/player_jump3.wav"
+		delta/jump4 = "sounds/player/shared/jump/player_jump4.wav"
+		delta/jump5 = "sounds/player/shared/jump/player_jump5.wav"
+		delta/land1 = "sounds/player/shared/land/player_land1.wav"
+		delta/land2 = "sounds/player/shared/land/player_land2.wav"
+		delta/land3 = "sounds/player/shared/land/player_land3.wav"
+		
+		$random delta/jump
+		{
+			delta/jump1
+			delta/jump2
+			delta/jump3
+			delta/jump4
+			delta/jump5
+		}
+		$random delta/land
+		{
+			delta/land1
+			delta/land2
+			delta/land3
+		}
+		
+		// Heal
+		delta/heal = "sounds/player/shared/player_heal.wav"
+		// Damage/death
+		delta/hurt = "sounds/player/shared/damage/player_hurt.wav"
+		delta/soul_break = "sounds/player/shared/damage/soul_break.wav"
+		delta/soul_shatter = "sounds/player/shared/damage/soul_shatter.wav"
+		delta/impact = "sounds/player/shared/damage/player_impact.wav"
+		delta/fall_damage = "sounds/player/shared/damage/player_fallDamage.wav"
+		delta/freeze = "sounds/player/shared/damage/player_freeze.wav"
+		delta/heartbeat = "sounds/player/shared/damage/player_heartbeat.wav"
+		// Miscellaneous sounds
+		delta/graze = "sounds/player/shared/player_graze.wav"
+		delta/use = "sounds/player/shared/player_usefail.wav"
+		delta/tp_fail = "sounds/player/shared/player_tpfail.wav"
+	
+	// Kris
+		// Sliding
+		delta/kris/slide = "sounds/player/kris/kris_slideLoop.wav"
+		// Shield
+		delta/kris/shield_swing = "sounds/player/kris/kris_shieldSwing.wav"
+		delta/kris/shield_parry = "sounds/player/kris/kris_shieldParry.wav"
+	
+	// Susie
+		// Laughing
+		delta/susie/laugh = "sounds/player/susie/susie_laugh.wav"
+	
+	// Ralsei
+		//
+	
+	// Noelle
+		// Screaming
+		delta/noelle/scream = "sounds/player/noelle/noelle_scream.wav"
+
+// Weapon sounds
+	// Generic
+	delta/dry_fire = "sounds/weapons/generic_dryfire.wav"
+	// Fists
+	delta/fists/swing1 = "sounds/weapons/fists/fists_punch1.wav"
+	delta/fists/swing2 = "sounds/weapons/fists/fists_punch2.wav"
+	
+	$random delta/fists/swing
+	{
+		delta/fists/swing1
+		delta/fists/swing2
+	}
+	
+	delta/fists/hook = "sounds/weapons/fists/fists_hook.wav"
+	
+	delta/fists/hit1 = "sounds/weapons/fists/fists_hit1.wav"
+	delta/fists/hit2 = "sounds/weapons/fists/fists_hit2.wav"
+	delta/fists/hit3 = "sounds/weapons/fists/fists_hit3.wav"
+	
+	$random delta/fists/hit
+	{
+		delta/fists/hit1
+		delta/fists/hit2
+		delta/fists/hit3
+	}
+
+	// Revolver
+	delta/revolver/deploy1 = "sounds/weapons/revolver/revolver_deploy1.wav"
+	delta/revolver/deploy2 = "sounds/weapons/revolver/revolver_deploy2.wav"
+	delta/revolver/holster = "sounds/weapons/revolver/revolver_holster.wav"
+	delta/revolver/fire = "sounds/weapons/revolver/revolver_fire.wav"
+	delta/revolver/cock1 = "sounds/weapons/revolver/revolver_cock1.wav"
+	delta/revolver/cock2 = "sounds/weapons/revolver/revolver_cock2.wav"
+	
+	// Sword
+	delta/sword/deploy = "sounds/weapons/sword/sword_unsheathe.wav"
+	$alias delta/sword/deploy_hit delta/generic_pullweapon
+	delta/sword/holster = "sounds/weapons/sword/sword_sheathe.wav"
+	$alias delta/sword/swing delta/generic_attack
+	$alias delta/sword/hit delta/generic_hit
+	
+	// Shotgun
+	delta/shotgun/deploy1 = "sounds/weapons/shotgun/shotgun_deploy1.wav"
+	delta/shotgun/deploy2 = "sounds/weapons/shotgun/shotgun_deploy2.wav"
+	delta/shotgun/fire = "sounds/weapons/shotgun/shotgun_fire.wav"
+	delta/shotgun/pumpIn = "sounds/weapons/shotgun/shotgun_pumpIn.wav"
+	delta/shotgun/pumpOut = "sounds/weapons/shotgun/shotgun_pumpOut.wav"
+	delta/shotgun/holster = "sounds/weapons/shotgun/shotgun_holster.wav"
+
+// Player sounds
+	$playeralias		delta	neutral	*jump		delta/jump
+	$playersound		delta	neutral	*grunt		dsempty
+	$playeralias		delta	neutral	*land		delta/land
+
+	$playeralias		delta	neutral	*pain100	delta/pain
+	$playeralias 		delta	neutral	*pain75		*pain100
+	$playeralias 		delta	neutral	*pain50		*pain100
+	$playeralias 		delta	neutral	*pain25		*pain100
+	$playeralias		delta	neutral	*death		*pain100
+	$playeralias		delta	neutral	*crazydeath	*death
+
+	$playeralias		delta	neutral	*usefail	delta/use
+
+// Overriding Doom sounds!
+	misc/i_pkup 		= 	"sounds/player/shared/player_pickupitem.wav"
+	misc/w_pkup 		= 	"sounds/player/shared/player_pickupweapon.wav"
+	misc/k_pkup 		= 	"sounds/player/shared/player_pickupkey.wav"
+	misc/secret			=	"sounds/player/shared/player_findsecret.wav"
+
+	$alias menu/activate	delta/menu_confirm
+	$alias menu/backup 		delta/menu_back
+	$alias menu/prompt		delta/menu_confirm
+	$alias menu/dismiss		delta/menu_back
+	$alias menu/change		delta/menu_change
+	$alias menu/clear		delta/menu_back
+	$alias menu/choose		delta/menu_change
+	$alias menu/cursor		delta/menu_change
+	$alias menu/invalid		delta/tp_fail
+	
+	/*
+	menu/activate			dsswtchn	// Activate a new menu
+	menu/backup			dsswtchn	// Backup to previous menu
+	menu/prompt			dsswtchn	// Activate a prompt "menu"
+	menu/cursor			dspstop		// Move cursor up/down
+	menu/change			dsstnmov	// Select new value for option
+	menu/invalid			dsoof		// Menu not available
+	menu/dismiss			dsswtchx	// Dismiss a prompt message
+	menu/choose			dspistol	// Choose a menu item
+	menu/clear			dsswtchx	// Close top menu
+	$alias menu/advance menu/choose	// Open a submenu
+	*/
+	
+	$alias menu/quit1_1		delta/hurt
+	$alias menu/quit1_2 	delta/susie/laugh
+	$alias menu/quit1_3 	delta/generic_attack
+	$alias menu/quit1_4 	delta/soul_shatter
+	$alias menu/quit1_5 	delta/freeze
+	$alias menu/quit1_6 	delta/noelle/scream
+	
+	$random menu/quit1
+	{
+		menu/quit1_1
+		menu/quit1_2
+		menu/quit1_3
+		menu/quit1_4
+		menu/quit1_5
+	}
+	
+	$alias menu/quit2 menu/quit1

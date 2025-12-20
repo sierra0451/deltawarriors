@@ -1,0 +1,77 @@
+/// base class for tension items!
+class DeltaTensionPickup : Inventory
+{
+	Default
+	{
+		Inventory.Amount 0;
+		Inventory.MaxAmount 250;
+		+INVENTORY.KEEPDEPLETED
+	}
+	
+	override bool TryPickup(in out Actor toucher)
+	{
+		let delta = DeltaPlayer(toucher);
+		
+		if (!delta)
+			return false;
+		if (delta.tensionPoints >= delta.maxTensionPoints && !bAlwaysPickup)
+			return false;
+		if (!Super.TryPickup(toucher))
+			return false;
+		
+		delta.AddTension(Amount);
+		GoAwayAndDie();
+		return true;
+	}
+}
+
+class DeltaTensionBit : DeltaTensionPickup replaces ArmorBonus
+{
+	Default
+	{
+		Inventory.Amount 20;
+		Inventory.PickupMessage "$DELTA_TPSMALL_PICKUP";
+		
+		+COUNTITEM
+		+INVENTORY.ALWAYSPICKUP
+	}
+	
+	States
+	{
+		Spawn:
+			DTNB ABCB 8;
+			Loop;
+	}
+}
+
+class DeltaTensionGem : DeltaTensionPickup replaces GreenArmor
+{
+	Default
+	{
+		Inventory.Amount 125;
+		Inventory.PickupMessage "$DELTA_TPMED_PICKUP";
+	}
+	
+	States
+	{
+		Spawn:
+			DTNG ABCB 8;
+			Loop;
+	}
+}
+
+class DeltaTensionMax : DeltaTensionPickup replaces BlueArmor
+{
+	Default
+	{
+		Inventory.Amount 250;
+		Inventory.PickupMessage "$DELTA_TPLARGE_PICKUP";
+	}
+	
+	States
+	{
+		Spawn:
+			DTNM ABCB 8;
+			Loop;
+	}
+}

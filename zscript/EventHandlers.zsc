@@ -1,0 +1,55 @@
+class DeltaDoomEvents : EventHandler
+{
+	override void WorldThingDamaged(WorldEvent e)
+	{
+		EnableNetworking(true);
+		
+		if (!e.thing || e.damage <= 0)
+			return;
+		
+		if (e.damageSource is "DeltaPlayer" && e.damageSource != e.thing)
+		{
+			DeltaPlayer ply = DeltaPlayer(e.damageSource);
+			ply.AddTension(e.damage / 8);
+		}
+		
+		if (e.thing is "DeltaPlayer" && e.thing != e.damageSource)
+		{
+			if (DeltaPlayer(e.thing).GetDamageTics() == 0)
+				EventHandler.SendInterfaceEvent(e.thing.PlayerNumber(), "DeltaPlayerDamage", e.damageSource ? e.damageSource.GetNetworkID() : 0);
+		}
+	}
+	
+	override void PlayerEntered(PlayerEvent e)
+	{
+		//Console.Printf("Hey, thanks for playing, \cf%s\c-. Have fun! :)", players[e.playerNumber].GetUserName());
+		EventHandler.SendInterfaceEvent(e.playerNumber, "ResetTP");
+	}
+	
+	override void PlayerRespawned(PlayerEvent e)
+	{
+		EventHandler.SendInterfaceEvent(e.playerNumber, "ResetTP");
+	}
+	
+	override void InterfaceProcess(ConsoleEvent e)
+	{
+		if (e.IsManual) return;
+		
+		if (e.name ~== "ResetTP")
+		{
+			if (!(statusBar is "DeltaHud"))
+				return;
+			
+			let hud = DeltaHud(statusBar);
+			hud._tpInterp.Reset(0);
+		}
+		else if (e.name ~== "DeltaPlayerDamage")
+		{
+			if (!(statusBar is "DeltaHud"))
+				return;
+			
+			let hud = DeltaHud(statusBar);
+			hud.CreateDamageIndicator(Actor(GetNetworkEntity(e.Args[0])));
+		}
+	}
+}

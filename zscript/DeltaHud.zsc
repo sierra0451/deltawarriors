@@ -1,0 +1,370 @@
+struct DamageIndicatorInfo
+{
+	int timer;
+	Vector3 sourcePos;
+}
+
+class DeltaHud : BaseStatusBar
+{
+	private double _hBorder, _vBorder;
+	private double _oldAngle, _currAngle;
+	private Vector3 _oldPos, _currPos;
+	private Vector2 _universalScale;
+	private HUDFont _consoleFont, _drHudFont;
+	private TextureID _hpText, _tpText, _tpMaxText, _tpHighlight,
+		_leftPanelBack, _vignette, _infiniteText, _damageIndicator;
+	private double _oldTp;
+	DynamicValueInterpolator _tpInterp;
+	private DamageIndicatorInfo[10] indicators;
+	const INDICATOR_TIME = floor(TICRATE * 2);
+	const INDICATOR_FADE_TIME = floor(TICRATE * 0.75);
+	
+	enum AMMO_ICON_TYPES
+	{
+		DELTA_AMMOICON_NONE = 0,
+		DELTA_AMMOICON_BULLETS,
+		DELTA_AMMOICON_SHELLS,
+		DELTA_AMMOICON_ROCKETS,
+		DELTA_AMMOICON_PLASMA,
+		DELTA_AMMOICON_FUEL,
+		DELTA_AMMOICON_MAX
+	}
+	
+	private TextureID[DELTA_AMMOICON_MAX] ammoIcons;
+	
+	override void Init()
+	{
+		Super.Init();
+		
+		_hBorder = 30;
+		
+		_drHudFont = HUDFont.Create("DRHUDFONT");
+		_consoleFont = HUDFont.Create("DRCONFONT");
+		
+		_hpText = TexMan.CheckForTexture("DRHPTEXT");
+		_tpText = TexMan.CheckForTexture("DRTPTEXT");
+		_tpMaxText = TexMan.CheckForTexture("DRHUDMAX");
+		_tpHighlight = TexMan.CheckForTexture("DRTPHLGT");
+		_leftPanelBack = TexMan.CheckForTexture("DRLPBACK");
+		_vignette = TexMan.CheckForTexture("sprites/hud/vignette.png");
+		_infiniteText = TexMan.CheckForTexture("DRINFTXT");
+		_damageIndicator = TexMan.CheckForTexture("DRDMGIND");
+		
+		ammoIcons[DELTA_AMMOICON_BULLETS]	= TexMan.CheckForTexture("DRAMBULL");
+		ammoIcons[DELTA_AMMOICON_SHELLS]	= TexMan.CheckForTexture("DRAMSHEL");
+		ammoIcons[DELTA_AMMOICON_ROCKETS]	= TexMan.CheckForTexture("DRAMROCK");
+		ammoIcons[DELTA_AMMOICON_PLASMA]	= TexMan.CheckForTexture("DRAMPLAS");
+		ammoIcons[DELTA_AMMOICON_FUEL]		= TexMan.CheckForTexture("DRAMFUEL");
+		
+		_tpInterp = DynamicValueInterpolator.Create(0, 0.25, 1, 30);
+	}
+	
+	override void Tick()
+	{
+		Super.Tick();
+		
+		if (!CPlayer.mo)
+			return;
+		
+		bool infiniteAmmo = sv_infiniteAmmo || (CPlayer.mo.FindInventory('PowerInfiniteAmmo', true) != null);
+		DeltaPlayer ply = DeltaPlayer(CPlayer.mo);
+		
+		if (!ply)
+			return;
+		
+		_oldTp = _tpInterp.GetValue();
+		_tpInterp.Update(infiniteAmmo ? ply.maxTensionPoints : ply.tensionPoints);
+		
+		for (int i = 0; i < indicators.Size(); i++)
+		{
+			if (indicators[i].timer)
+				indicators[i].timer--;
+		}
+		
+		_oldAngle = _currAngle;
+		_currAngle = ply.Angle;
+		
+		_oldPos = _currPos;
+		_currPos = ply.Pos;
+	}
+	
+	override void Draw(int state, double ticFrac)
+	{
+		Super.Draw(state, ticFrac);
+		_universalScale = (1, (hud_aspectScale ? (1/1.2) : 1));
+		_vBorder = 30 * _universalScale.y;
+		
+		if (state == HUD_None || !delta_showHud)
+			return;
+		
+		if (CPlayer.Health <= 40 && delta_lowHealthVignette)
+		{
+			double alpha = 1 - CPlayer.Health / 40.;
+			Screen.DrawTexture(_vignette, false, 0, 0, DTA_Fullscreen, true,
+				DTA_FullScreenScale, FSMode_ScaleToScreen, DTA_Alpha, alpha,
+				DTA_Color, CPlayer.mo.GetPainFlash());
+		}
+		
+		BeginHUD(1, false);
+		DrawDamageIndicators(ticFrac);
+		
+		if (CPlayer.Health > 0)
+		{
+			DrawLeftPanel(sv_infiniteAmmo || (CPlayer.mo.FindInventory('PowerInfiniteAmmo', true) != null), ticFrac);
+			DrawRightPanel(sv_infiniteAmmo || (CPlayer.mo.FindInventory('PowerInfiniteAmmo', true) != null));
+		}
+			
+		if (!deathmatch)
+			DrawKeys();
+		else
+			DrawDeathmatch();
+	}
+	
+	protected void DrawDamageIndicators(double ticFrac)
+	{
+		for (int i = 0; i < indicators.Size(); i++)
+		{
+			/*
+			DrawString(_consoleFont, "Indicator " .. i+1
+				.. ": Timer " .. indicators[i].timer .. ", Pos " ..
+				indicators[i].sourcePos, (0, i*12 + 6));
+			*/
+			
+			if (indicators[i].timer <= 0)
+				continue;
+			
+			Vector3 targetPos = indicators[i].sourcePos;
+			let player = CPlayer.mo;
+			Vector3 playerPos = DeltaMath.Vector3Lerp(_oldPos, _currPos, ticFrac);
+			float refAng = DeltaMath.Lerp(_oldAngle, _currAngle, ticFrac);
+			Vector3 diff = level.Vec3Diff(playerPos, targetPos);
+			float ang = player.DeltaAngle(refAng, VectorAngle(diff.x, diff.y));
+			float alpha = min(1, (indicators[i].timer - ticFrac) / INDICATOR_FADE_TIME);
+			//alpha *= min(1, (abs(ang) - INDICATOR_HIDE_ANGLE) / INDICATOR_HIDE_ANGLE);
+			float distance = 75;
+			
+			DrawTextureRotated(
+				_damageIndicator,
+				(distance * sin(-ang), -distance * cos(-ang)),
+				DI_SCREEN_CENTER | DI_ITEM_OFFSETS,
+				ang,
+				alpha,
+				col: 0xff000000 | player.GetPainFlash()
+			);
+			//DrawString(_consoleFont, "Angle: " .. ang, (0, 0));
+		}
+	}
+	
+	protected float GetHealthPerc()
+	{
+		return CPlayer.mo.GetMaxHealth() == 0 ? 0 : min(2, CPlayer.Health / float(CPlayer.mo.GetMaxHealth()));
+	}
+	
+	protected void DrawLeftPanel(bool infiniteAmmo, double ticFrac)
+	{
+		double yMultiplier = _universalScale.y;
+		double panelXSpacing = 4;
+		double panelYSpacing = 4 * yMultiplier;
+		double curY = -_vBorder;
+		double barWidth = 144;
+		double barHeight = 16 * yMultiplier;
+		double labelXOffset = 50;
+		double barXOffset = 14 + labelXOffset + panelXSpacing;
+		double panelY = curY - barHeight * 2 - panelYSpacing * 4 - (3 * yMultiplier);
+		
+		DrawTexture(_leftPanelBack, (_hBorder, panelY), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_TOP, scale: _universalScale);
+		
+		double smallFontHeight = _drHudFont.mFont.GetGlyphHeight("0") * yMultiplier;
+		double halfDifference = (barHeight * yMultiplier - smallFontHeight) / 2;
+		double textYOffset = halfDifference + 0.5;
+		
+		DeltaPlayer ply = DeltaPlayer(CPlayer.mo);
+		
+		if (!ply)
+			return;
+		
+		double tpTimer = float(ply.tensionDrainTimer) / ply.DRAIN_TIMER_START;
+		
+		curY -= 3 * yMultiplier + panelYSpacing;
+		
+		Fill(0xffffffff, _hBorder + panelXSpacing + barXOffset, curY, tpTimer * barWidth, 3 * yMultiplier, DI_SCREEN_LEFT_BOTTOM);
+		
+		double tp = infiniteAmmo ? ply.maxTensionPoints : ply.tensionPoints;
+		double maxTp = ply.maxTensionPoints;
+		
+		TextureID currentFace = GetMugshot(4, Mugshot.DISABLEOUCH);
+		
+		int temp, panelYSize, faceYSize;
+		[temp, panelYSize] = TexMan.GetSize(_leftPanelBack);
+		[temp, faceYSize] = TexMan.GetSize(currentFace);
+		
+		DrawTexture(currentFace, (_hBorder + panelXSpacing*2, panelY + panelYSize * yMultiplier - 40 * yMultiplier), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_TOP, scale: _universalScale);
+		
+		/// ---- DRAWING TENSION POINTS ----
+		// draw TP bar
+		curY -= barHeight + panelYSpacing;
+		
+		if (ply.ticLastGrazed >= 0)
+		{
+			int timePassed = level.Time - ply.ticLastGrazed;
+			int alpha = 255 * (1 - (timePassed / 5.));
+			
+			DrawTexture(_tpHighlight, (_hBorder + panelXSpacing + labelXOffset - 1, curY - yMultiplier), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_TOP, scale: _universalScale, col: Color(alpha, 255, 255, 255));
+		}
+		
+		Fill(Color(255, 255, 0, 0), _hBorder + panelXSpacing + barXOffset, curY,
+			DeltaMath.Lerp(_oldTp, _tpInterp.GetValue(), ticFrac) / maxTp * barWidth,
+			barHeight, DI_SCREEN_LEFT_BOTTOM);
+		Fill(Color(255, 255, 160, 64), _hBorder + panelXSpacing + barXOffset, curY,
+			tp / maxTp * barWidth, barHeight, DI_SCREEN_LEFT_BOTTOM);
+		
+		if (tp >= 1 && tp <= maxTp - 1)
+			Fill(Color(255, 255, 255, 255), _hBorder + panelXSpacing + barXOffset + barWidth * (tp / maxTp) - 1, curY, 1, barHeight, DI_SCREEN_LEFT_BOTTOM);
+		
+		// draw TP text
+		if (!infiniteAmmo)
+		{
+			if (tp < maxTp)
+				DrawString(_drHudFont, String.Format("%d", tp * 100 / maxTp), (_hBorder + barWidth + barXOffset + 1, curY + textYOffset/2), DI_SCREEN_LEFT_BOTTOM | DI_TEXT_ALIGN_RIGHT, scale: _universalScale * 2);
+			else
+				DrawTexture(_tpMaxText, (_hBorder + barWidth + barXOffset, curY + panelYSpacing + barHeight/2), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_RIGHT, scale: _universalScale * 2);
+		}
+		else
+			DrawTexture(_infiniteText, (_hBorder + barWidth + barXOffset + 1, curY + panelYSpacing + barHeight/2), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_RIGHT, scale: _universalScale * 10/8);
+		
+		// ================
+		//  DRAWING HEALTH
+		// ================
+		
+		curY -= panelYSpacing + barHeight;
+		Fill(ply.GetCharacterColor(), _hBorder + panelXSpacing + barXOffset,
+			curY, min(1, GetHealthPerc()) * barWidth, barHeight, DI_SCREEN_LEFT_BOTTOM);
+		
+		if (GetHealthPerc() > 1)
+			Fill(ply.GetOverhealColor(), _hBorder + panelXSpacing + barXOffset,
+				curY, min(1, GetHealthPerc() - 1) * barWidth, barHeight, DI_SCREEN_LEFT_BOTTOM);
+		
+		string format = GetHealthPerc() <= 0.33 ? "\c[DeltaLowHealth]%d" : "%d";
+		DrawString(_drHudFont, String.Format(format, CPlayer.Health), (_hBorder + barWidth + barXOffset + 1, curY + textYOffset/2), DI_SCREEN_LEFT_BOTTOM | DI_TEXT_ALIGN_RIGHT, scale: _universalScale * 2);
+		DrawTexture(_hpText, (_hBorder + labelXOffset + panelXSpacing, curY + panelYSpacing + barHeight/2), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT, scale: (1, yMultiplier), col: GetHealthPerc() <= 0.33 ? 0xffffff00 : 0xffffffff);
+	}
+	
+	protected void DrawRightPanel(bool infiniteAmmo)
+	{
+		let weap = CPlayer.ReadyWeapon;
+		
+		if (weap == null || weap.AmmoType1 == null)
+			return;
+		
+		double yMultiplier = _universalScale.y;
+		double widgetWidth = 40 + 22, widgetHeight = 28 * yMultiplier;
+		int ammo1 = CPlayer.mo.FindInventory(CPlayer.ReadyWeapon.AmmoType1).Amount;
+		let ammoType1 = CPlayer.ReadyWeapon.AmmoType1;
+		int ammoIcon = DELTA_AMMOICON_NONE;
+		
+		if (ammoType1 == "Clip")
+			ammoIcon = DELTA_AMMOICON_BULLETS;
+		else if (ammoType1 == "Shell")
+			ammoIcon = DELTA_AMMOICON_SHELLS;
+		else if (ammoType1 == "RocketAmmo")
+			ammoIcon = DELTA_AMMOICON_ROCKETS;
+		else if (ammoType1 == "Cell")
+			ammoIcon = DELTA_AMMOICON_PLASMA;
+		else if (ammoType1 == "ID24Fuel")
+			ammoIcon = DELTA_AMMOICON_FUEL;
+		
+		Fill(Color(128, 0, 0, 0), -_hBorder - widgetWidth,
+			-_vBorder - widgetHeight + (4 * yMultiplier), widgetWidth,
+			widgetHeight, DI_SCREEN_RIGHT_BOTTOM);
+		
+		if (ammoIcon != DELTA_AMMOICON_NONE)
+			DrawTexture(ammoIcons[ammoIcon], (-_hBorder - widgetWidth + 12, -_vBorder - widgetHeight/2 + 4),
+				DI_ITEM_CENTER | DI_SCREEN_RIGHT_BOTTOM, box: (16, 16));
+		
+		if (!infiniteAmmo)
+			DrawString(_drHudFont, String.Format("%d", ammo1),
+				(-_hBorder - 4, -_vBorder - (18 * yMultiplier)),
+				DI_SCREEN_RIGHT_BOTTOM | DI_TEXT_ALIGN_RIGHT, scale: 3 * _universalScale);
+		else
+			DrawTexture(_infiniteText, (-_hBorder - 4, -_vBorder - (10 * yMultiplier)),
+				DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT | DI_ITEM_VCENTER, box: (28, 16), scale: _universalScale * 15/8);
+	}
+	
+	protected void DrawKeys()
+	{
+		int
+			count = Key.GetKeyTypeCount(),
+			keyX = GetKeyCount() * 5,
+			keyY = -_vBorder;
+		Key inv;
+		
+		for (int i = count - 1; i >= 0; i--)
+		{
+			if (inv = Key(CPlayer.mo.FindInventory(Key.GetKeyType(i))))
+			{
+				TextureID icon;
+				
+				if (inv.SpawnState && inv.SpawnState.sprite != 0)
+				{
+					let state = inv.SpawnState;
+					
+					if (state != null)
+						icon = state.GetSpriteTexture(0);
+					else
+						icon.SetNull();
+				}
+				
+				if (icon.IsNull())
+					icon = inv.Icon;
+				
+				if (icon.IsValid())
+				{
+					DrawTexture(icon, (keyX, keyY),
+						DI_SCREEN_CENTER_BOTTOM | DI_ITEM_BOTTOM, box: (8, 10));
+					keyX -= 10;
+				}
+			}
+		}
+	}
+	
+	protected void DrawDeathmatch()
+	{
+		
+	}
+	
+	void CreateDamageIndicator(Actor source)
+	{
+		if (!source)
+			return;
+		
+		int smallestTimer = -1;
+		int smallestTimerIndex;
+		
+		for (int i = 0; i < indicators.Size(); i++)
+		{
+			if (indicators[i].timer <= 0)
+			{
+				indicators[i].timer = INDICATOR_TIME;
+				indicators[i].sourcePos = source.Pos;
+				return;
+			}
+			
+			if (smallestTimer > 0 && indicators[i].timer > smallestTimer)
+				continue;
+			
+			smallestTimer = indicators[i].timer;
+			smallestTimerIndex = i;
+		}
+		
+		indicators[smallestTimerIndex].timer = INDICATOR_TIME;
+		indicators[smallestTimerIndex].sourcePos = source.Pos;
+	}
+}
+
+class DeltaAltHUD : AltHUD
+{
+	override void DrawInGame(PlayerInfo CPlayer)
+	{
+		// kept blank so we don't draw an alt hud at all
+	}
+}

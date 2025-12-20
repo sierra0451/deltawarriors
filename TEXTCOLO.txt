@@ -1,0 +1,44 @@
+DeltaLowHealth
+{
+	#FFFF00 #FFFF00 0 256
+}
+
+DeltaHighlight
+{
+	#4F4F00 #FFFF40 0 256
+}
+
+DeltaSusie
+{
+	#4B245B #D66CFF 0 256
+}
+
+DeltaRalsei
+{
+	#1D4600 #56d200 0 256
+}
+
+DeltaNoelle
+{
+	#6E6B3F #FBF236 0 256
+}
+
+DeltaMenuHeader
+{
+	#004040 #00FFFF 0 256
+}
+
+DeltaMenuDesc
+{
+	#204040 #80FFFF 0 256
+}
+
+DeltaMenuInactive
+{
+	#FFFFFF #FFFFFF 0 256
+}
+
+DeltaMenuActive
+{
+	#FFFF40 #FFFF40 0 256
+}

@@ -1,0 +1,7 @@
+mugshot "Normal", health		{ NEUT0	-1; }
+mugshot "Pain",	health 			{ HURT0	20; }
+mugshot "Grin",	health 			{ GRIN0	35; }
+mugshot "Rampage", health 		{ HURT0	 1; }
+mugshot "Blush", health			{ BLSH0	 1; }
+
+mugshot "God" 					{ INVU0	-1; }

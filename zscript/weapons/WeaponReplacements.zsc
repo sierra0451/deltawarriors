@@ -1,0 +1,154 @@
+class ShotgunReplacer : Inventory replaces Shotgun
+{
+	States
+	{
+		Spawn:
+			TNT1 A 0 NoDelay
+			{
+				A_SpawnItem("KrisShotgun");
+				GoAwayAndDie();
+			}
+			Stop;
+	}
+}
+
+/// -----------------------------------------------------------------
+/// TEMPORARY REPLACERS FOR WEAPONS THAT HAVEN'T BEEN IMPLEMENTED YET
+/// -----------------------------------------------------------------
+class TempChainsaw : Inventory replaces Chainsaw
+{
+	Default
+	{
+		Inventory.PickupMessage "";
+		Inventory.PickupSound "misc/w_pkup";
+		Inventory.MaxAmount 1;
+	}
+	
+	States
+	{
+		Spawn:
+			CSAW A -1;
+			Stop;
+	}
+	
+	override void AttachToOwner(Actor other)
+	{
+		other.A_Print("You picked up a cardboard cutout of a chainsaw. It's completely useless. Someone should really replace that...", 4);
+		Super.AttachToOwner(other);
+	}
+}
+
+class TempSuperShotgun : Inventory replaces SuperShotgun
+{
+	Default
+	{
+		Inventory.PickupMessage "";
+		Inventory.PickupSound "misc/w_pkup";
+		Inventory.MaxAmount 1;
+	}
+	
+	States
+	{
+		Spawn:
+			SGN2 A -1;
+			Stop;
+	}
+	
+	override void AttachToOwner(Actor other)
+	{
+		other.A_Print("You picked up a double-barreled shotgun, but it doesn't seem to do anything yet. Someone should really get on fixing that...", 4);
+		Super.AttachToOwner(other);
+	}
+}
+
+class TempChaingun : Inventory replaces Chaingun
+{
+	Default
+	{
+		Inventory.PickupMessage "";
+		Inventory.PickupSound "misc/w_pkup";
+		Inventory.MaxAmount 1;
+	}
+	
+	States
+	{
+		Spawn:
+			MGUN A -1;
+			Stop;
+	}
+	
+	override void AttachToOwner(Actor other)
+	{
+		other.A_Print("You picked up a chaingun, but it doesn't seem to do anything yet. Someone should really get on fixing that...", 4);
+		Super.AttachToOwner(other);
+	}
+}
+
+class TempRocketLauncher : Inventory replaces RocketLauncher
+{
+	Default
+	{
+		Inventory.PickupMessage "";
+		Inventory.PickupSound "misc/w_pkup";
+		Inventory.MaxAmount 1;
+	}
+	
+	States
+	{
+		Spawn:
+			LAUN A -1;
+			Stop;
+	}
+	
+	override void AttachToOwner(Actor other)
+	{
+		other.A_Print("You picked up a rocket launcher, but it doesn't seem to do anything yet. Someone should really get on fixing that...", 4);
+		Super.AttachToOwner(other);
+	}
+}
+
+class TempPlasmaRifle : Inventory replaces PlasmaRifle
+{
+	Default
+	{
+		Inventory.PickupMessage "";
+		Inventory.PickupSound "misc/w_pkup";
+		Inventory.MaxAmount 1;
+	}
+	
+	States
+	{
+		Spawn:
+			PLAS A -1;
+			Stop;
+	}
+	
+	override void AttachToOwner(Actor other)
+	{
+		other.A_Print("You picked up some sort of weird device. You can't seem to figure out how it works. Someone should teach you how to use it at some point...", 4);
+		Super.AttachToOwner(other);
+	}
+}
+
+class TempBFG9000 : Inventory replaces BFG9000
+{
+	Default
+	{
+		Inventory.PickupMessage "";
+		Inventory.PickupSound "misc/w_pkup";
+		Inventory.MaxAmount 1;
+	}
+	
+	States
+	{
+		Spawn:
+			BFUG A -1;
+			Stop;
+	}
+	
+	override void AttachToOwner(Actor other)
+	{
+		other.A_Print("You picked up some sort of strange, large device. It feels powerful, but doesn't seem to work. Perhaps one day, you can use it.", 4);
+		Super.AttachToOwner(other);
+	}
+}

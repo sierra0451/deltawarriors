@@ -1,0 +1,34 @@
+class DeltaMath
+{
+	clearscope static float Lerp(float a, float b, float t, bool _clamp = true)
+	{
+		if (_clamp)
+			t = Clamp(t, 0, 1);
+		
+		return a + ((b - a) * t);
+	}
+	
+	clearscope static float Clamp(float value, float min, float max)
+	{
+		return max(min, min(max, value));
+	}
+	
+	clearscope static Vector2 Vector2Lerp(Vector2 a, Vector2 b, float t, bool _clamp = true)
+	{
+		float
+			x = Lerp(a.x, b.x, t, _clamp),
+			y = Lerp(a.y, b.y, t, _clamp);
+		
+		return (x, y);
+	}
+	
+	clearscope static Vector3 Vector3Lerp(Vector3 a, Vector3 b, float t, bool _clamp = true)
+	{
+		float
+			x = Lerp(a.x, b.x, t, _clamp),
+			y = Lerp(a.y, b.y, t, _clamp),
+			z = Lerp(a.z, b.z, t, _clamp);
+		
+		return (x, y, z);
+	}
+}

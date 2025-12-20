@@ -1,0 +1,126 @@
+class DeltaWeapon : Weapon
+{
+	Default
+	{
+		Weapon.BobStyle "Smooth";
+		Weapon.BobSpeed 2.5;
+	}
+	
+	States
+	{
+		OffhandStart:
+			TNT1 A 1 A_StartOffhand;
+		OffhandLoop:
+			TNT1 A 1 A_CheckOffhand;
+			Wait;
+	}
+	
+	virtual bool TryUseTension(double amount)
+	{
+		if (amount < 0)
+			return false;
+		if (!(owner is "DeltaPlayer"))
+			return false;
+		
+		return DeltaPlayer(owner).TryTakeTension(amount);
+	}
+	
+	action void A_StartRaiseWeapon()
+	{
+		// some code taken from A_Raise code: https://github.com/UZDoom/UZDoom/blob/41ca20c1c30decbe70da21505785fbec6bb83cd6/wadsrc/static/zscript/actors/inventory/weapons.zs#L307
+		if (player == null)
+			return;
+		if (player.PendingWeapon != WP_NOCHANGE)
+		{
+			player.mo.DropWeapon();
+			return;
+		}
+		if (player.ReadyWeapon == null)
+			return;
+		
+		let psp = player.GetPSprite(PSP_WEAPON);
+		
+		if (!psp)
+			return;
+		
+		// set weapon sprite upfront immediately, we want to do our own deploy animations
+		psp.y = WEAPONTOP;
+	}
+	
+	action void A_FinishRaiseWeapon()
+	{
+		let psp = player.GetPSprite(PSP_WEAPON);
+		
+		if (!psp)
+			return;
+		
+		psp.SetState(player.ReadyWeapon.GetReadyState());
+	}
+	
+	action state A_DeltaWeaponReady(int flags = 0)
+	{
+		if (!(flags & WRF_NOFIRE) && (player.cmd.buttons & BT_USER1) && !(player.oldButtons & BT_USER1))
+		{
+			if (DeltaPlayer(invoker.owner).CanUseOffhand())
+				return ResolveState("OffhandStart");
+		}
+		
+		A_WeaponReady(flags);
+		return ResolveState(null);
+	}
+	
+	action void A_SwapWeapon()
+	{
+		// some code taken from A_Lower code:
+		// https://github.com/UZDoom/UZDoom/blob/41ca20c1c30decbe70da21505785fbec6bb83cd6/wadsrc/static/zscript/actors/inventory/weapons.zs#L259
+		if (player == null)
+			return;
+		if (player.ReadyWeapon == null)
+			return;
+		
+		let psp = player.GetPSprite(PSP_WEAPON);
+		
+		if (!psp)
+			return;
+		
+		ResetPSprite(psp);
+		
+		// [RH] Clear the flash state. Only needed for Strife.
+		player.SetPsprite(PSP_FLASH, null);
+		player.mo.BringUpWeapon ();
+		return;
+	}
+	
+	action state A_DoLunge(statelabel attackState)
+	{
+		// TO-DO: implement lunging, basically having lunge attacks loop through
+		// lunge state until we get close enough to land attack, then we move to
+		// attack state
+		
+			return ResolveState(attackState);
+		
+		// return ResolveState(null);
+	}
+	
+	action void A_StartOffhand()
+	{
+		invoker.owner.A_Overlay(PSP_OFFHAND, "Offhand");
+		invoker.owner.A_OverlayFlags(PSP_OFFHAND, PSPF_ADDBOB, true);
+	}
+	
+	action state A_CheckOffHand(bool bob = false, statelabel dest = "Select")
+	{
+		A_DeltaWeaponReady(WRF_NOFIRE | WRF_NOSWITCH);
+		
+		let deltaOwner = DeltaPlayer(self);
+		
+		if (deltaOwner.GetIsUsingOffhand())
+			return ResolveState(null);
+		
+		if (deltaOwner.player.PendingWeapon == WP_NOCHANGE)
+			return ResolveState(dest);
+		
+		A_SwapWeapon();
+		return ResolveState(null);
+	}
+}

@@ -1,0 +1,751 @@
+enum DELTA_PSP
+{
+	PSP_LEGS = -10,
+	PSP_OFFHAND = -5
+}
+
+class DeltaPlayer : PlayerPawn abstract
+{
+	double tensionPoints;
+	double maxTensionPoints;
+	int ticLastGrazed;
+	int tensionDrainTimer;
+	bool beingHugged;
+	int hugReactionTime;
+	
+	protected int airTimer; 		// when alive, used to coyote time. when dead, used to determine if we made a thud sound upon corpse landing
+	protected int jumpBuffer;
+	protected int damageTics; 		// invulnerability frames, essentially
+	protected int airBobTics;
+	protected int hugTimer;
+	protected int deathTimer; 		// used for first person death animation
+	protected Color characterColor;
+	protected Color overhealColor;
+	protected double deathPitchFP;
+	protected double deathPitchTP;
+	
+	protected float flinchMultiplier;
+	protected int startFlinchTics;
+	
+	protected bool lunging;
+	protected Actor lungeTarget;
+	protected Array<Actor> grazed;
+	
+	protected bool isUsingOffhand;
+	
+	protected LinearValueInterpolator heartbeat;
+	
+	private bool _frozenDeath;		// using this for custom ice death that doesn't automatically shatter us lol
+	private float _targetRoll;
+	private Vector2 _currentFlinch; // used for weapon flinching when taking damage
+	private int _flinchTics;
+	
+	// Damage types that ignore I-frames and Kris's shield.
+	static const Name DAMAGE_TYPES_IGNORE_IFRAMES[] =
+	{
+		'Crush',
+		'Telefrag',
+		'Falling',
+		'Suicide',
+		'Exit',
+		'Poison'
+	};
+	const DAMAGE_IFRAMES = 10;
+	const DRAIN_TIMER_START = TICRATE * 12;
+	
+	property HugReactionTime: hugReactionTime;
+	property CharacterColor: characterColor;	// mostly used for hud elements
+	property OverhealColor: overhealColor;
+	property FlinchMultiplier: flinchMultiplier;
+	property StartFlinchTics: startFlinchTics;
+	
+	Default
+	{
+		Height 36;
+		Radius 16;
+		Speed 0.7;
+		Mass 100;
+		PainChance 256;
+		
+		Player.MugShotMaxHealth -1;
+		
+		Player.DisplayName "DeltaPlayer";
+		Player.SoundClass "delta";
+		
+		// strafing should be same speed as moving forward
+		Player.ForwardMove 1, 1;
+		Player.SideMove 1.25, 1.25;
+		
+		Player.AttackZOffset 12;
+		Player.JumpZ 12;
+		Player.GruntSpeed 3;
+		Player.ViewBob 0.2;
+		Player.ViewBobSpeed 12;
+		Player.ViewHeight 32;
+		Player.FlyBob 0;
+		Player.InvulnerabilityMode "Reflective";
+		
+		DeltaPlayer.HugReactionTime 20;
+		DeltaPlayer.CharacterColor Color(127, 127, 127);
+		DeltaPlayer.OverhealColor Color(60, 255, 60);
+		
+		+PLAYERPAWN.MAKEFOOTSTEPS
+		+DONTGIB					// prevents us from being turned into a pile of flattened meat by crushers
+		+NOICEDEATH
+	}
+	
+	override void PostBeginPlay()
+	{
+		Super.PostBeginPlay();
+		
+		airTimer = 0;
+		jumpBuffer = 0;
+		ticLastGrazed = -1;
+		hugTimer = 0;
+		deathTimer = -1;
+		tensionPoints = 0;
+		maxTensionPoints = 250;
+		tensionDrainTimer = 0;
+		airBobTics = 0;
+		beingHugged = false;
+		lunging = false;
+		isUsingOffhand = false;
+		
+		_targetRoll = 0;
+	}
+	
+	override void Travelled()
+	{
+		Super.Travelled();
+		
+		airTimer = 0;
+		jumpBuffer = 0;
+		ticLastGrazed = -1;
+		hugTimer = 0;
+		tensionPoints = 0;
+		tensionDrainTimer = 0;
+		airBobTics = 0;
+		beingHugged = false;
+		lunging = false;
+		isUsingOffhand = false;
+		
+		_targetRoll = 0;
+	}
+	
+	override void PlayerThink()
+	{
+		Super.PlayerThink();
+		
+		HandleHeartbeat();
+		HandleViewRoll();
+		
+		if (player.PlayerState == PST_DEAD)
+		{
+			deathTimer++;
+			return;
+		}
+		
+		HandleIFrames();
+		DrainTension();
+		HandleRalseiHugs();
+		HandleAirStuff();
+		CheckGraze();
+	}
+	
+	override int DamageMobj(Actor inflictor, Actor source, int damage, Name mod, int flags, double angle)
+	{
+		bool ignoreIFrames = false;
+		
+		foreach (damageType : DAMAGE_TYPES_IGNORE_IFRAMES)
+		{
+			if (mod == damageType)
+			{
+				ignoreIFrames = true;
+				break;
+			}
+		}
+		
+		if (_frozenDeath && mod != "Ice")
+		{
+			Vel = (0, 0, 0);
+			A_FreezeDeathChunks();
+		}	
+		
+		if (damageTics > 0 && !ignoreIFrames)
+			return 0;
+		
+		int finalDamage = Super.DamageMobj(inflictor, source, damage, mod, flags, angle);
+		
+		if (finalDamage > 0 && Health > 0)
+			A_StartSound("delta/hurt", CHAN_VOICE, 0, 1, 0.5);
+		
+		if (player.damageCount > 25)
+			player.damageCount = 25;
+		
+		if (!ignoreIFrames)
+			damageTics = -1;
+		
+		if (mod == 'Falling')
+			A_StartSound("delta/fall_damage", CHAN_AUTO);
+		
+		return finalDamage;
+	}
+	
+	override void Die(Actor source, Actor inflictor, int dmgFlags, Name MeansOfDeath)
+	{
+		Super.Die(source, inflictor, dmgFlags, MeansOfDeath);
+		deathTimer = 0;
+		deathPitchFP = deathPitchTP = Pitch;
+	}
+	
+	// taking implementation from uzdoom.pk3, slightly retooling for different look on death
+	override void DeathThink()
+	{
+		let player = self.player;
+		player.Uncrouch();
+		player.onground = (pos.Z <= floorz);
+		
+		if (!_frozenDeath && player.onGround)
+		{
+			// Fall to ground (if not frozen)
+			player.deltaviewheight = 0;
+			if (player.viewheight > 6)
+				player.viewheight -= deathTimer;
+				
+			if (player.viewheight < 6)
+				player.viewheight = 6;
+			
+			if (player.viewHeight == 6)
+			{
+				if (deathPitchFP > -19.)
+				{
+					double lookDelta = (-19. - deathPitchFP) / 8;
+					deathPitchFP += lookDelta;
+				}
+				
+				if (abs(deathPitchTP) > 0.01)
+				{
+					double lookDelta = -deathPitchTP / 8;
+					deathPitchTP += lookDelta;
+				}
+				else if (!(deathPitchTP ~== 0))
+					deathPitchTP = 0;
+				
+				if (!(player.cheats & CF_CHASECAM))
+					Pitch = deathPitchFP;
+				else
+					Pitch = deathPitchTP;
+			}
+		}
+		
+		player.mo.CalcHeight ();
+		
+		if (player.damagecount)
+			player.damagecount--;
+		
+		if (player.poisoncount)
+			player.poisoncount--;
+		
+		if ((player.cmd.buttons & BT_USE ||
+			((deathmatch || alwaysapplydmflags) && sv_forcerespawn)) && !sv_norespawn)
+		{
+			if (Level.maptime >= player.respawn_time || ((player.cmd.buttons & BT_USE) && player.Bot == NULL))
+			{
+				player.cls = NULL;		// Force a new class if the player is using a random class
+				player.playerstate = (multiplayer || level.AllowRespawn || sv_singleplayerrespawn || G_SkillPropertyInt(SKILLP_PlayerRespawn)) ? PST_REBORN : PST_ENTER;
+				if (special1 > 2)
+				{
+					special1 = 0;
+				}
+			}
+		}
+	}
+	
+	// Grabbing GZDoom's player code and retooling it to work with coyote time and jump buffering
+	override void CheckJump()
+	{
+		let player = self.player;
+		
+		// Buffer jump inputs
+		if (player.cmd.buttons & BT_JUMP)
+			jumpBuffer = 3;
+		
+		// [RH] check for jump
+		if (jumpBuffer > 0)
+		{
+			jumpBuffer--;
+			
+			if (GetCrouching())
+			{
+				// Jumping while crouching will force an un-crouch but not jump
+				player.crouching = 1;
+			}
+			else if (waterlevel >= 2)
+			{
+				Vel.Z = 4 * Speed;
+			}
+			else if (bNoGravity)
+			{
+				Vel.Z = 3.;
+			}
+			// airTimer < 4 instead of grounded check, allows for coyote time
+			else if (level.IsJumpingAllowed() && airTimer < 4 && Vel.Z <= 0)
+			{
+				double jumpvelz = JumpZ * 35 / TICRATE;
+				double jumpfac = 0;
+
+				// [BC] If the player has the high jump power, double their jump velocity.
+				// (actually, pick the best factors from all active items.)
+				for (let p = Inv; p != null; p = p.Inv)
+				{
+					let pp = PowerHighJump(p);
+					if (pp)
+					{
+						double f = pp.Strength;
+						if (f > jumpfac) jumpfac = f;
+					}
+				}
+				if (jumpfac > 0) jumpvelz *= jumpfac;
+
+				Vel.Z = jumpvelz;
+				bOnMobj = false;
+				jumpBuffer = 0;
+				
+				if (!(player.cheats & CF_PREDICTING))
+					A_StartSound("*jump", CHAN_BODY);
+			}
+		}
+	}
+	
+	override void CheckCrouch(bool totallyFrozen)
+	{
+		let player = self.player;
+		int buttons = player.cmd.buttons;
+		
+		if (CanCrouch() && player.health > 0 && level.IsCrouchingAllowed())
+		{
+			if (!totallyfrozen)
+			{
+				int crouchdir = player.crouching;
+				
+				if (crouchdir == 0)
+					crouchdir = (player.cmd.buttons & BT_CROUCH) ? -1 : 1;
+				else if (player.cmd.buttons & BT_CROUCH)
+					player.crouching = 0;
+				
+				if (crouchdir == 1 && player.crouchfactor < 1 && pos.Z + height < ceilingz)
+					CrouchMove(2);
+				else if (crouchdir == -1 && player.crouchfactor > 0.5)
+					CrouchMove(-2);
+			}
+		}
+		else
+			player.Uncrouch();
+
+		player.crouchoffset = -(ViewHeight) * (1 - player.crouchfactor);
+	}
+	
+	override void HasReceived(Inventory item)
+	{
+		if (!(player.cheats & CF_PREDICTING) && item is "Health" && item.GetClass() != "Health" && !item.bQuiet)
+			A_StartSound("delta/heal", CHAN_VOICE, 0);
+	}
+	
+	override Vector2 BobWeapon(double ticfrac)
+	{
+		let originalBob = Super.BobWeapon(ticfrac);
+		double perc = 1 - airBobTics / 5.;
+		
+		return originalBob * perc;
+	}
+	
+	override void CheatGive(string name, int amount)
+	{
+		//A_Log("Giving " .. amount .. " of " .. name .. ".", true);
+		
+		if (name ~== "armor")
+			return;
+		
+		if (name ~== "tensionPoints" || name ~== "tp")
+		{
+			if (amount < 0)
+				return;
+			
+			if (amount == 0)
+				amount = maxTensionPoints;
+			
+			tensionPoints = min(maxTensionPoints, tensionPoints + amount);
+			tensionDrainTimer = DRAIN_TIMER_START;
+		}
+		else
+		{
+			if (name ~== "everything" || name ~== "ammo")
+			{
+				tensionPoints = maxTensionPoints;
+				tensionDrainTimer = DRAIN_TIMER_START;
+			}
+			
+			Super.CheatGive(name, amount);
+		}
+	}
+	
+	override void CheatTake(string name, int amount)
+	{
+		//A_Log("Taking " .. amount .. " of " .. name .. " away.", true);
+		
+		if (name ~== "armor")
+			return;
+			
+		if (name ~== "tensionPoints" || name ~== "tp")
+		{
+			if (amount < 0)
+				return;
+			
+			if (amount == 0)
+			{
+				tensionPoints = 0;
+				return;
+			}
+			
+			tensionPoints = max(0, tensionPoints - amount);
+			tensionDrainTimer = DRAIN_TIMER_START;
+		}
+		else
+			Super.CheatTake(name, amount);
+	}
+	
+	// taking from uzdoom.pk3 and retooling, removing grunts entirely
+	override void PlayerLandedMakeGruntSound(actor onmobj)
+	{
+		// [RH] only make noise if alive
+		if (self.health > 0 && !Alternative)
+		{
+			bool isliquid = (pos.Z <= floorz) && HitFloor ();
+			
+			if (onmobj != NULL || !isliquid)
+				A_StartSound("*land", CHAN_AUTO);
+		}
+	}
+	
+	void AddTension(double amount, bool graze = false, bool resetTimer = true)
+	{
+		tensionPoints = min(maxTensionPoints, tensionPoints + amount);
+		
+		if (resetTimer)
+			tensionDrainTimer = DRAIN_TIMER_START;
+		if (graze)
+			ticLastGrazed = level.Time;
+	}
+	
+	bool TryTakeTension(double amount, bool playSound = true)
+	{
+		if (amount < 0)
+			return false;
+		if (sv_infiniteAmmo || (FindInventory('PowerInfiniteAmmo', true) != null))
+			return true;
+		if (tensionPoints < amount)
+		{
+			if (playSound)
+				A_StartSound("delta/tp_fail", CHAN_ITEM, CHANF_LOCAL | CHANF_NOSTOP);
+			
+			return false;
+		}
+		
+		tensionPoints -= amount;
+		
+		if (tensionPoints > 0)
+			tensionDrainTimer = DRAIN_TIMER_START;
+		else
+			tensionDrainTimer = 0;
+		return true;
+	}
+	
+	protected void HandleHeartbeat()
+	{
+		if (player.cheats & CF_PREDICTING)
+			return;
+		
+		if (!heartbeat)
+			heartbeat = LinearValueInterpolator.Create(0, 10);
+		
+		float _maxHealth = GetMaxHealth();
+		
+		// make sure heartbeat only plays if we're above 40% of our max health AND we aren't dead
+		if (Health <= _maxHealth / 3. && Health > 0 && (delta_heartbeatSound == 1 || (delta_heartbeatSound == 2 && self is "KrisPlayer")))
+		{
+			int _targetVol = (175/3. - Health/float(GetMaxHealth()) * 100) * 2;
+			
+			heartbeat.Update(_targetVol);
+		}
+		else if (Health > 0 && cvar_heartbeatSound)
+			heartbeat.Update(0);
+		else
+			heartbeat.Reset(0);
+		
+		if (!IsActorPlayingSound(7))
+			A_StartSound("delta/heartbeat", 7, CHANF_LOOPING, heartbeat.GetValue() / 100., 120);
+		else
+			A_SoundVolume(7, heartbeat.GetValue() / 100.);
+	}
+	
+	protected virtual float GetViewRoll()
+	{
+		if (player.cheats & CF_PREDICTING)
+			return 0;
+		
+		let relVel = (Vel.x * cos(-Angle) - (Vel.y * sin(-Angle)), Vel.x * sin(-Angle) + Vel.y * cos(-Angle), Vel.z);
+		let rollTarget = min(10, max(-10, -relVel.y * 0.25));
+		
+		let maxChange = 20. / TICRATE;
+		
+		if (abs(rollTarget - _targetRoll) > 2)
+			maxChange *= 2;
+		if (abs(rollTarget - _targetRoll) > 5)
+			maxChange *= 2;
+		if (abs(rollTarget - _targetRoll) > 10)
+			maxChange *= 2;
+		
+		_targetRoll += min(maxChange, max(-maxChange, rollTarget - _targetRoll));
+		return _targetRoll;
+	}
+	
+	protected void HandleViewRoll()
+	{
+		viewRoll = (player.cheats & CF_CHASECAM) ? 0 : GetViewRoll();
+	}
+	
+	protected void HandleIFrames()
+	{
+		if (damageTics < 0)
+			damageTics = max(1, DAMAGE_IFRAMES) - 1; // minus one because we take a tic to initialize i-frames
+		else if (damageTics > 0)
+			damageTics--;
+	}
+	
+	protected void DrainTension()
+	{
+		if (sv_infiniteAmmo || (FindInventory('PowerInfiniteAmmo', true) != null))
+			return;
+		if (GetIsUsingOffhand())
+			return;
+		
+		if (tensionDrainTimer > 0)
+			tensionDrainTimer--;
+		else if (tensionPoints > 0)
+			tensionPoints = max(0, tensionPoints - 5./TICRATE);
+	}
+	
+	protected bool RalseiIsHugging()
+	{
+		string hug = "hugging";
+		class<Inventory> hugging = hug;
+		return FindInventory(hugging);
+	}
+	
+	protected virtual void HandleRalseiHugs()
+	{
+		string rals = "FriendsWithRalsei";
+		class<Actor> ralseiCheck = rals;
+		
+		if (ralseiCheck == null)
+			return; // don't bother with this if we don't have the ralsei mod
+		
+		if (RalseiIsHugging() && !beingHugged)
+		{
+			if (++hugTimer == hugReactionTime)
+				beingHugged = true;
+		}
+		else if (!RalseiIsHugging() && beingHugged)
+		{
+			hugTimer = 0;
+			beingHugged = false;
+		}
+	}
+	
+	protected void HandleAirStuff()
+	{
+		if (player.OnGround)
+			airTimer = 0;
+		else
+			airTimer++;
+		
+		if (!(player.cheats & CF_PREDICTING))
+		{
+			if (player.OnGround && airBobTics)
+				airBobTics--;
+			else if (!player.OnGround && airBobTics < 5)
+				airBobTics++;
+		}
+	}
+	
+	protected void CheckGraze()
+	{
+		if (damageTics != 0)
+			return;
+		
+		ThinkerIterator it = ThinkerIterator.Create("Actor", STAT_DEFAULT);
+		Actor mis;
+		bool grazeSound;
+		
+		while (mis = Actor(it.Next()))
+		{
+			if (!mis.bMissile && !mis.bSkullfly)
+				continue;
+			if (!mis.bSkullfly && mis.target == self) // "target" with projectiles is used to figure out who threw it
+				continue;
+			if (mis.Damage <= 0)
+				continue;
+			if (mis.bFriendly)
+				continue;
+			
+			// code largely taken from ThinkerIterator documentation page
+			double blockDist = (radius * 3) + (mis.radius * 3);
+			double blockHeight = (height * 3) + (mis.height * 3);
+			Vector3 diff = level.Vec3Diff(pos, mis.pos);
+			
+			if (abs(diff.x) > blockDist || abs(diff.y) > blockDist)
+				continue;
+			if (abs(diff.z) > blockHeight)
+				continue;
+			
+			bool firstGraze = grazed.Find(mis) == grazed.Size();
+			
+			if (firstGraze)
+			{
+				AddTension(mis.Damage * GetGrazeMultiplier(), true);
+				grazed.Push(mis);
+			}
+			else
+				AddTension(mis.Damage * GetGrazeMultiplier() / float(TICRATE), true);
+			
+			if (!grazeSound && !(player.cheats & CF_PREDICTING))
+			{
+				grazeSound = true;
+				A_StartSound("delta/graze", 5, 0, firstGraze ? 1 : 0.5);
+			}
+		}
+	}
+	
+	// retooling zdoom's implementation of freeze death for our own freeze death!
+	protected action void A_DeltaFreezeDeath()
+	{
+		A_StartDeath(true);
+		
+		invoker._frozenDeath = bSolid = bShootable = bNoBlood = bPushable
+			= bTelestomp = bCanPass = bSlidesOnWalls = true;
+		Height = Default.Height;
+		A_StartSound("delta/freeze", CHAN_BODY);
+
+		player.damagecount = 0;
+		player.poisoncount = 0;
+		player.bonuscount = 0;
+	}
+	
+	protected action void A_StartDeath(bool freeze = false)
+	{
+		invoker.airTimer = 0;
+		invoker.isUsingOffhand = false;
+		A_Fall();
+		
+		if (!(player.cheats & CF_PREDICTING))
+		{
+			A_StopSound();
+			A_StartSound("delta/hurt", CHAN_VOICE);
+			
+			// if we have partial invisibility or anything like that, turn it off
+			A_SetRenderStyle(1, STYLE_Normal);
+			
+			// hide our weapon sprites IMMEDIATELY. classic doom and default zdoom
+			// use deselect state, which would look weird since it's actually
+			// animated
+			player.SetPsprite(PSP_FLASH, null);
+			player.SetPsprite(PSP_WEAPON, null);
+			player.SetPsprite(PSP_OFFHAND, null);
+			A_StopSound(CHAN_WEAPON);
+		}
+		
+		if (!freeze)
+			invoker.bCanPass = false;		// make sure our corpse doesn't get
+											// stuck on decorations or monsters
+	}
+	
+	protected action state A_CheckDeathLand(statelabel targetState = "FinishDeath")
+	{
+		if (pos.Z == floorZ && Vel.Z <= 0)
+			return ResolveState(targetState);
+		
+		invoker.airTimer++;
+		return ResolveState(null);
+	}
+	
+	protected action void A_DeathImpact()
+	{
+		if (invoker.airTimer > 3)
+			A_StartSound("delta/impact", CHAN_BODY, 0, 0.75);
+	}
+	
+	virtual void StartOffhand()
+	{
+		isUsingOffhand = true;
+	}
+	
+	// See if we're holding offhand or not
+	action state A_CheckOffhand(statelabel failDest)
+	{
+		if (player.cmd.buttons & BT_USER1)
+			return ResolveState(null);
+		
+		return ResolveState(failDest);
+	}
+	
+	// Wrap up
+	action void A_EndOffhand()
+	{
+		invoker.isUsingOffhand = false;
+	}
+	
+	clearscope Color GetCharacterColor()
+	{
+		return characterColor | 0xff000000;
+	}
+	
+	clearscope Color GetOverhealColor()
+	{
+		return overhealColor | 0xff000000;
+	}
+	
+	clearscope bool GetCrouching()
+	{
+		return player.crouchOffset != 0;
+	}
+	
+	clearscope int GetDamageTics()
+	{
+		return damageTics;
+	}
+	
+	clearscope bool GetIsUsingOffhand()
+	{
+		return isUsingOffhand;
+	}
+	
+	clearscope virtual float GetGrazeMultiplier()
+	{
+		return 1;
+	}
+	
+	virtual bool CanUseOffhand()
+	{
+		return true;
+	}
+	
+	States
+	{
+		Spawn:
+			TNT1 A 1;
+			Loop;
+		See:
+			TNT1 A 1;
+			Loop;
+	}
+}

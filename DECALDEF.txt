@@ -1,0 +1,29 @@
+decal KrisSwordSlash1
+{
+	pic PLASMA1
+	shade "00 00 00"
+	x-scale 0.6
+	y-scale 0.05
+	randomflipx
+	randomflipy
+}
+
+decal KrisSwordSlash2
+{
+	pic PLASMA2
+	shade "00 00 00"
+	x-scale 0.6
+	y-scale 0.05
+	randomflipx
+	randomflipy
+}
+
+decalgroup KrisSwordSlash
+{
+	KrisSwordSlash1	1
+	KrisSwordSlash2	1
+}
+
+generator KrisSword KrisSwordSlash
+generator KrisRevolver BulletChip
+generator KrisShotgun BulletChip

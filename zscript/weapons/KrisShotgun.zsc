@@ -1,0 +1,157 @@
+class KrisShotgun : DeltaWeapon
+{
+	bool pumped;
+	
+	Default
+	{
+		Weapon.SlotNumber 3;
+		Weapon.SelectionOrder 700;
+		Weapon.AmmoUse 1;
+		Weapon.AmmoUse2 2;
+		Weapon.AmmoGive 10;
+		Weapon.AmmoType "Shell";
+		Weapon.AmmoType2 "Shell";
+		
+		Inventory.PickupMessage "$DELTA_KRISSHOTGUN_PICKUP";
+		Tag "$DELTA_KRISSHOTGUN_TAG";
+		Obituary "$DELTA_KRISSHOTGUN_OBIT";
+		
+		+SQUAREPIXELS
+		+WEAPON.NOALERT
+	}
+	
+	override void BeginPlay()
+	{
+		pumped = true;
+	}
+	
+	// pulling this code from gzalice (a previous project of mine, i.e. still MY code) lmao
+	override bool CheckAmmo(int fireMode, bool autoSwitch, bool requireAmmo, int ammoCount)
+	{
+		if (sv_infiniteAmmo || (owner.FindInventory('PowerInfiniteAmmo', true) != null))
+			return true;
+		if ((fireMode == PrimaryFire || fireMode == EitherFire) && Ammo1.Amount > 0)
+			return true;
+		if (fireMode == AltFire && Ammo1.Amount >= AmmoUse2)
+			return true;
+		
+		// only switch if either fire won't work; otherwise if we're dry firing our alt fire, just fail the alt fire
+		if (autoSwitch && (fireMode == PrimaryFire || fireMode == EitherFire || (fireMode == AltFire && Ammo1.Amount <= 0)))
+			PlayerPawn(owner).PickNewWeapon(null);
+		
+		if (fireMode == AltFire && Ammo1.Amount > 0 && pumped)
+			owner.A_StartSound("delta/dry_fire", CHAN_WEAPON, CHANF_NOSTOP);
+		
+		return false;
+	}
+	
+	action void A_KrisShotgunFire()
+	{
+		// make first shot more accurate than others after it
+		A_FireBullets(5.5, 5.5, 8, 9, flags: FBF_USEAMMO | FBF_NORANDOM);
+		A_AlertMonsters();
+		A_StartSound("delta/shotgun/fire", CHAN_WEAPON, CHANF_OVERLAP);
+		A_ZoomFactor(0.97, ZOOM_INSTANT | ZOOM_NOSCALETURNING);
+		self.A_AttachLightDef("shotgunMuzzle", "DeltaGenericMuzzle");
+		invoker.pumped = false;
+	}
+	
+	action state A_KrisShotgunAltFire()
+	{
+		if (!invoker.CheckAmmo(AltFire, false) || !invoker.TryUseTension(50))
+			return ResolveState("Ready");
+		
+		invoker.DepleteAmmo(true, false);
+		A_AlertMonsters();
+		A_FireBullets(6.5, 6.5, 16, 10, "KrisShotgunPuff", FBF_NORANDOM);
+		A_StartSound("delta/shotgun/fire", CHAN_WEAPON, CHANF_OVERLAP);
+		A_ZoomFactor(0.97, ZOOM_INSTANT | ZOOM_NOSCALETURNING);
+		self.A_AttachLightDef("shotgunMuzzle", "DeltaGenericMuzzle");
+		invoker.pumped = false;
+		
+		if (player.crouchOffset ~== 0)
+		{
+			Vector2 forward = AngleToVector(player.mo.angle);
+			Vector2 up = AngleToVector(player.mo.pitch);
+			player.mo.vel -= (forward.x * up.x, forward.y * up.x, -up.y) * (player.onGround ? 5 : 10);
+		}
+		
+		return ResolveState(null);
+	}
+	
+	States
+	{
+		Ready:
+			DKSG A 1
+			{
+				if (!invoker.pumped)
+					return ResolveState("Pump");
+				
+				return A_DeltaWeaponReady();
+			}
+			Loop;
+		Deselect:
+			DKSH A 2 A_StartSound("delta/shotgun/holster", CHAN_WEAPON, CHANF_OVERLAP);
+			DKSH BCDE 2;
+			TNT1 A 4;
+			TNT1 A 0 A_SwapWeapon;
+			Stop;
+		Select:
+			TNT1 A 2
+			{
+				A_StartRaiseWeapon();
+				A_StartSound("delta/shotgun/deploy1", CHAN_WEAPON, CHANF_OVERLAP);
+			}
+			DKSD ABCD 2;
+			DKSD E 1 A_StartSound("delta/shotgun/deploy2", CHAN_WEAPON, CHANF_OVERLAP);
+			DKSD E 1
+			{
+				if (invoker.pumped)
+					A_DeltaWeaponReady(WRF_NOBOB);
+			}
+			DKSD FGH 2
+			{
+				if (invoker.pumped)
+					A_DeltaWeaponReady(WRF_NOBOB);
+			}
+			DKSG A 1 A_FinishRaiseWeapon;
+			Stop;
+		Fire:
+			DKSG B 2 A_KrisShotgunFire;
+			DKSG C 1 A_RemoveLight("shotgunMuzzle");
+			DKSG C 1 A_ZoomFactor;
+			DKSG DEF 2; // fall-through is intentional
+		Pump:
+			DKSG G 1 A_DeltaWeaponReady(WRF_NOFIRE | WRF_NOBOB);
+			DKSG G 1 A_CheckReload;
+			DKSG HI 2;
+			DKSG J 2 A_StartSound("delta/shotgun/pumpIn", CHAN_WEAPON, CHANF_OVERLAP);
+			DKSG K 2;
+			DKSG L 2;
+			DKSG M 2
+			{
+				A_StartSound("delta/shotgun/pumpOut", CHAN_WEAPON, CHANF_OVERLAP);
+				invoker.pumped = true;
+			}
+			DKSG N 2;
+			DKSG O 3;
+			DKSG PQR 2;
+			Goto Ready;
+		AltFire:
+			DKSA A 2 A_KrisShotgunAltFire;
+			DKSA B 1 A_RemoveLight("shotgunMuzzle");
+			DKSA B 1 A_ZoomFactor;
+			DKSA CDEFGHIJKL 2;
+			Goto Pump;
+		Spawn:
+			DSHG A -1;
+			Stop;
+	}
+}
+
+class KrisShotgunPuff : BulletPuff
+{
+	Default
+	{
+	}
+}

@@ -1,0 +1,17 @@
+GameInfo
+{
+	StatusBarClass = "DeltaHud"
+	AltHUDClass = "DeltaAltHud"
+	AddEventHandlers = "DeltaDoomEvents"
+	CursorPic = "CURSOR03"
+	TitlePage = "DELTATT1"
+	TitleMusic = "music/mus_deltaMenu.ogg"
+	CreditPage = ""
+	SwapMenu = true
+	QuitMessages =	"$DELTA_QUIT_1", "$DELTA_QUIT_2", "$DELTA_QUIT_3",
+					"$DELTA_QUIT_4", "$DELTA_QUIT_5", "$DELTA_QUIT_6",
+					"$DELTA_QUIT_7", "$DELTA_QUIT_8"
+	
+	NoRandomPlayerClass = true
+	PlayerClasses = "KrisPlayer"/*, "SusiePlayer", "RalseiPlayer", "NoellePlayer" */
+}

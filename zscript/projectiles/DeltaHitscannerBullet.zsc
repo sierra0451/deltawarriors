@@ -1,0 +1,19 @@
+class DeltaHitscannerBullet : FastProjectile
+{
+	Default
+	{
+		Radius 4;
+		Height 4;
+		Speed 20;
+		Damage 3;
+		
+		+RANDOMIZE
+	}
+	
+	States
+	{
+		Spawn:
+			BULL A 1;
+			Loop;
+	}
+}
