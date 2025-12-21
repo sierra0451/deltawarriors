@@ -593,7 +593,10 @@ class DeltaPlayer : PlayerPawn abstract
 				continue;
 			if (!mis.bSkullfly && mis.target == self) // "target" with projectiles is used to figure out who threw it
 				continue;
-			if (mis.Damage <= 0)
+			
+			//A_Log(mis.GetTag() .. "'s damage: " .. mis.Damage, true);
+			
+			if (mis.Damage == 0)
 				continue;
 			if (mis.bFriendly)
 				continue;
@@ -609,14 +612,15 @@ class DeltaPlayer : PlayerPawn abstract
 				continue;
 			
 			bool firstGraze = grazed.Find(mis) == grazed.Size();
+			double grazeAmount = max(3, mis.Damage);
 			
 			if (firstGraze)
 			{
-				AddTension(mis.Damage * GetGrazeMultiplier(), true);
+				AddTension(grazeAmount * GetGrazeMultiplier(), true);
 				grazed.Push(mis);
 			}
 			else
-				AddTension(mis.Damage * GetGrazeMultiplier() / float(TICRATE), true);
+				AddTension(grazeAmount * GetGrazeMultiplier() / TICRATE, true);
 			
 			if (!grazeSound && !(player.cheats & CF_PREDICTING))
 			{

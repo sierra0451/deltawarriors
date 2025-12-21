@@ -92,7 +92,7 @@ class KrisRevolverPuff : BulletPuff
 {
 	Default
 	{
+		ProjectileKickBack 1;
 		+NOEXTREMEDEATH
-		+NODAMAGETHRUST
 	}
 }

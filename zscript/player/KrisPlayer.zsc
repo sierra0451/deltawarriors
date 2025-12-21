@@ -351,7 +351,7 @@ class KrisPlayer : DeltaPlayer
 			/*A_Log("Mis: " .. mis.GetTag() .. ", missle/skullfly: " .. (mis.bMissile || mis.bSkullfly)
 				.. ", target: " .. (mis.target ? mis.target.GetTag() : "") .. ", damage: " .. mis.damage);*/
 			
-			if (mis.Damage <= 0)
+			if (mis.Damage == 0)
 				continue;
 			if (mis.bRipper || mis.bFriendly) // rippers can't be parried, friendlies shouldn't be parried
 				continue;
@@ -379,7 +379,10 @@ class KrisPlayer : DeltaPlayer
 		}
 		
 		if (!targets.Size())
+		{
+			AddTension(80);
 			return;
+		}
 		
 		A_QuakeEx(0, 10, 5, 10, 0, 10, "dsempty", QF_RELATIVE | QF_SCALEDOWN);
 		A_SetBlend("white", 0.3, 12);
@@ -433,7 +436,7 @@ class KrisPlayer : DeltaPlayer
 	
 	override bool CanUseOffhand()
 	{
-		return Super.CanUseOffhand() && TryTakeTension(maxTensionPoints / 3.);
+		return Super.CanUseOffhand() && TryTakeTension(80);
 	}
 	
 	States
