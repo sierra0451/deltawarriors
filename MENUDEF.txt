@@ -6,8 +6,10 @@ DefaultListMenu
 
 ListMenu "MainMenu"
 {
-	Position 110, 54
+	Position 110, 64
 	StaticPatchCentered 150, 0, "graphics/delta_logo.png"
+	StaticTextCentered 150, 34, "v0.1"
+	
 	TextItem "$MENU_NEWGAME", "n", "PlayerclassMenu"
 	TextItem "$MENU_LOAD", "l", "LoadGameMenu"
 	TextItem "$MENU_SAVE", "s", "SaveGameMenu"
