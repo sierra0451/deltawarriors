@@ -1,3 +1,17 @@
+class PistolReplacer : Inventory replaces Pistol
+{
+	States
+	{
+		Spawn:
+			TNT1 A 0 NoDelay
+			{
+				A_SpawnItem("KrisRevolver");
+				GoAwayAndDie();
+			}
+			Stop;
+	}
+}
+
 class ShotgunReplacer : Inventory replaces Shotgun
 {
 	States
@@ -15,13 +29,21 @@ class ShotgunReplacer : Inventory replaces Shotgun
 /// -----------------------------------------------------------------
 /// TEMPORARY REPLACERS FOR WEAPONS THAT HAVEN'T BEEN IMPLEMENTED YET
 /// -----------------------------------------------------------------
-class TempChainsaw : Inventory replaces Chainsaw
+class DeltaTempReplacer : Inventory
+{
+	Class<Inventory> _replacedClass;
+	
+	Property ReplacedClass: _replacedClass;
+}
+
+class TempChainsaw : DeltaTempReplacer replaces Chainsaw
 {
 	Default
 	{
 		Inventory.PickupMessage "";
 		Inventory.PickupSound "misc/w_pkup";
 		Inventory.MaxAmount 1;
+		DeltaTempReplacer.ReplacedClass 'Chainsaw';
 	}
 	
 	States
@@ -33,18 +55,21 @@ class TempChainsaw : Inventory replaces Chainsaw
 	
 	override void AttachToOwner(Actor other)
 	{
-		other.A_Print("You picked up a cardboard cutout of a chainsaw. It's completely useless. Someone should really replace that...", 4);
+		let replacee = Spawn(_replacedClass);
+		other.A_Print("You picked up a cardboard cutout of a " .. replacee.GetTag().MakeLower() .. ". It's completely useless. Someone should really replace that...", 4);
+		replacee.Destroy();
 		Super.AttachToOwner(other);
 	}
 }
 
-class TempSuperShotgun : Inventory replaces SuperShotgun
+class TempSuperShotgun : DeltaTempReplacer replaces SuperShotgun
 {
 	Default
 	{
 		Inventory.PickupMessage "";
 		Inventory.PickupSound "misc/w_pkup";
 		Inventory.MaxAmount 1;
+		DeltaTempReplacer.ReplacedClass 'SuperShotgun';
 	}
 	
 	States
@@ -61,13 +86,14 @@ class TempSuperShotgun : Inventory replaces SuperShotgun
 	}
 }
 
-class TempChaingun : Inventory replaces Chaingun
+class TempChaingun : DeltaTempReplacer replaces Chaingun
 {
 	Default
 	{
 		Inventory.PickupMessage "";
 		Inventory.PickupSound "misc/w_pkup";
 		Inventory.MaxAmount 1;
+		DeltaTempReplacer.ReplacedClass 'Chaingun';
 	}
 	
 	States
@@ -79,18 +105,21 @@ class TempChaingun : Inventory replaces Chaingun
 	
 	override void AttachToOwner(Actor other)
 	{
-		other.A_Print("You picked up a chaingun, but it doesn't seem to do anything yet. Someone should really get on fixing that...", 4);
+		let replacee = Spawn(_replacedClass);
+		other.A_Print("You picked up a " .. replacee.GetTag().MakeLower() .. ", but it doesn't seem to do anything yet. Someone should really get on fixing that...", 4);
+		replacee.Destroy();
 		Super.AttachToOwner(other);
 	}
 }
 
-class TempRocketLauncher : Inventory replaces RocketLauncher
+class TempRocketLauncher : DeltaTempReplacer replaces RocketLauncher
 {
 	Default
 	{
 		Inventory.PickupMessage "";
 		Inventory.PickupSound "misc/w_pkup";
 		Inventory.MaxAmount 1;
+		DeltaTempReplacer.ReplacedClass 'RocketLauncher';
 	}
 	
 	States
@@ -102,18 +131,21 @@ class TempRocketLauncher : Inventory replaces RocketLauncher
 	
 	override void AttachToOwner(Actor other)
 	{
-		other.A_Print("You picked up a rocket launcher, but it doesn't seem to do anything yet. Someone should really get on fixing that...", 4);
+		let replacee = Spawn(_replacedClass);
+		other.A_Print("You picked up a " .. replacee.GetTag().MakeLower() .. ", but it doesn't seem to do anything yet. Someone should really get on fixing that...", 4);
+		replacee.Destroy();
 		Super.AttachToOwner(other);
 	}
 }
 
-class TempPlasmaRifle : Inventory replaces PlasmaRifle
+class TempPlasmaRifle : DeltaTempReplacer replaces PlasmaRifle
 {
 	Default
 	{
 		Inventory.PickupMessage "";
 		Inventory.PickupSound "misc/w_pkup";
 		Inventory.MaxAmount 1;
+		DeltaTempReplacer.ReplacedClass 'PlasmaRifle';
 	}
 	
 	States
@@ -130,13 +162,14 @@ class TempPlasmaRifle : Inventory replaces PlasmaRifle
 	}
 }
 
-class TempBFG9000 : Inventory replaces BFG9000
+class TempBFG9000 : DeltaTempReplacer replaces BFG9000
 {
 	Default
 	{
 		Inventory.PickupMessage "";
 		Inventory.PickupSound "misc/w_pkup";
 		Inventory.MaxAmount 1;
+		DeltaTempReplacer.ReplacedClass 'BFG9000';
 	}
 	
 	States
@@ -148,7 +181,7 @@ class TempBFG9000 : Inventory replaces BFG9000
 	
 	override void AttachToOwner(Actor other)
 	{
-		other.A_Print("You picked up some sort of strange, large device. It feels powerful, but doesn't seem to work. Perhaps one day, you can use it.", 4);
+		other.A_Print("You picked up some sort of strange, fucking HUGE device. It feels powerful, but doesn't seem to work. Perhaps one day, you can use it.", 4);
 		Super.AttachToOwner(other);
 	}
 }

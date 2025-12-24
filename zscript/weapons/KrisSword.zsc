@@ -5,11 +5,14 @@ class KrisSword : DeltaWeapon
 	
 	Default
 	{
+		Tag "$DELTA_SWORD_TAG";
+		Inventory.RestrictedTo "KrisPlayer";
+		Inventory.PickupMessage "$DELTA_SWORD_PICKUP";
+		
 		Weapon.SlotNumber 1;
 		Weapon.SelectionOrder 1000;
 		
-		Inventory.PickupMessage "$DELTA_SWORD_PICKUP";
-		Tag "$DELTA_SWORD_TAG";
+		DeltaWeapon.MaxLungeDistance 160;
 		
 		+WEAPON.AXEBLOOD
 		+WEAPON.MELEEWEAPON
@@ -25,6 +28,7 @@ class KrisSword : DeltaWeapon
 	action void A_KrisSwordSwing()
 	{
 		invoker.swingCombo++;
+		A_StartSound("delta/sword/swing", CHAN_WEAPON, CHANF_OVERLAP, pitch: cfrandom(0.95, 1.05));
 		
 		int dmg;
 		int TRACER_COUNT = 16;
@@ -40,11 +44,15 @@ class KrisSword : DeltaWeapon
 			double pitch = AimLineAttack(ang, distance, t, 0., ALF_CHECK3D);
 			LineTrace(Angle + ang, distance, pitch, TRF_NOSKY, player.mo.height*0.5 - player.mo.floorclip + player.mo.AttackZOffset*player.crouchFactor, data: l);
 			
-			if (l.HitActor && targets.Find(l.HitActor) == targets.Size())
-			{
-				LineAttack(Angle + ang, distance, pitch, dmg, "Melee", "KrisSwordPuff", 0, t);
-				targets.Push(l.HitActor);
-			}
+			if (!l.HitActor)
+				continue;
+			if (targets.Find(l.HitActor) != targets.Size())
+				continue;
+			if (l.HitActor is "ExplosiveBarrel")
+				continue;
+			
+			LineAttack(Angle + ang, distance, pitch, dmg, "Melee", "KrisSwordPuff", 0, t);
+			targets.Push(l.HitActor);
 		}
 		
 		if (targets.Size() > 0)
@@ -99,10 +107,9 @@ class KrisSword : DeltaWeapon
 			}
 			Goto SwingR;
 		LungeL:
-			DKSW K 1 A_DoLunge("SwingL");
+			DKSW K 1 A_DoLunge(ResolveState("SwingL"));
 			Loop;
 		SwingL:
-			DKSW K 1 A_StartSound("delta/sword/swing", CHAN_WEAPON, CHANF_OVERLAP, pitch: cfrandom(0.95, 1.05));
 			DKSW L 1 A_KrisSwordSwing;
 			DKSW L 1 A_QuakeEx(0, 5, 2, 5, 0, 1, "dsempty", QF_RELATIVE | QF_WAVE | QF_SCALEDOWN, 0, 1, -1, rollWave: 5);
 			DKSW M 1;
@@ -111,10 +118,9 @@ class KrisSword : DeltaWeapon
 			DKSW PPQQRRSSTTAAA 1 A_ReFire;
 			Goto Ready;
 		LungeR:
-			DKSW B 1 A_DoLunge("SwingR");
+			DKSW B 1 A_DoLunge(ResolveState("SwingR"));
 			Loop;
 		SwingR:
-			DKSW B 1 A_StartSound("delta/sword/swing", CHAN_WEAPON, CHANF_OVERLAP, pitch: cfrandom(0.95, 1.05));
 			DKSW C 1 A_KrisSwordSwing;
 			DKSW C 1 A_QuakeEx(0, 5, 2, 5, 0, 1, "dsempty", QF_RELATIVE | QF_WAVE | QF_SCALEDOWN, 0, -1, -1, rollWave: 5);
 			DKSW D 1;

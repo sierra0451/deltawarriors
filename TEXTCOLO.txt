@@ -1,44 +1,39 @@
-DeltaLowHealth
-{
-	#FFFF00 #FFFF00 0 256
-}
+// Text emphasis
+DeltaHighlight DeltaYellow
+{ #4F4F00 #FFFF40 0 256 }
+DeltaBlue
+{ #00004F #4040FF 0 256 }
+DeltaRed
+{ #4F0000 #FF4040 0 256 }
 
-DeltaHighlight
-{
-	#4F4F00 #FFFF40 0 256
-}
-
+// Characters
+DeltaKris
+{ #002149 #00a2e8 0 256 }
 DeltaSusie
-{
-	#4B245B #D66CFF 0 256
-}
-
+{ #2B143B #D66CFF 0 256 }
 DeltaRalsei
-{
-	#1D4600 #56d200 0 256
-}
-
+{ #1D4600 #56d200 0 256 }
 DeltaNoelle
-{
-	#6E6B3F #FBF236 0 256
-}
+{ #6E6B3F #FBF236 0 256 }
 
+// Menu colors
+DeltaMenuTitle
+{ #004040 #00FFFF 0 256 }
 DeltaMenuHeader
-{
-	#004040 #00FFFF 0 256
-}
-
+{ #004040 #00FFFF 0 256 }
 DeltaMenuDesc
-{
-	#204040 #80FFFF 0 256
-}
-
-DeltaMenuInactive
-{
-	#FFFFFF #FFFFFF 0 256
-}
-
+{ #204040 #80FFFF 0 256 }
 DeltaMenuActive
-{
-	#FFFF40 #FFFF40 0 256
-}
+{ #FFFF40 #FFFF40 0 256 }
+DeltaMenuInactive
+{ #FFFFFF #FFFFFF 0 256 }
+DeltaOptMenuValue
+{ #086040 #20C0FF 0 256 }
+DeltaOptMenuActive
+{ #404010 #FFFF40 0 256 }
+DeltaOptMenuInactive DeltaOptMenuLabel
+{ #404040 #FFFFFF 0 256 }
+
+// Misc
+DeltaLowHealth
+{ #FFFF00 #FFFF00 0 256 }

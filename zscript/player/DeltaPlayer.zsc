@@ -4,6 +4,13 @@ enum DELTA_PSP
 	PSP_OFFHAND = -5
 }
 
+enum TP_RESULT
+{
+	TP_FAIL = 0,
+	TP_USE = 1,
+	TP_INFINITE = 2
+}
+
 class DeltaPlayer : PlayerPawn abstract
 {
 	double tensionPoints;
@@ -12,32 +19,32 @@ class DeltaPlayer : PlayerPawn abstract
 	int tensionDrainTimer;
 	bool beingHugged;
 	int hugReactionTime;
+	Actor lungeTarget;
 	
-	protected int airTimer; 		// when alive, used to coyote time. when dead, used to determine if we made a thud sound upon corpse landing
-	protected int jumpBuffer;
-	protected int damageTics; 		// invulnerability frames, essentially
-	protected int airBobTics;
-	protected int hugTimer;
-	protected int deathTimer; 		// used for first person death animation
-	protected Color characterColor;
-	protected Color overhealColor;
-	protected double deathPitchFP;
-	protected double deathPitchTP;
+	protected int airTimer; 						// when alive, used to coyote time. when dead, used to determine if we made a thud sound upon corpse landing
+	protected int jumpBuffer, airBobTics, hugTimer;
+	protected int damageTics; 						// invulnerability frames, essentially
+	protected int deathTimer; 						// used for first person death animation
+	protected Color characterColor, overhealColor;
+	protected double deathPitchFP, deathPitchTP;
 	
 	protected float flinchMultiplier;
 	protected int startFlinchTics;
 	
 	protected bool lunging;
-	protected Actor lungeTarget;
+	protected float lungeSpeed;
+	protected float lungeStopDistance;
 	protected Array<Actor> grazed;
 	
 	protected bool isUsingOffhand;
 	
 	protected LinearValueInterpolator heartbeat;
 	
-	private bool _frozenDeath;		// using this for custom ice death that doesn't automatically shatter us lol
 	private float _targetRoll;
-	private Vector2 _currentFlinch; // used for weapon flinching when taking damage
+	private bool _frozenDeath;						// using this for custom ice death that doesn't automatically shatter us lol
+	
+	// used for weapon flinching when taking damage
+	private Vector2 _currentFlinch;
 	private int _flinchTics;
 	
 	// Damage types that ignore I-frames and Kris's shield.
@@ -50,14 +57,16 @@ class DeltaPlayer : PlayerPawn abstract
 		'Exit',
 		'Poison'
 	};
+	const MAX_AIR_BOB_TICS = 5;
 	const DAMAGE_IFRAMES = 10;
-	const DRAIN_TIMER_START = TICRATE * 12;
+	const DRAIN_TIMER_START = TICRATE * 12;			// tp lasts for 12 seconds before we start draining it
 	
 	property HugReactionTime: hugReactionTime;
-	property CharacterColor: characterColor;	// mostly used for hud elements
-	property OverhealColor: overhealColor;
+	property CharacterColor: characterColor;		// mostly used for hud elements
+	property OverhealColor: overhealColor;			// used for overheal bar on hud
 	property FlinchMultiplier: flinchMultiplier;
 	property StartFlinchTics: startFlinchTics;
+	property LungeSpeed: lungeSpeed;
 	
 	Default
 	{
@@ -81,13 +90,16 @@ class DeltaPlayer : PlayerPawn abstract
 		Player.GruntSpeed 3;
 		Player.ViewBob 0.2;
 		Player.ViewBobSpeed 12;
-		Player.ViewHeight 32;
+		Player.ViewHeight 32.0;
 		Player.FlyBob 0;
 		Player.InvulnerabilityMode "Reflective";
 		
 		DeltaPlayer.HugReactionTime 20;
 		DeltaPlayer.CharacterColor Color(127, 127, 127);
-		DeltaPlayer.OverhealColor Color(60, 255, 60);
+		DeltaPlayer.OverhealColor Color(60, 220, 60);
+		DeltaPlayer.FlinchMultiplier 10;
+		DeltaPlayer.StartFlinchTics 5;
+		DeltaPlayer.LungeSpeed 35;
 		
 		+PLAYERPAWN.MAKEFOOTSTEPS
 		+DONTGIB					// prevents us from being turned into a pile of flattened meat by crushers
@@ -145,11 +157,110 @@ class DeltaPlayer : PlayerPawn abstract
 			return;
 		}
 		
+		HandleLunging();
 		HandleIFrames();
 		DrainTension();
 		HandleRalseiHugs();
 		HandleAirStuff();
+		HandleFlinch();
 		CheckGraze();
+	}
+
+	override void ApplyAirControl(out double movefactor, out double bobfactor)
+	{
+		movefactor *= level.aircontrol;
+		bobfactor *= level.aircontrol;
+	}
+	
+	// grabbing code from uzdoom.pk3 and retooling for more preferred feeling
+	override void MovePlayer()
+	{
+		if (!player)
+			return;
+		
+		UserCmd cmd = player.cmd;
+		bool doingMoveInput = player.buttons & (BT_MOVERIGHT | BT_MOVELEFT | BT_BACK | BT_FORWARD);
+		
+		// [RH] 180-degree turn overrides all other yaws
+		if (player.turnticks && !lunging)
+		{
+			player.turnticks--;
+			A_SetAngle(Angle + (180. / TURN180_TICKS), SPF_INTERPOLATE);
+		}
+		else if (!lunging)
+			Angle += cmd.yaw * (360./65536.);
+
+		player.onground = (pos.z <= floorz) || bOnMobj || bMBFBouncer || (player.cheats & CF_NOCLIP2);
+
+		// killough 10/98:
+		//
+		// We must apply thrust to the player and bobbing separately, to avoid
+		// anomalies. The thrust applied to bobbing is always the same strength on
+		// ice, because the player still "works just as hard" to move, while the
+		// thrust applied to the movement varies with 'movefactor'.
+
+		//if (cmd.forwardmove | cmd.sidemove)
+		{
+			double forwardmove, sidemove;
+			double bobfactor;
+			double friction, movefactor;
+			double fm, sm;
+			double perc = 1 - airBobTics / float(MAX_AIR_BOB_TICS);
+
+			[friction, movefactor] = GetFriction();
+			bobfactor = friction < ORIG_FRICTION ? movefactor : ORIG_FRICTION_FACTOR;
+			bobfactor *= perc;
+			
+			fm = cmd.forwardmove;
+			sm = cmd.sidemove;
+			[fm, sm] = TweakSpeeds (fm, sm);
+			fm *= Speed / 256;
+			sm *= Speed / 256;
+			
+			if (!player.onground && !bNoGravity && !waterlevel)
+			{
+				// [RH] allow very limited movement if not on ground.
+				// [AA] but also allow authors to override it.
+				ApplyAirControl(movefactor, bobfactor);
+			}
+
+			// When crouching, speed and bobbing have to be reduced
+			if (CanCrouch() && player.crouchfactor != 1)
+			{
+				fm *= player.crouchfactor;
+				sm *= player.crouchfactor;
+				bobfactor *= player.crouchfactor;
+			}
+			
+			forwardmove = fm * movefactor * (35 / TICRATE);
+			sidemove = sm * movefactor * (35 / TICRATE);
+			
+			if (forwardmove)
+			{
+				Bob(Angle, cmd.forwardmove * bobfactor / 256., true);
+				ForwardThrust(forwardmove, Angle);
+			}
+			if (sidemove)
+			{
+				let a = Angle - 90;
+				Bob(a, cmd.sidemove * bobfactor / 256., false);
+				Thrust(sidemove, a);
+			}
+			
+			if (!IsPredicting())
+			{
+				if (doingMoveInput && Vel.LengthSquared() > 0)
+					PlayRunning();
+				else
+					PlayIdle();
+			}
+			
+			if (player.cheats & CF_REVERTPLEASE)
+			{
+				player.cheats &= ~CF_REVERTPLEASE;
+				player.camera = player.mo;
+			}
+		}
 	}
 	
 	override int DamageMobj(Actor inflictor, Actor source, int damage, Name mod, int flags, double angle)
@@ -177,16 +288,22 @@ class DeltaPlayer : PlayerPawn abstract
 		int finalDamage = Super.DamageMobj(inflictor, source, damage, mod, flags, angle);
 		
 		if (finalDamage > 0 && Health > 0)
+		{
 			A_StartSound("delta/hurt", CHAN_VOICE, 0, 1, 0.5);
+			if (!ignoreIFrames)
+				damageTics = -1;
+			if (mod == 'Falling')
+				A_StartSound("delta/fall_damage", CHAN_AUTO);
+			
+			if (source && source != self)
+			{
+				float ang = DeltaAngle(self.angle, AngleTo(inflictor)) + cfrandom(-15, 15);
+				DamageFlinch(ang);
+			}
+		}
 		
-		if (player.damageCount > 25)
+		if (player && player.damageCount > 25)
 			player.damageCount = 25;
-		
-		if (!ignoreIFrames)
-			damageTics = -1;
-		
-		if (mod == 'Falling')
-			A_StartSound("delta/fall_damage", CHAN_AUTO);
 		
 		return finalDamage;
 	}
@@ -194,6 +311,14 @@ class DeltaPlayer : PlayerPawn abstract
 	override void Die(Actor source, Actor inflictor, int dmgFlags, Name MeansOfDeath)
 	{
 		Super.Die(source, inflictor, dmgFlags, MeansOfDeath);
+		
+		if (lunging)
+		{
+			let oldVel = Vel;
+			StopLunge();
+			Vel = oldVel;
+		}
+		
 		deathTimer = 0;
 		deathPitchFP = deathPitchTP = Pitch;
 	}
@@ -201,7 +326,9 @@ class DeltaPlayer : PlayerPawn abstract
 	// taking implementation from uzdoom.pk3, slightly retooling for different look on death
 	override void DeathThink()
 	{
-		let player = self.player;
+		if (!player)
+			return;
+		
 		player.Uncrouch();
 		player.onground = (pos.Z <= floorz);
 		
@@ -264,7 +391,8 @@ class DeltaPlayer : PlayerPawn abstract
 	// Grabbing GZDoom's player code and retooling it to work with coyote time and jump buffering
 	override void CheckJump()
 	{
-		let player = self.player;
+		if (!player)
+			return;
 		
 		// Buffer jump inputs
 		if (player.cmd.buttons & BT_JUMP)
@@ -275,12 +403,7 @@ class DeltaPlayer : PlayerPawn abstract
 		{
 			jumpBuffer--;
 			
-			if (GetCrouching())
-			{
-				// Jumping while crouching will force an un-crouch but not jump
-				player.crouching = 1;
-			}
-			else if (waterlevel >= 2)
+			if (waterlevel >= 2)
 			{
 				Vel.Z = 4 * Speed;
 			}
@@ -291,9 +414,12 @@ class DeltaPlayer : PlayerPawn abstract
 			// airTimer < 4 instead of grounded check, allows for coyote time
 			else if (level.IsJumpingAllowed() && airTimer < 4 && Vel.Z <= 0)
 			{
+				if (GetCrouching())
+					player.crouchOffset = 0;
+				
 				double jumpvelz = JumpZ * 35 / TICRATE;
 				double jumpfac = 0;
-
+				
 				// [BC] If the player has the high jump power, double their jump velocity.
 				// (actually, pick the best factors from all active items.)
 				for (let p = Inv; p != null; p = p.Inv)
@@ -306,12 +432,12 @@ class DeltaPlayer : PlayerPawn abstract
 					}
 				}
 				if (jumpfac > 0) jumpvelz *= jumpfac;
-
+				
 				Vel.Z = jumpvelz;
 				bOnMobj = false;
 				jumpBuffer = 0;
 				
-				if (!(player.cheats & CF_PREDICTING))
+				if (!IsPredicting())
 					A_StartSound("*jump", CHAN_BODY);
 			}
 		}
@@ -319,7 +445,9 @@ class DeltaPlayer : PlayerPawn abstract
 	
 	override void CheckCrouch(bool totallyFrozen)
 	{
-		let player = self.player;
+		if (!player)
+			return;
+		
 		int buttons = player.cmd.buttons;
 		
 		if (CanCrouch() && player.health > 0 && level.IsCrouchingAllowed())
@@ -345,24 +473,79 @@ class DeltaPlayer : PlayerPawn abstract
 		player.crouchoffset = -(ViewHeight) * (1 - player.crouchfactor);
 	}
 	
+	// modifying uzdoom's source code (not using Super.CrouchMove cuz i need to insert some stuff more directly)
+	override void CrouchMove(int direction)
+	{
+		if (!player)
+			return;
+		
+		double defaultheight = FullHeight;
+		double savedheight = Height;
+		double crouchspeed = direction * CROUCHSPEED;
+		double oldheight = player.viewheight;
+		
+		player.crouchdir = direction;
+		player.crouchfactor += crouchspeed;
+		
+		if (!IsGrounded())
+			SetOrigin((pos.x, pos.y, pos.z + crouchspeed), false);
+		
+		// check whether the move is ok
+		Height = defaultheight * player.crouchfactor;
+		if (!TryMove(Pos.XY, false, NULL))
+		{
+			Height = savedheight;
+			if (direction > 0)
+			{
+				// doesn't fit
+				player.crouchfactor -= crouchspeed;
+				
+				if (!player.onGround)
+					SetOrigin((pos.x, pos.y, pos.z - crouchspeed), false);
+		
+				return;
+			}
+		}
+		Height = savedheight;
+
+		player.crouchfactor = clamp(player.crouchfactor, 0.5, 1.);
+		player.viewheight = ViewHeight * player.crouchfactor;
+		player.crouchviewdelta = player.viewheight - ViewHeight;
+
+		// Check for eyes going above/below fake floor due to crouching motion.
+		CheckFakeFloorTriggers(pos.Z + oldheight, true);
+	}
+	
+	override bool CanCollideWith(Actor other, bool passive)
+	{
+		if (other.bIsMonster && lunging)
+			return false;
+		
+		return Super.CanCollideWith(other, passive);
+	}
+	
 	override void HasReceived(Inventory item)
 	{
-		if (!(player.cheats & CF_PREDICTING) && item is "Health" && item.GetClass() != "Health" && !item.bQuiet)
-			A_StartSound("delta/heal", CHAN_VOICE, 0);
+		if (!IsPredicting() && item is "Health" && item.GetClass() != "Health" && !item.bQuiet)
+			A_StartSound("delta/heal", CHAN_VOICE);
 	}
 	
 	override Vector2 BobWeapon(double ticfrac)
 	{
 		let originalBob = Super.BobWeapon(ticfrac);
-		double perc = 1 - airBobTics / 5.;
+		double perc = 1 - airBobTics / float(MAX_AIR_BOB_TICS);
 		
-		return originalBob * perc;
+		Vector2 bobFlinch = (0, 0);
+		if (_flinchTics)
+			bobFlinch = _currentFlinch * ((_flinchTics - ticFrac) / startFlinchTics);
+		
+		bobFlinch.y = abs(bobFlinch.y);
+		
+		return originalBob * perc + bobFlinch;
 	}
 	
 	override void CheatGive(string name, int amount)
 	{
-		//A_Log("Giving " .. amount .. " of " .. name .. ".", true);
-		
 		if (name ~== "armor")
 			return;
 		
@@ -379,7 +562,7 @@ class DeltaPlayer : PlayerPawn abstract
 		}
 		else
 		{
-			if (name ~== "everything" || name ~== "ammo")
+			if (name ~== "all" || name ~== "everything" || name ~== "ammo")
 			{
 				tensionPoints = maxTensionPoints;
 				tensionDrainTimer = DRAIN_TIMER_START;
@@ -427,6 +610,116 @@ class DeltaPlayer : PlayerPawn abstract
 		}
 	}
 	
+	void StartLunge(Actor target, float stopDistance)
+	{
+		if (!CanLunge())
+			return;
+		
+		lungeTarget = target;
+		lungeStopDistance = stopDistance;
+		
+		if (LungeBlocked())
+		{
+			if (!player)
+				return;
+			
+			let weap = DeltaWeapon(player.ReadyWeapon);
+			
+			if (!weap)
+				return;
+			
+			weap.MarkReadyToStopLunging();
+			return;
+		}
+		
+		lunging = bNoGravity = true;
+		bSolid = false;
+	}
+	
+	bool LungeBlocked()
+	{
+		bool blocked = false;
+		double dist = level.Vec3Diff(pos, lungeTarget.pos).Length() - radius - lungeTarget.radius;
+		
+		for (int x = -1; x <= 1; x++)
+		{
+			for (int y = -1; y <= 1; y++)
+			{
+				for (int z = -1; z <= 1; z++)
+				{
+					blocked = LineTrace(
+						angle,
+						dist, pitch, TRF_ABSOFFSET | TRF_BLOCKSELF | TRF_THRUACTORS,
+						(height / 2 - 2) * z + (z == -1 ? MaxStepHeight : 0),
+						(radius / 2 - 2) * x, (radius / 2 - 2) * y
+					);
+					
+					if (blocked)
+						return true;
+				}
+			}
+		}
+		
+		return false;
+	}
+	
+	void HandleLunging()
+	{
+		if (!lunging || !player)
+			return;
+		if (!lungeTarget)
+		{
+			StopLunge();
+			return;
+		}
+		
+		player.bob = 0;
+		Vector3 diff = level.Vec3Diff(pos, lungeTarget.pos);
+		
+		A_SetAngle(VectorAngle(diff.x, diff.y), SPF_INTERPOLATE);
+		
+		if (freelook && false)
+			A_SetPitch(sin(diff.z), SPF_INTERPOLATE);
+		
+		Vector3 diffUnit = diff.Unit();
+		float dist = diff.Length() - radius - lungeTarget.radius;
+		
+		Vel = diffUnit * min(lungeSpeed, dist);
+		
+		if (dist <= lungeStopDistance + Vel.Length())
+		{
+			if (!player)
+				return;
+			
+			let weap = DeltaWeapon(player.ReadyWeapon);
+			
+			if (!weap)
+				return;
+			
+			weap.MarkReadyToStopLunging();
+		}
+		
+		if (dist <= lungeStopDistance || lungeTarget.health <= 0 || LungeBlocked())
+			StopLunge();
+	}
+	
+	void StopLunge()
+	{
+		Vel = (0, 0, 0);
+		lunging = bNoGravity = false;
+		bSolid = true;
+		
+		if (!player)
+			return;
+		
+		let weap = DeltaWeapon(player.ReadyWeapon);
+		
+		if (!weap)
+			return;
+		
+		weap.MarkReadyToStopLunging();
+	}
+	
 	void AddTension(double amount, bool graze = false, bool resetTimer = true)
 	{
 		tensionPoints = min(maxTensionPoints, tensionPoints + amount);
@@ -437,19 +730,29 @@ class DeltaPlayer : PlayerPawn abstract
 			ticLastGrazed = level.Time;
 	}
 	
-	bool TryTakeTension(double amount, bool playSound = true)
+	clearscope int GetTension(double amount, bool playSound = true)
 	{
 		if (amount < 0)
-			return false;
+			amount = 0;
 		if (sv_infiniteAmmo || (FindInventory('PowerInfiniteAmmo', true) != null))
-			return true;
+			return TP_INFINITE;
+		
 		if (tensionPoints < amount)
 		{
 			if (playSound)
 				A_StartSound("delta/tp_fail", CHAN_ITEM, CHANF_LOCAL | CHANF_NOSTOP);
 			
-			return false;
+			return TP_FAIL;
 		}
+		
+		return TP_USE;
+	}
+	
+	bool TryTakeTension(double amount, bool playSound = true)
+	{
+		let tpResult = GetTension(amount, playSound);
+		if (tpResult != TP_USE)
+			return tpResult == TP_INFINITE; // false if fail, true if infinite
 		
 		tensionPoints -= amount;
 		
@@ -460,9 +763,22 @@ class DeltaPlayer : PlayerPawn abstract
 		return true;
 	}
 	
+	protected void DrainTension()
+	{
+		if (sv_infiniteAmmo || (FindInventory('PowerInfiniteAmmo', true) != null))
+			return;
+		if (GetIsUsingOffhand())
+			return;
+		
+		if (tensionDrainTimer > 0)
+			tensionDrainTimer--;
+		else if (tensionPoints > 0)
+			tensionPoints = max(0, tensionPoints - 5./TICRATE);
+	}
+	
 	protected void HandleHeartbeat()
 	{
-		if (player.cheats & CF_PREDICTING)
+		if (IsPredicting())
 			return;
 		
 		if (!heartbeat)
@@ -490,7 +806,7 @@ class DeltaPlayer : PlayerPawn abstract
 	
 	protected virtual float GetViewRoll()
 	{
-		if (player.cheats & CF_PREDICTING)
+		if (IsPredicting())
 			return 0;
 		
 		let relVel = (Vel.x * cos(-Angle) - (Vel.y * sin(-Angle)), Vel.x * sin(-Angle) + Vel.y * cos(-Angle), Vel.z);
@@ -522,19 +838,6 @@ class DeltaPlayer : PlayerPawn abstract
 			damageTics--;
 	}
 	
-	protected void DrainTension()
-	{
-		if (sv_infiniteAmmo || (FindInventory('PowerInfiniteAmmo', true) != null))
-			return;
-		if (GetIsUsingOffhand())
-			return;
-		
-		if (tensionDrainTimer > 0)
-			tensionDrainTimer--;
-		else if (tensionPoints > 0)
-			tensionPoints = max(0, tensionPoints - 5./TICRATE);
-	}
-	
 	protected bool RalseiIsHugging()
 	{
 		string hug = "hugging";
@@ -564,18 +867,24 @@ class DeltaPlayer : PlayerPawn abstract
 	
 	protected void HandleAirStuff()
 	{
-		if (player.OnGround)
+		if (IsGrounded())
 			airTimer = 0;
 		else
 			airTimer++;
 		
-		if (!(player.cheats & CF_PREDICTING))
-		{
-			if (player.OnGround && airBobTics)
-				airBobTics--;
-			else if (!player.OnGround && airBobTics < 5)
-				airBobTics++;
-		}
+		if (IsPredicting())
+			return;
+		
+		if (IsGrounded() && airBobTics)
+			airBobTics--;
+		else if (!IsGrounded() && airBobTics < MAX_AIR_BOB_TICS)
+			airBobTics++;
+	}
+	
+	protected void HandleFlinch()
+	{
+		if (_flinchTics > 0)
+			_flinchTics--;
 	}
 	
 	protected void CheckGraze()
@@ -594,11 +903,11 @@ class DeltaPlayer : PlayerPawn abstract
 			if (!mis.bSkullfly && mis.target == self) // "target" with projectiles is used to figure out who threw it
 				continue;
 			
-			//A_Log(mis.GetTag() .. "'s damage: " .. mis.Damage, true);
+			int misDmg = mis.GetMissileDamage(0, 1);
 			
-			if (mis.Damage == 0)
+			if (misDmg <= 0)
 				continue;
-			if (mis.bFriendly)
+			if (mis.target && IsFriend(mis.target))
 				continue;
 			
 			// code largely taken from ThinkerIterator documentation page
@@ -612,7 +921,7 @@ class DeltaPlayer : PlayerPawn abstract
 				continue;
 			
 			bool firstGraze = grazed.Find(mis) == grazed.Size();
-			double grazeAmount = max(3, mis.Damage);
+			double grazeAmount = max(5, misDmg);
 			
 			if (firstGraze)
 			{
@@ -622,12 +931,18 @@ class DeltaPlayer : PlayerPawn abstract
 			else
 				AddTension(grazeAmount * GetGrazeMultiplier() / TICRATE, true);
 			
-			if (!grazeSound && !(player.cheats & CF_PREDICTING))
+			if (!grazeSound && !IsPredicting())
 			{
 				grazeSound = true;
 				A_StartSound("delta/graze", 5, 0, firstGraze ? 1 : 0.5);
 			}
 		}
+	}
+	
+	protected void DamageFlinch(float ang)
+	{
+		_flinchTics = startFlinchTics;
+		_currentFlinch = (sin(ang), cos(ang)) * flinchMultiplier;
 	}
 	
 	// retooling zdoom's implementation of freeze death for our own freeze death!
@@ -640,6 +955,9 @@ class DeltaPlayer : PlayerPawn abstract
 		Height = Default.Height;
 		A_StartSound("delta/freeze", CHAN_BODY);
 
+		if (!player)
+			return;
+		
 		player.damagecount = 0;
 		player.poisoncount = 0;
 		player.bonuscount = 0;
@@ -651,10 +969,11 @@ class DeltaPlayer : PlayerPawn abstract
 		invoker.isUsingOffhand = false;
 		A_Fall();
 		
-		if (!(player.cheats & CF_PREDICTING))
+		if (!invoker.IsPredicting())
 		{
 			A_StopSound();
 			A_StartSound("delta/hurt", CHAN_VOICE);
+			invoker.DeltaExtraDeathStuff();
 			
 			// if we have partial invisibility or anything like that, turn it off
 			A_SetRenderStyle(1, STYLE_Normal);
@@ -662,9 +981,12 @@ class DeltaPlayer : PlayerPawn abstract
 			// hide our weapon sprites IMMEDIATELY. classic doom and default zdoom
 			// use deselect state, which would look weird since it's actually
 			// animated
-			player.SetPsprite(PSP_FLASH, null);
-			player.SetPsprite(PSP_WEAPON, null);
-			player.SetPsprite(PSP_OFFHAND, null);
+			if (player)
+			{
+				player.SetPsprite(PSP_FLASH, null);
+				player.SetPsprite(PSP_WEAPON, null);
+				player.SetPsprite(PSP_OFFHAND, null);
+			}
 			A_StopSound(CHAN_WEAPON);
 		}
 		
@@ -688,14 +1010,23 @@ class DeltaPlayer : PlayerPawn abstract
 			A_StartSound("delta/impact", CHAN_BODY, 0, 0.75);
 	}
 	
-	virtual void StartOffhand()
+	virtual void DeltaExtraDeathStuff()
+	{
+		
+	}
+	
+	virtual bool StartOffhand()
 	{
 		isUsingOffhand = true;
+		return true;
 	}
 	
 	// See if we're holding offhand or not
 	action state A_CheckOffhand(statelabel failDest)
 	{
+		if (!player)
+			return ResolveState(failDest);
+		
 		if (player.cmd.buttons & BT_USER1)
 			return ResolveState(null);
 		
@@ -706,6 +1037,11 @@ class DeltaPlayer : PlayerPawn abstract
 	action void A_EndOffhand()
 	{
 		invoker.isUsingOffhand = false;
+	}
+	
+	clearscope virtual bool CanUseOffhand()
+	{
+		return true;
 	}
 	
 	clearscope Color GetCharacterColor()
@@ -720,7 +1056,7 @@ class DeltaPlayer : PlayerPawn abstract
 	
 	clearscope bool GetCrouching()
 	{
-		return player.crouchOffset != 0;
+		return player && player.crouchOffset != 0;
 	}
 	
 	clearscope int GetDamageTics()
@@ -738,9 +1074,30 @@ class DeltaPlayer : PlayerPawn abstract
 		return 1;
 	}
 	
-	virtual bool CanUseOffhand()
+	clearscope bool IsLunging()
 	{
-		return true;
+		return lunging && lungeTarget;
+	}
+	
+	clearscope virtual bool CanLunge()
+	{
+		return !GetCrouching();
+	}
+	
+	clearscope bool IsGrounded()
+	{
+		if (player)
+			return player.onGround;
+		
+		return pos.Z <= floorZ;
+	}
+	
+	clearscope bool IsPredicting()
+	{
+		if (player)
+			return (player.cheats & CF_PREDICTING);
+		
+		return false;
 	}
 	
 	States

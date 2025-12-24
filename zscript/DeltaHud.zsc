@@ -145,7 +145,7 @@ class DeltaHud : BaseStatusBar
 			
 			DrawTextureRotated(
 				_damageIndicator,
-				(distance * sin(-ang), -distance * cos(-ang)),
+				(distance * sin(-ang), -distance * cos(ang)),
 				DI_SCREEN_CENTER | DI_ITEM_OFFSETS,
 				ang,
 				alpha,
@@ -225,12 +225,19 @@ class DeltaHud : BaseStatusBar
 		if (!infiniteAmmo)
 		{
 			if (tp < maxTp)
-				DrawString(_drHudFont, String.Format("%d", tp * 100 / maxTp), (_hBorder + barWidth + barXOffset + 1, curY + textYOffset/2), DI_SCREEN_LEFT_BOTTOM | DI_TEXT_ALIGN_RIGHT, scale: _universalScale * 2);
+				DrawString(_drHudFont, String.Format("%d", tp * 100 / maxTp),
+					(_hBorder + barWidth + barXOffset + 1, curY + textYOffset/2),
+					DI_SCREEN_LEFT_BOTTOM | DI_TEXT_ALIGN_RIGHT,
+					scale: _universalScale * 2);
 			else
-				DrawTexture(_tpMaxText, (_hBorder + barWidth + barXOffset, curY + panelYSpacing + barHeight/2), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_RIGHT, scale: _universalScale * 2);
+				DrawTexture(_tpMaxText,
+					(_hBorder + barWidth + barXOffset, curY + panelYSpacing + barHeight/2),
+					DI_SCREEN_LEFT_BOTTOM | DI_ITEM_RIGHT, scale: _universalScale * 2);
 		}
 		else
-			DrawTexture(_infiniteText, (_hBorder + barWidth + barXOffset + 1, curY + panelYSpacing + barHeight/2), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_RIGHT, scale: _universalScale * 10/8);
+			DrawTexture(_infiniteText,
+				(_hBorder + barWidth + barXOffset + 1, curY + panelYSpacing + barHeight/2),
+				DI_SCREEN_LEFT_BOTTOM | DI_ITEM_RIGHT, scale: _universalScale * 1.25);
 		
 		// ================
 		//  DRAWING HEALTH
@@ -244,9 +251,23 @@ class DeltaHud : BaseStatusBar
 			Fill(ply.GetOverhealColor(), _hBorder + panelXSpacing + barXOffset,
 				curY, min(1, GetHealthPerc() - 1) * barWidth, barHeight, DI_SCREEN_LEFT_BOTTOM);
 		
-		string format = GetHealthPerc() <= 0.33 ? "\c[DeltaLowHealth]%d" : "%d";
-		DrawString(_drHudFont, String.Format(format, CPlayer.Health), (_hBorder + barWidth + barXOffset + 1, curY + textYOffset/2), DI_SCREEN_LEFT_BOTTOM | DI_TEXT_ALIGN_RIGHT, scale: _universalScale * 2);
-		DrawTexture(_hpText, (_hBorder + labelXOffset + panelXSpacing, curY + panelYSpacing + barHeight/2), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT, scale: (1, yMultiplier), col: GetHealthPerc() <= 0.33 ? 0xffffff00 : 0xffffffff);
+		string format = GetHealthPerc() <= 0.33 ? "\c[DeltaLowHealth]%s" : "%s";
+		string maxHp = String.Format(format, "" .. ply.GetMaxHealth());
+		int maxHpWidth = _drHudFont.mFont.StringWidth(maxHp);
+		int slashWidth = _drHudFont.mFont.GetCharWidth("/");
+		DrawString(_drHudFont, String.Format(format, "" .. CPlayer.Health),
+			(_hBorder + barWidth + barXOffset - maxHpWidth - (2*slashWidth), curY + textYOffset/2),
+			DI_SCREEN_LEFT_BOTTOM | DI_TEXT_ALIGN_RIGHT, scale: _universalScale * 2);
+		DrawString(_drHudFont, String.Format(format, "/"),
+			(_hBorder + barWidth + barXOffset - maxHpWidth - slashWidth, curY + textYOffset/2),
+			DI_SCREEN_LEFT_BOTTOM | DI_TEXT_ALIGN_RIGHT, scale: _universalScale);
+		DrawString(_drHudFont, maxHp,
+			(_hBorder + barWidth + barXOffset + 1, curY + textYOffset/2),
+			DI_SCREEN_LEFT_BOTTOM | DI_TEXT_ALIGN_RIGHT, scale: _universalScale * 2);
+		DrawTexture(_hpText,
+			(_hBorder + labelXOffset + panelXSpacing, curY + panelYSpacing + barHeight/2),
+			DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT, scale: (1, yMultiplier),
+			col: GetHealthPerc() <= 0.33 ? 0xffffff00 : 0xffffffff);
 	}
 	
 	protected void DrawRightPanel(bool infiniteAmmo)

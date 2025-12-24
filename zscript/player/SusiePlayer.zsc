@@ -1,0 +1,95 @@
+class SusiePlayer : DeltaPlayer
+{
+	Default
+	{
+		Height 42;
+		Radius 18;
+		Speed 0.8;
+		Mass 120;
+		
+		Health 130;
+		Player.MaxHealth 130;
+		
+		Player.DisplayName "$DELTA_CHAR_SUSIE";
+		Player.ViewHeight 34.5;
+		
+		// Player.WeaponSlot 1, "SusieAxe";
+		// Player.WeaponSlot 2, "SusieShotgun";
+		// Player.WeaponSlot 3, "SusieSuperShotgun";
+		// Player.WeaponSlot 4, "SusieChaingun";
+		// Player.WeaponSlot 5, "SusieRocketLauncher";
+		// Player.WeaponSlot 6, "";
+		
+		// Player.StartItem "SusieAxe";
+		// Player.StartItem "SusieShotgun";
+		Player.StartItem "Shell", 15;
+		
+		DeltaPlayer.HugReactionTime 20;
+		DeltaPlayer.CharacterColor Color(234, 121, 200);
+	}
+	
+	override void DeltaExtraDeathStuff()
+	{
+		A_StartSound("delta/susie/gasp", CHAN_VOICE, CHANF_OVERLAP, attenuation: 20);
+	}
+	
+	States
+	{
+		Spawn:
+			DSUS A 1
+			{
+				if (!IsGrounded())
+					return ResolveState("Airborne");
+				
+				return ResolveState(null);
+			}
+			Loop;
+		See:
+			DSUS AAAABBBBAAAACCCC 1
+			{
+				let speedLerp = 1 - (invoker.Vel.Length() / (GetDefaultSpeed(invoker.GetClass()) * TICRATE));
+				self.tics = max(1, round(1 + speedLerp * 0.75));
+				
+				if (!IsGrounded())
+					return ResolveState("Airborne");
+				
+				return ResolveState(null);
+			}
+			Loop;
+		Airborne:
+			DSUS HHHHIIIIJJJJ 1
+			{
+				if (IsGrounded())
+					return ResolveState("Spawn");
+				
+				return ResolveState(null);
+			}
+			Loop;
+		Pain:
+			Goto Spawn;
+		Death:
+			DSUS P 1 A_StartDeath;
+			DSUS P 1 A_CheckDeathLand;
+			Wait;
+		FinishDeath:
+			DSUS Q 5 A_DeathImpact;
+			DSUS Q 2;
+			DSUS Q 1; // turn to dust here!
+			DSUS Q -1;
+			Stop;
+		Death.Ice:
+			DSUF A 2 A_DeltaFreezeDeath;
+			DSUF BCD 2;
+			Goto FinishIce;
+		FinishIce:
+			DSUF E TICRATE;
+			DSUF E 1;
+			DSUF E -1;
+			Stop;
+		XDeath:
+			DSUS G 1 A_StartDeath;
+			DSUS G 1; // turn to dust here!
+			DSUS G -1;
+			Stop;
+	}
+}

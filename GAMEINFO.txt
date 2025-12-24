@@ -1,3 +1,4 @@
 IWAD = "DOOM2.WAD"
 StartupTitle = "DeltaWarriors"
 StartupColors = "FFFFFF", "000000"
+StartupType = "Hexen"

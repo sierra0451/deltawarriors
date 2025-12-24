@@ -1,3 +1,13 @@
+class DeltaHealthBonus : HealthBonus replaces HealthBonus
+{
+	override bool TryPickup(in out Actor toucher)
+	{
+		toucher.GiveBody(1, toucher.GetMaxHealth() * 2);
+		GoAwayAndDie();
+		return true;
+	}
+}
+
 class DeltaSoulsphere : Soulsphere replaces Soulsphere
 {
 	override bool TryPickup(in out Actor toucher)

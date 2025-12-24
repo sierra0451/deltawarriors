@@ -16,16 +16,24 @@ class KrisPlayer : DeltaPlayer
 	
 	Default
 	{
+		Height 36;
+		Radius 16;
+		Speed 0.7;
+		Mass 100;
+		
 		Health 100;
 		Player.MaxHealth 100;
-		Speed 0.7;
 		
-		Player.DisplayName "Kris";
-		Player.ViewHeight 30;
+		Player.DisplayName "$DELTA_CHAR_KRIS";
+		Player.ViewHeight 28.0;
 		
 		Player.WeaponSlot 1, "KrisSword";
 		Player.WeaponSlot 2, "KrisRevolver";
 		Player.WeaponSlot 3, "KrisShotgun";
+		// Player.WeaponSlot 4, "KrisMP5";
+		// Player.WeaponSlot 5, "KrisGrenadeLauncher";
+		// Player.WeaponSlot 6, "KrisCrossbow";
+		
 		Player.StartItem "KrisSword";
 		Player.StartItem "KrisRevolver";
 		Player.StartItem "Clip", 15;
@@ -121,46 +129,6 @@ class KrisPlayer : DeltaPlayer
 		player.crouchoffset = -(ViewHeight) * (1 - player.crouchfactor);
 	}
 	
-	/*
-	override int DamageMobj(Actor inflictor, Actor source, int damage, Name mod, int flags, double angle)
-	{
-		if (!GetIsUsingOffhand() || !source || self == source)
-			return Super.DamageMobj(inflictor, source, damage, mod, flags, angle);
-		
-		foreach (damageType : DAMAGE_TYPES_IGNORE_IFRAMES)
-		{
-			if (mod == damageType)
-				return Super.DamageMobj(inflictor, source, damage, mod, flags, angle);
-		}
-		
-		bool isExplosive = flags & DMG_EXPLOSION;
-		
-		// A_Log("Attempting to block some of " .. damage .. (isExplosive ? " explosive damage." : " damage."));
-		int finalDamage = damage;
-		
-		Vector3 forward = (cos(self.Angle), sin(self.Angle), 0);
-		Vector3 diff = level.Vec3Diff(self.pos, inflictor.pos);
-		diff.z = 0;
-		float _dotProduct = forward dot diff.Unit();
-		
-		if (_dotProduct < 0.45)
-		{
-			// A_Log("Blocking failed.");
-			return Super.DamageMobj(inflictor, source, finalDamage, mod, flags, angle);
-		}
-		
-		double preventionFactor = isExplosive ? 0.75 : 0.9;
-		double tensionToTake = max(0, damage * 0.5);
-		
-		if (!TryTakeTension(tensionToTake * (isExplosive ? 0.5 : 1)))
-			tensionToTake = tensionPoints;
-		
-		finalDamage -= ceil(tensionToTake * preventionFactor * 2);
-		// A_Log("Ended with taking " .. finalDamage .. (isExplosive ? " explosive damage" : " damage") .. ", taking " .. tensionToTake .. " TP.");
-		return Super.DamageMobj(inflictor, source, finalDamage, mod, flags, angle);
-	}
-	*/
-	
 	override Vector2 BobWeapon(double ticfrac)
 	{
 		let originalBob = Super.BobWeapon(ticfrac),
@@ -199,6 +167,14 @@ class KrisPlayer : DeltaPlayer
 	{
 		_slideAngle += Angle - destAngle;
 		return Super.PreTeleport(destPos, destAngle, flags);
+	}
+	
+	override void MakeFootsteps()
+	{
+		if (_isSliding)
+			return;
+		
+		Super.MakeFootsteps();
 	}
 	
 	override void PlayerLandedMakeGruntSound(actor onmobj)
@@ -255,7 +231,7 @@ class KrisPlayer : DeltaPlayer
 			
 			A_ChangeVelocity(slideX, slideY, Vel.Z, CVF_REPLACE);
 			
-			if (player.onGround)
+			if (IsGrounded())
 			{
 				_currentSlideSpeed = max(0, _currentSlideSpeed - (_slideSlowing / TICRATE));
 				
@@ -291,7 +267,7 @@ class KrisPlayer : DeltaPlayer
 			if (IsActorPlayingSound(6))
 				A_StopSound(6);
 			
-			if (!player.onGround)
+			if (!IsGrounded())
 				_savedSlideSpeed = max(_savedSlideSpeed, -Vel.Z * 0.75);
 			else
 			{
@@ -308,7 +284,7 @@ class KrisPlayer : DeltaPlayer
 	
 	protected void StartSlide(float slideAngle, bool resetSpeed = true)
 	{
-		if (!player.onGround || GetIsUsingOffhand())
+		if (!IsGrounded() || GetIsUsingOffhand())
 			return;
 		
 		_slideAngle = slideAngle;
@@ -336,7 +312,6 @@ class KrisPlayer : DeltaPlayer
 	
 	protected void KrisShieldParry()
 	{
-		A_QuakeEx(0, 5, 1, 10, 0, 1, "dsempty", QF_RELATIVE | QF_WAVE | QF_SCALEDOWN, 0, 1, -1, rollWave: 5);
 		A_StartSound("delta/kris/shield_swing", CHAN_AUTO);
 		
 		double distance = 120;
@@ -348,16 +323,22 @@ class KrisPlayer : DeltaPlayer
 		
 		while (mis = Actor(it.Next()))
 		{
-			/*A_Log("Mis: " .. mis.GetTag() .. ", missle/skullfly: " .. (mis.bMissile || mis.bSkullfly)
-				.. ", target: " .. (mis.target ? mis.target.GetTag() : "") .. ", damage: " .. mis.damage);*/
-			
-			if (mis.Damage == 0)
+			if (mis.Damage == 0 && !mis.bIsMonster)
 				continue;
-			if (mis.bRipper || mis.bFriendly) // rippers can't be parried, friendlies shouldn't be parried
+			if (mis.bRipper) // rippers can't be parried
+				continue;
+			if (!mis.bIsMonster && mis.target && IsFriend(mis.target)) // friendly projectiles shouldn't be parried
 				continue;
 			if (!mis.bMissile && !mis.bSkullfly)
-				continue;
-			if (!mis.bSkullfly && mis.target == self) // "target" with projectiles is used to figure out who threw it
+			{
+				if (!mis.bIsMonster)
+					continue;
+				if ((!mis.curState.InStateSequence(mis.ResolveState("Melee"))
+						&& !mis.curState.InStateSequence(mis.ResolveState("Missile")))
+					|| damageTics != 0)
+					continue;
+			}
+			if (mis.bMissile && mis.target == self) // "target" with projectiles is used to figure out who threw it
 				continue;
 			
 			// code largely taken from ThinkerIterator documentation page
@@ -370,7 +351,8 @@ class KrisPlayer : DeltaPlayer
 			if (abs(diff.z) > blockHeight)
 				continue;
 			
-			Vector3 forward = (cos(Angle), sin(Angle), 0);
+			Vector3 forward = DeltaMath.GetActorForward(self);
+			forward = forward.PlusZ(-forward.z);
 			
 			if ((diff dot forward) < 0.7)
 				continue;
@@ -378,50 +360,67 @@ class KrisPlayer : DeltaPlayer
 			targets.Push(mis);
 		}
 		
-		if (!targets.Size())
+		float largestDot = -1;
+		int largestDotIndex = -1;
+		
+		for (int i = 0; i < targets.Size(); i++)
+		{
+			let t = targets[i];
+			let dir = level.Vec3Diff(pos, t.pos).Unit();
+			let zOffset = 1 - abs(sin(pitch));
+			let dotProduct = (zOffset*cos(angle), zOffset*sin(angle), zOffset) dot dir;
+			
+			if (dotProduct > largestDot)
+			{
+				largestDot = dotProduct;
+				largestDotIndex = i;
+			}
+		}
+		
+		if (largestDotIndex == -1)
 		{
 			AddTension(80);
 			return;
 		}
+		
+		let parried = targets[largestDotIndex];
 		
 		A_QuakeEx(0, 10, 5, 10, 0, 10, "dsempty", QF_RELATIVE | QF_SCALEDOWN);
 		A_SetBlend("white", 0.3, 12);
 		A_StartSound("delta/kris/shield_parry", CHAN_AUTO, attenuation: 1.0);
 		damageTics = 12;
 		
-		foreach (target : targets)
+		FTranslatedLineTarget t;
+		double parryPitch = AimLineAttack(Angle, PLAYERMISSILERANGE, t, 0., ALF_CHECK3D);
+		
+		double newSpeed = parried.bMissile ? 70 : 50;
+		Vector3 newVel = (cos(Angle), sin(Angle), -sin(parryPitch)) * newSpeed;
+		
+		if (parried.bMissile)
 		{
-			if (target.bMissile)
-			{
-				target.target = self;
-				target.tracer = null;
-				
-				target.bForceRadiusDmg = true;
-				target.bSeekerMissile = false;
-				
-				let oldVel = target.Vel;
-				let newSpeed = 70;
-				
-				target.SetOrigin(pos + (0, 0, viewHeight), false);
-				target.A_ChangeVelocity(cos(Angle) * newSpeed, sin(Angle) * newSpeed,
-					-sin(Pitch) * newSpeed, CVF_REPLACE);
-				
-				//A_Log("oldVel: " .. oldVel .. ", newVel: " .. target.Vel);
-				
-				target.bStrifeDamage = true;
-				target.SetDamage(target.damage * 6);
-			}
+			int dam = parried.GetMissileDamage(0, 10);
+			parried.SetDamage(dam);
+			parried.SetOrigin(pos + (0, 0, viewHeight), false);
 			
-			if (target.bSkullfly)
-			{
-				let newSpeed = 50;
-				
-				target.DamageMobj(self, self, random[parryDmg](60, 90), 'Parry');
-				target.A_ChangeVelocity(cos(Angle) * newSpeed, sin(Angle) * newSpeed,
-					-sin(Pitch) * newSpeed, CVF_REPLACE);
-				target.bStrifeDamage = true;
-				target.SetDamage(target.damage * 6);
-			}
+			parried.target = self;
+			parried.tracer = null;
+			
+			parried.Vel = newVel;
+			parried.bForceRadiusDmg = true;
+			parried.bForcePain = true;
+			parried.bSeekerMissile = false;
+			parried.bStrifeDamage = true;
+		}
+		else if (parried.bSkullfly)
+		{
+			parried.Vel = newVel;
+			parried.DamageMobj(self, self, random[parryDmg](60, 90), 'Parry');
+		}
+		else if (parried.bIsMonster)
+		{
+			let forcePainFlag = !parried.bForcePain;
+			
+			LineAttack(angle, Distance3D(parried), parryPitch, random[parryDmg](60, 90), 'Parry', "KrisParryPuff");
 		}
 	}
 	
@@ -434,9 +433,15 @@ class KrisPlayer : DeltaPlayer
 		return A_CheckOffhand("PutAwayShield");
 	}
 	
+	override bool StartOffhand()
+	{
+		TryTakeTension(80);
+		return Super.StartOffhand();
+	}
+	
 	override bool CanUseOffhand()
 	{
-		return Super.CanUseOffhand() && TryTakeTension(80);
+		return Super.CanUseOffhand() && (GetTension(80) != TP_FAIL);
 	}
 	
 	States
@@ -444,7 +449,7 @@ class KrisPlayer : DeltaPlayer
 		Spawn:
 			DKRS A 1
 			{
-				if (!player.OnGround)
+				if (!IsGrounded())
 					return ResolveState("Airborne");
 				if (invoker.beingHugged)
 					return ResolveState("Blush");
@@ -458,10 +463,8 @@ class KrisPlayer : DeltaPlayer
 				let speedLerp = 1 - (invoker.Vel.Length() / (GetDefaultSpeed(invoker.GetClass()) * TICRATE));
 				self.tics = max(1, round(1 + speedLerp * 0.75));
 				
-				if (!player.OnGround)
+				if (!IsGrounded())
 					return ResolveState("Airborne");
-				if (!(player.buttons & (BT_MOVERIGHT | BT_MOVELEFT | BT_BACK | BT_FORWARD)))
-					return ResolveState("Spawn");
 				if (invoker.beingHugged)
 					return ResolveState("BlushWalk");
 				
@@ -471,12 +474,10 @@ class KrisPlayer : DeltaPlayer
 		Blush:
 			DKRS I 1
 			{
-				if (!player.OnGround)
+				if (!IsGrounded())
 					return ResolveState("Airborne");
 				if (!invoker.beingHugged)
 					return ResolveState("Spawn");
-				if (player.buttons & (BT_MOVERIGHT | BT_MOVELEFT | BT_BACK | BT_FORWARD))
-					return ResolveState("See");
 				
 				return ResolveState(null);
 			}
@@ -487,7 +488,7 @@ class KrisPlayer : DeltaPlayer
 				let speedLerp = 1 - (invoker.Vel.Length() / (GetDefaultSpeed(invoker.GetClass()) * TICRATE));
 				self.tics = max(1, round(1 + speedLerp * 0.75));
 				
-				if (!player.OnGround)
+				if (!IsGrounded())
 					return ResolveState("Airborne");
 				if (!(player.buttons & (BT_MOVERIGHT | BT_MOVELEFT | BT_BACK | BT_FORWARD)))
 					return ResolveState("Spawn");
@@ -500,7 +501,7 @@ class KrisPlayer : DeltaPlayer
 		Airborne:
 			DKRS DDDDEEEEFFFF 1
 			{
-				if (player.OnGround)
+				if (IsGrounded())
 					return ResolveState("Spawn");
 				
 				return ResolveState(null);
@@ -538,12 +539,22 @@ class KrisPlayer : DeltaPlayer
 		Offhand:
 			TNT1 A 0 { invoker.StartOffhand(); }
 		Parry:
-			DKSL G 2 { invoker.KrisShieldParry(); }
-			DKSL H 2;
-			DKSL I 4;
-			DKSL J 2;
+			DKSL A 2 { invoker.KrisShieldParry(); }
+			DKSL B 2 A_QuakeEx(0, 5, 1, 10, 0, 1, "dsempty", QF_RELATIVE | QF_WAVE | QF_SCALEDOWN, 0, 1, -1, rollWave: 5);
+			DKSL C 2;
+			DKSL D 4;
+			DKSL E 2;
 			TNT1 A 5;
 			TNT1 A 1 A_EndOffhand;
 			Stop;
+	}
+}
+
+class KrisParryPuff : Actor
+{
+	Default
+	{
+		+FORCEPAIN
+		+NOEXTREMEDEATH
 	}
 }

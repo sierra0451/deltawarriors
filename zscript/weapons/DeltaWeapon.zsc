@@ -1,9 +1,19 @@
 class DeltaWeapon : Weapon
 {
+	protected float _maxLungeDistance;	// maximum distance the lunge check will detect targets from
+	protected float _stopLungeDistance;	// distance user must be at during lunge before they stop and attack
+	
+	private bool _lungeReadyToStop;
+	
+	property MaxLungeDistance: _maxLungeDistance;
+	property StopLungeDistance: _stopLungeDistance;
+	
 	Default
 	{
 		Weapon.BobStyle "Smooth";
 		Weapon.BobSpeed 2.5;
+		DeltaWeapon.MaxLungeDistance 120;
+		DeltaWeapon.StopLungeDistance 20;
 	}
 	
 	States
@@ -59,7 +69,7 @@ class DeltaWeapon : Weapon
 	
 	action state A_DeltaWeaponReady(int flags = 0)
 	{
-		if (!(flags & WRF_NOFIRE) && (player.cmd.buttons & BT_USER1) && !(player.oldButtons & BT_USER1))
+		if (!(flags & WRF_NOFIRE) && (player.cmd.buttons & BT_USER1))
 		{
 			if (DeltaPlayer(invoker.owner).CanUseOffhand())
 				return ResolveState("OffhandStart");
@@ -91,15 +101,70 @@ class DeltaWeapon : Weapon
 		return;
 	}
 	
-	action state A_DoLunge(statelabel attackState)
+	action state A_DoLunge(state attackState)
 	{
-		// TO-DO: implement lunging, basically having lunge attacks loop through
-		// lunge state until we get close enough to land attack, then we move to
-		// attack state
+		let deltaOwner = DeltaPlayer(self);
+		if (!deltaOwner || !deltaOwner.CanLunge()
+			|| invoker._lungeReadyToStop || (player.cmd.buttons & BT_BACK))
+		{
+			invoker._lungeReadyToStop = false;
+			return attackState;
+		}
 		
-			return ResolveState(attackState);
+		if (!deltaOwner.IsLunging())
+		{
+			Actor currMo, targetMo;
+			double shortestDistance = invoker._maxLungeDistance + self.radius;
+			
+			let iter = BlockThingsIterator.Create(deltaOwner, shortestDistance);
+			
+			while (iter.Next())
+			{
+				currMo = iter.thing;
+				
+				if (!currMo || (currMo.health <= 0) || !currMo.bIsMonster || invoker.owner.IsFriend(currMo))
+					continue;
+				
+				Vector3 diff = level.Vec3Diff(pos, currMo.pos);
+				double targetAngle = VectorAngle(diff.x, diff.y);
+				double targetPitch = sin(diff.z);
+				double distance = diff.Length();
+				let forward = DeltaMath.GetActorForward(deltaOwner, false);
+				
+				if ((diff.x, diff.y).Unit() dot (forward.x, forward.y) < 0.75)
+					continue;
+				
+				//A_Log("target: " .. targetPitch .. ", pitch: " .. deltaOwner.pitch .. ", abs diff: " .. abs(targetPitch - deltaOwner.pitch));
+				
+				if (abs(targetPitch - deltaOwner.pitch) > 45)
+					continue;
+				
+				if (distance <= shortestDistance)
+				{
+					shortestDistance = distance;
+					targetMo = currMo;
+				}
+				
+				if (shortestDistance <= invoker._stopLungeDistance)
+					return attackState;
+			}
+			
+			// skip lunge and immediately attack if we don't have a target
+			// or if our target is a charging lost soul or equivalent
+			// (i.e. if lunging at them would end up hurting us)
+			if (!targetMo || targetMo.bSkullfly)
+				return attackState;
+			
+			deltaOwner.StartLunge(targetMo, invoker._stopLungeDistance);
+		}
 		
-		// return ResolveState(null);
+		if (invoker._lungeReadyToStop)
+		{
+			invoker._lungeReadyToStop = false;
+			return attackState;
+		}
+		
+		return ResolveState(null);
 	}
 	
 	action void A_StartOffhand()
@@ -122,5 +187,10 @@ class DeltaWeapon : Weapon
 		
 		A_SwapWeapon();
 		return ResolveState(null);
+	}
+	
+	void MarkReadyToStopLunging()
+	{
+		_lungeReadyToStop = true;
 	}
 }

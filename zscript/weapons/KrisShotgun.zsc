@@ -4,6 +4,11 @@ class KrisShotgun : DeltaWeapon
 	
 	Default
 	{
+		Tag "$TAG_DELTA_KRISSHOTGUN";
+		Obituary "$OBIT_DELTA_KRISSHOTGUN";
+		Inventory.RestrictedTo "KrisPlayer";
+		Inventory.PickupMessage "$PICKUP_DELTA_KRISSHOTGUN";
+		
 		Weapon.SlotNumber 3;
 		Weapon.SelectionOrder 700;
 		Weapon.AmmoUse 1;
@@ -11,10 +16,6 @@ class KrisShotgun : DeltaWeapon
 		Weapon.AmmoGive 10;
 		Weapon.AmmoType "Shell";
 		Weapon.AmmoType2 "Shell";
-		
-		Inventory.PickupMessage "$DELTA_KRISSHOTGUN_PICKUP";
-		Tag "$DELTA_KRISSHOTGUN_TAG";
-		Obituary "$DELTA_KRISSHOTGUN_OBIT";
 		
 		+SQUAREPIXELS
 		+WEAPON.NOALERT

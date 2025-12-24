@@ -1,0 +1,119 @@
+class RalseiPlayer : DeltaPlayer
+{
+	bool krisNearby;
+	
+	Default
+	{
+		Height 38;
+		Radius 16;
+		Speed 0.7;
+		Mass 90;
+		
+		Health 80;
+		Player.MaxHealth 80;
+		
+		Player.DisplayName "$DELTA_CHAR_RALSEI";
+		Player.ViewHeight 32;
+		
+		// Player.WeaponSlot 1, "RalseiScarf";
+		// Player.WeaponSlot 2, "RalseiPistol";
+		// Player.WeaponSlot 3, "RalseiShotgun";
+		// Player.WeaponSlot 4, "RalseiAK47";
+		// Player.WeaponSlot 5, " ";
+		// Player.WeaponSlot 6, " ";
+		
+		// Player.StartItem "RalseiScarf";
+		// Player.StartItem "RalseiPistol";
+		// Player.StartItem "Clip", 15;
+		
+		DeltaPlayer.HugReactionTime 20;
+		DeltaPlayer.CharacterColor Color(0, 255, 0);
+		DeltaPlayer.OverhealColor Color(255, 255, 0);
+		
+		-PLAYERPAWN.MAKEFOOTSTEPS;
+	}
+	
+	States
+	{
+		Spawn:
+			DRAL A 1
+			{
+				if (!IsGrounded())
+					return ResolveState("Airborne");
+				if (invoker.krisNearby)
+					return ResolveState("Blush");
+				
+				return ResolveState(null);
+			}
+			Loop;
+		See:
+			DRAL AAAABBBBAAAACCCC 1
+			{
+				let speedLerp = 1 - (invoker.Vel.Length() / (GetDefaultSpeed(invoker.GetClass()) * TICRATE));
+				self.tics = max(1, round(1 + speedLerp * 0.75));
+				
+				if (!IsGrounded())
+					return ResolveState("Airborne");
+				if (invoker.krisNearby)
+					return ResolveState("BlushWalk");
+				
+				return ResolveState(null);
+			}
+			Loop;
+		Blush:
+			DRAL I 1
+			{
+				if (!IsGrounded())
+					return ResolveState("Airborne");
+				if (!invoker.krisNearby)
+					return ResolveState("Spawn");
+				
+				return ResolveState(null);
+			}
+			Loop;
+		BlushWalk:
+			DRAL IIIIJJJJIIIIKKKK 1
+			{
+				let speedLerp = 1 - (invoker.Vel.Length() / (GetDefaultSpeed(invoker.GetClass()) * TICRATE));
+				self.tics = max(1, round(1 + speedLerp * 0.75));
+				
+				if (!IsGrounded())
+					return ResolveState("Airborne");
+				if (!invoker.krisNearby)
+					return ResolveState("See");
+				
+				return ResolveState(null);
+			}
+			Loop;
+		Airborne:
+			DRAL DDDDEEEEFFFF 1
+			{
+				if (IsGrounded())
+					return ResolveState("Spawn");
+				
+				return ResolveState(null);
+			}
+			Loop;
+		Pain:
+			Goto Spawn;
+		Death:
+			DRAL G 1 A_StartDeath;
+			DRAL G 1 A_CheckDeathLand;
+			Wait;
+		FinishDeath:
+			DRAL H 5 A_DeathImpact;
+			DRAL H 2;
+			DRAL H 1;
+			DRAL H -1;
+			Stop;
+		Death.Ice:
+			DRAF A 2 A_DeltaFreezeDeath;
+			DRAF BCD 2;
+			Goto FinishIce;
+		FinishIce:
+			DRAF E TICRATE;
+			DRAF E 1;
+			DRAF E -1;
+			Stop;
+	}
+}

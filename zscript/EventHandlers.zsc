@@ -22,7 +22,6 @@ class DeltaDoomEvents : EventHandler
 	
 	override void PlayerEntered(PlayerEvent e)
 	{
-		//Console.Printf("Hey, thanks for playing, \cf%s\c-. Have fun! :)", players[e.playerNumber].GetUserName());
 		EventHandler.SendInterfaceEvent(e.playerNumber, "ResetTP");
 	}
 	

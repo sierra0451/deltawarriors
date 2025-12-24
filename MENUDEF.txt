@@ -1,16 +1,39 @@
+DefaultListMenu
+{
+	Font "DRCONFONT", "DeltaMenuInactive", "DeltaMenuActive"
+	Selector "DRSELECT", -14, 4
+}
+
 ListMenu "MainMenu"
 {
 	Position 110, 54
-	Font "DRCONFONT", "DeltaMenuInactive", "DeltaMenuActive"
-	StaticPatchCentered 150, 0, "graphics/logo.png"
-	Selector "DRSELECT", -14, 4
-	
-	TextItem "$MENU_NEWGAME", "n", "EpisodeMenu"
+	StaticPatchCentered 150, 0, "graphics/delta_logo.png"
+	TextItem "$MENU_NEWGAME", "n", "PlayerclassMenu"
 	TextItem "$MENU_LOAD", "l", "LoadGameMenu"
 	TextItem "$MENU_SAVE", "s", "SaveGameMenu"
 	TextItem "$MENU_OPTIONS", "c", "DeltaOptions"
 	TextItem "$MENU_ABOUT", "r", "ReadThisMenu"
 	TextItem "$MENU_QUIT", "q", "QuitMenu"
+}
+
+ListMenu "PlayerClassMenu"
+{
+	Position 48, 63
+	NetgameMessage "$NEWGAME"
+	StaticTextCentered 160, 15, "$MENU_CLASS_HEADER"
+	MouseWindow 0, 220
+}
+
+ListMenu "EpisodeMenu"
+{
+	Position 48, 63
+	StaticTextCentered 160, 15, "$MNU_EPISODE"
+}
+
+ListMenu "SkillMenu"
+{
+	Position 48, 63
+	StaticTextCentered 160, 15, "$MNU_CHOOSESKILL"
 }
 
 OptionValue "ShowHide"
@@ -34,7 +57,7 @@ OptionValue "OnOff"
 
 AddOptionMenu "OptionsMenu"
 {
-	Title "$UZDOOM_OPTIONS"
+	Title "$MENU_UZDOOM_OPTIONS"
 }
 
 OptionMenu "DeltaOptions"
@@ -44,58 +67,58 @@ OptionMenu "DeltaOptions"
 	StaticText "Configure Deltawarriors.", "DeltaMenuHeader"
 	StaticText ""
 	
-	SubMenu "$CONTROLS_HEADER", "DeltaControls"
-	SubMenu "$AUDIO_HEADER", "SoundOptions"
-	SubMenu "$HUD_HEADER", "DeltaHudOptions"
+	SubMenu "$MENU_CTRLHEADER", "DeltaControls"
+	SubMenu "$MENU_AUDIO_HEADER", "SoundOptions"
+	SubMenu "$MENU_HUD_HEADER", "DeltaHudOptions"
 	
 	StaticText ""
-	SubMenu "$UZDOOM_OPTIONS", "OptionsMenu"
-	SubMenu "$OPT_SEARCH", "os_menu"
+	SubMenu "$MENU_UZDOOM_OPTIONS", "OptionsMenu"
+	SubMenu "$MENU_OPT_SEARCH", "os_menu"
 }
 
 OptionMenu "DeltaControls"
 {
-	Title "$CONTROLS_HEADER"
+	Title "$MENU_CTRLHEADER"
 	
-	StaticText "$CONTROLS_CONFIG", "DeltaMenuHeader"
+	StaticText "$MENU_CTRLCONFIG", "DeltaMenuHeader"
 	StaticText ""
 	
-	StaticText "$CONTROLS_MOVEMENT", "DeltaMenuHeader"
-	Control "$CONTROLS_MOVEFRWD", "+forward"
-	Control "$CONTROLS_MOVEBACK", "+back"
-	Control "$CONTROLS_STRFLEFT", "+moveleft"
-	Control "$CONTROLS_STRFRIGHT", "+moveright"
-	Control "$CONTROLS_JUMP", "+jump"
-	Control "$CONTROLS_CROUCH", "+crouch"
+	StaticText "$MENU_MOVEMENT", "DeltaMenuHeader"
+	Control "$MENU_MOVEFRWD", "+forward"
+	Control "$MENU_MOVEBACK", "+back"
+	Control "$MENU_STRFLEFT", "+moveleft"
+	Control "$MENU_STRFRIGHT", "+moveright"
+	Control "$MENU_JUMP", "+jump"
+	Control "$MENU_CROUCH", "+crouch"
 	StaticText ""
-	StaticText "$CONTROLS_ACTION", "DeltaMenuHeader"
-	Control "$CONTROLS_FIRE", "+attack"
-	Control "$CONTROLS_ALTFIRE", "+altattack"
-	Control "$CONTROLS_INTERACT", "+use"
+	StaticText "$MENU_CTRLACTION", "DeltaMenuHeader"
+	Control "$MENU_FIRE", "+attack"
+	Control "$MENU_ALTFIRE", "+altattack"
+	Control "$MENU_INTERACT", "+use"
 	StaticText ""
-	StaticText "$CONTROLS_WEAPONS", "DeltaMenuHeader"
-	Control "$CONTROLS_PREVWEAP", "weapprev"
-	Control "$CONTROLS_NEXTWEAP", "weapnext"
-	Control "$CONTROLS_WEAP1", "slot 1"
-	Control "$CONTROLS_WEAP2", "slot 2"
-	Control "$CONTROLS_WEAP3", "slot 3"
-	Control "$CONTROLS_WEAP4", "slot 4"
-	Control "$CONTROLS_WEAP5", "slot 5"
-	Control "$CONTROLS_WEAP6", "slot 6"
+	StaticText "$MENU_WEAPONS", "DeltaMenuHeader"
+	Control "$MENU_PREVWEAP", "weapprev"
+	Control "$MENU_NEXTWEAP", "weapnext"
+	Control "$MENU_WEAP1", "slot 1"
+	Control "$MENU_WEAP2", "slot 2"
+	Control "$MENU_WEAP3", "slot 3"
+	Control "$MENU_WEAP4", "slot 4"
+	Control "$MENU_WEAP5", "slot 5"
+	Control "$MENU_WEAP6", "slot 6"
 	StaticText ""
-	SubMenu "$UZDOOM_CONTROLS", "CustomizeControls"
+	SubMenu "$MENU_UZDOOM_CONTROLS", "CustomizeControls"
 }
 
 OptionMenu "DeltaHudOptions"
 {
-	Title "$HUD_HEADER"
+	Title "$MENU_HUD_HEADER"
 	
-	StaticText "$HUD_CONFIG", "DeltaMenuHeader"
+	StaticText "$MENU_HUD_CONFIG", "DeltaMenuHeader"
 	StaticText ""
 	
-	Option "Hide HUD?", "delta_showHud", "ShowHide"
-	Option "Low Health Vignette", "delta_lowHealthVignette", "ShowHide"
+	Option "$MENU_HIDEHUD", "delta_showHud", "ShowHide"
+	Option "$MENU_LOWHEALTHVIG", "delta_lowHealthVignette", "ShowHide"
 	
 	StaticText ""
-	Option "Heartbeat sound", "delta_heartbeatSound", "Heartbeat"
+	Option "$MENU_HEARTBEAT", "delta_heartbeatSound", "Heartbeat"
 }

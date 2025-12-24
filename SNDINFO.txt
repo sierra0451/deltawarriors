@@ -50,6 +50,33 @@
 		delta/graze = "sounds/player/shared/player_graze.wav"
 		delta/use = "sounds/player/shared/player_usefail.wav"
 		delta/tp_fail = "sounds/player/shared/player_tpfail.wav"
+		
+		// Footstep sounds
+			// Generic
+			delta/step_generic1 = "sounds/player/shared/footsteps/generic/footstep_generic01.wav"
+			delta/step_generic2 = "sounds/player/shared/footsteps/generic/footstep_generic02.wav"
+			delta/step_generic3 = "sounds/player/shared/footsteps/generic/footstep_generic03.wav"
+			delta/step_generic4 = "sounds/player/shared/footsteps/generic/footstep_generic04.wav"
+			delta/step_generic5 = "sounds/player/shared/footsteps/generic/footstep_generic05.wav"
+			
+			$random delta/step_generic
+			{
+				delta/step_generic1
+				delta/step_generic2
+				delta/step_generic3
+				delta/step_generic4
+				delta/step_generic5
+			}
+			
+			// Liquids
+			delta/step_liquid1 = "sounds/player/shared/footsteps/liquid/footstep_liquid01.wav"
+			delta/step_liquid2 = "sounds/player/shared/footsteps/liquid/footstep_liquid02.wav"
+			
+			$random delta/step_liquid
+			{
+				delta/step_liquid1
+				delta/step_liquid2
+			}
 	
 	// Kris
 		// Sliding
@@ -61,6 +88,7 @@
 	// Susie
 		// Laughing
 		delta/susie/laugh = "sounds/player/susie/susie_laugh.wav"
+		delta/susie/gasp = "sounds/player/susie/susie_gasp.wav"
 	
 	// Ralsei
 		//

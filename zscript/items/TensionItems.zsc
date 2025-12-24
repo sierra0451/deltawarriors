@@ -29,8 +29,9 @@ class DeltaTensionBit : DeltaTensionPickup replaces ArmorBonus
 {
 	Default
 	{
+		Tag "$TAG_DELTA_TPSMALL";
 		Inventory.Amount 20;
-		Inventory.PickupMessage "$DELTA_TPSMALL_PICKUP";
+		Inventory.PickupMessage "$PICKUP_DELTA_TPSMALL";
 		
 		+COUNTITEM
 		+INVENTORY.ALWAYSPICKUP
@@ -48,8 +49,9 @@ class DeltaTensionGem : DeltaTensionPickup replaces GreenArmor
 {
 	Default
 	{
+		Tag "$TAG_DELTA_TPMED";
 		Inventory.Amount 125;
-		Inventory.PickupMessage "$DELTA_TPMED_PICKUP";
+		Inventory.PickupMessage "$PICKUP_DELTA_TPMED";
 	}
 	
 	States
@@ -64,8 +66,9 @@ class DeltaTensionMax : DeltaTensionPickup replaces BlueArmor
 {
 	Default
 	{
+		Tag "$TAG_DELTA_TPLARGE";
 		Inventory.Amount 250;
-		Inventory.PickupMessage "$DELTA_TPLARGE_PICKUP";
+		Inventory.PickupMessage "$PICKUP_DELTA_TPLARGE";
 	}
 	
 	States

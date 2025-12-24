@@ -31,4 +31,13 @@ class DeltaMath
 		
 		return (x, y, z);
 	}
+	
+	clearscope static Vector3 GetActorForward(Actor a, bool countPitch = true)
+	{
+		if (!a)
+			return (0, 0, 0);
+		
+		let zOffset = countPitch ? 1 - abs(sin(a.pitch)) : 1;
+		return (zOffset*cos(a.angle), zOffset*sin(a.angle), countPitch ? zOffset : 0);
+	}
 }

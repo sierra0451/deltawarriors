@@ -5,15 +5,16 @@ class KrisRevolver : DeltaWeapon
 	
 	Default
 	{
+		Tag "$TAG_DELTA_REVOLVER";
+		Obituary "$OBIT_DELTA_REVOLVER";
+		Inventory.RestrictedTo "KrisPlayer";
+		Inventory.PickupMessage "$PICKUP_DELTA_REVOLVER";
+		
 		Weapon.SlotNumber 3;
 		Weapon.SelectionOrder 900;
 		Weapon.AmmoUse 1;
 		Weapon.AmmoGive 15;
 		Weapon.AmmoType "Clip";
-		
-		Inventory.PickupMessage "$DELTA_REVOLVER_PICKUP";
-		Tag "$DELTA_REVOLVER_TAG";
-		Obituary "$DELTA_REVOLVER_OBIT";
 		
 		+SQUAREPIXELS
 	}

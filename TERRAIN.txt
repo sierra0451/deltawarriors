@@ -1,0 +1,42 @@
+Terrain Generic
+{
+	StepSounds		delta/step_generic
+	WalkStepTics	20
+	RunStepTics		12
+	StepVolume		1
+}
+
+Terrain LiquidTerrain
+{
+	StepSounds		delta/step_liquid
+	WalkStepTics	20
+	RunStepTics		12
+	StepVolume		1
+	Liquid
+}
+
+DefaultTerrain Generic
+
+Floor FWATER1 LiquidTerrain
+Floor FWATER2 LiquidTerrain
+Floor FWATER3 LiquidTerrain
+Floor FWATER4 LiquidTerrain
+Floor LAVA1 LiquidTerrain
+Floor LAVA2 LiquidTerrain
+Floor LAVA3 LiquidTerrain
+Floor LAVA4 LiquidTerrain
+Floor NUKAGE1 LiquidTerrain
+Floor NUKAGE2 LiquidTerrain
+Floor NUKAGE3 LiquidTerrain
+Floor NUKAGE4 LiquidTerrain
+Floor SLIME01 LiquidTerrain
+Floor SLIME02 LiquidTerrain
+Floor SLIME03 LiquidTerrain
+Floor SLIME04 LiquidTerrain
+Floor SLIME05 LiquidTerrain
+Floor SLIME06 LiquidTerrain
+Floor SLIME07 LiquidTerrain
+Floor SLIME08 LiquidTerrain
+Floor BLOOD1 LiquidTerrain
+Floor BLOOD2 LiquidTerrain
+Floor BLOOD3 LiquidTerrain
