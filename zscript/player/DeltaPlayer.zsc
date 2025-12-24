@@ -597,6 +597,14 @@ class DeltaPlayer : PlayerPawn abstract
 			Super.CheatTake(name, amount);
 	}
 	
+	override void MakeFootsteps()
+	{
+		if (IsPredicting())
+			return;
+		
+		Super.MakeFootsteps();
+	}
+	
 	// taking from uzdoom.pk3 and retooling, removing grunts entirely
 	override void PlayerLandedMakeGruntSound(actor onmobj)
 	{

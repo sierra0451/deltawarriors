@@ -122,8 +122,9 @@ class DeltaWeapon : Weapon
 			{
 				currMo = iter.thing;
 				
-				if (!currMo || (currMo.health <= 0) || !currMo.bIsMonster || invoker.owner.IsFriend(currMo))
-					continue;
+				if (!currMo || (currMo.health <= 0)
+					|| (!currMo.bIsMonster && !(currMo is "PlayerPawn"))
+					|| invoker.owner.IsFriend(currMo)) continue;
 				
 				Vector3 diff = level.Vec3Diff(pos, currMo.pos);
 				double targetAngle = VectorAngle(diff.x, diff.y);

@@ -6,18 +6,18 @@ class KrisSword : DeltaWeapon
 	Default
 	{
 		Tag "$DELTA_SWORD_TAG";
+		Obituary "$OBIT_DELTA_SWORD";
+		
 		Inventory.RestrictedTo "KrisPlayer";
 		Inventory.PickupMessage "$DELTA_SWORD_PICKUP";
 		
 		Weapon.SlotNumber 1;
 		Weapon.SelectionOrder 1000;
-		
 		DeltaWeapon.MaxLungeDistance 160;
 		
 		+WEAPON.AXEBLOOD
 		+WEAPON.MELEEWEAPON
 		+SQUAREPIXELS
-		Obituary "$DELTA_SWORD_OBIT";
 	}
 	
 	override void BeginPlay()
