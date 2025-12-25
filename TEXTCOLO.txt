@@ -24,9 +24,9 @@ DeltaMenuHeader
 DeltaMenuDesc
 { #204040 #80FFFF 0 256 }
 DeltaMenuActive
-{ #FFFF40 #FFFF40 0 256 }
+{ #404010 #FFFF40 0 256 }
 DeltaMenuInactive
-{ #FFFFFF #FFFFFF 0 256 }
+{ #404040 #FFFFFF 0 256 }
 DeltaOptMenuValue
 { #086040 #20C0FF 0 256 }
 DeltaOptMenuActive

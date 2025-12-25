@@ -4,6 +4,13 @@ struct DamageIndicatorInfo
 	Vector3 sourcePos;
 }
 
+struct GrazeIndicatorInfo
+{
+	int timer;
+	Actor grazing;
+	Vector3 sourcePos;
+}
+
 class DeltaHud : BaseStatusBar
 {
 	private double _hBorder, _vBorder;
@@ -12,12 +19,15 @@ class DeltaHud : BaseStatusBar
 	private Vector2 _universalScale;
 	private HUDFont _consoleFont, _drHudFont;
 	private TextureID _hpText, _tpText, _tpMaxText, _tpHighlight,
-		_leftPanelBack, _vignette, _infiniteText, _damageIndicator;
+		_leftPanelBack, _vignette, _infiniteText, _damageIndicator,
+		_grazeIndicator;
 	private double _oldTp;
 	DynamicValueInterpolator _tpInterp;
-	private DamageIndicatorInfo[10] indicators;
-	const INDICATOR_TIME = floor(TICRATE * 2);
-	const INDICATOR_FADE_TIME = floor(TICRATE * 0.75);
+	private DamageIndicatorInfo[10] damageIndicators;
+	private GrazeIndicatorInfo[10] grazeIndicators;
+	const DAMAGE_INDICATOR_TIME = floor(TICRATE * 2);
+	const DAMAGE_INDICATOR_FADE_TIME = floor(TICRATE * 0.75);
+	const GRAZE_INDICATOR_TIME = floor(TICRATE * 0.25);
 	
 	enum AMMO_ICON_TYPES
 	{
@@ -49,6 +59,7 @@ class DeltaHud : BaseStatusBar
 		_vignette = TexMan.CheckForTexture("sprites/hud/vignette.png");
 		_infiniteText = TexMan.CheckForTexture("DRINFTXT");
 		_damageIndicator = TexMan.CheckForTexture("DRDMGIND");
+		_grazeIndicator = TexMan.CheckForTexture("DRGRZIND");
 		
 		ammoIcons[DELTA_AMMOICON_BULLETS]	= TexMan.CheckForTexture("DRAMBULL");
 		ammoIcons[DELTA_AMMOICON_SHELLS]	= TexMan.CheckForTexture("DRAMSHEL");
@@ -75,10 +86,16 @@ class DeltaHud : BaseStatusBar
 		_oldTp = _tpInterp.GetValue();
 		_tpInterp.Update(infiniteAmmo ? ply.maxTensionPoints : ply.tensionPoints);
 		
-		for (int i = 0; i < indicators.Size(); i++)
+		for (int i = 0; i < damageIndicators.Size(); i++)
 		{
-			if (indicators[i].timer)
-				indicators[i].timer--;
+			if (damageIndicators[i].timer)
+				damageIndicators[i].timer--;
+		}
+		
+		for (int i = 0; i < grazeIndicators.Size(); i++)
+		{
+			if (grazeIndicators[i].timer)
+				grazeIndicators[i].timer--;
 		}
 		
 		_oldAngle = _currAngle;
@@ -91,11 +108,12 @@ class DeltaHud : BaseStatusBar
 	override void Draw(int state, double ticFrac)
 	{
 		Super.Draw(state, ticFrac);
-		_universalScale = (1, (hud_aspectScale ? (1/1.2) : 1));
-		_vBorder = 30 * _universalScale.y;
 		
 		if (state == HUD_None || !delta_showHud)
 			return;
+		
+		_universalScale = (1, (hud_aspectScale ? (1/1.2) : 1));
+		_vBorder = 30 * _universalScale.y;
 		
 		if (CPlayer.Health <= 40 && delta_lowHealthVignette)
 		{
@@ -107,51 +125,77 @@ class DeltaHud : BaseStatusBar
 		
 		BeginHUD(1, false);
 		DrawDamageIndicators(ticFrac);
+		DrawGrazeIndicators(ticFrac);
 		
 		if (CPlayer.Health > 0)
 		{
 			DrawLeftPanel(sv_infiniteAmmo || (CPlayer.mo.FindInventory('PowerInfiniteAmmo', true) != null), ticFrac);
 			DrawRightPanel(sv_infiniteAmmo || (CPlayer.mo.FindInventory('PowerInfiniteAmmo', true) != null));
 		}
-			
-		if (!deathmatch)
-			DrawKeys();
-		else
-			DrawDeathmatch();
 	}
 	
 	protected void DrawDamageIndicators(double ticFrac)
 	{
-		for (int i = 0; i < indicators.Size(); i++)
+		for (int i = 0; i < damageIndicators.Size(); i++)
 		{
 			/*
 			DrawString(_consoleFont, "Indicator " .. i+1
-				.. ": Timer " .. indicators[i].timer .. ", Pos " ..
-				indicators[i].sourcePos, (0, i*12 + 6));
+				.. ": Timer " .. damageIndicators[i].timer .. ", Pos " ..
+				damageIndicators[i].sourcePos, (0, i*12 + 6));
 			*/
 			
-			if (indicators[i].timer <= 0)
+			if (damageIndicators[i].timer <= 0)
 				continue;
 			
-			Vector3 targetPos = indicators[i].sourcePos;
+			Vector3 targetPos = damageIndicators[i].sourcePos;
 			let player = CPlayer.mo;
 			Vector3 playerPos = DeltaMath.Vector3Lerp(_oldPos, _currPos, ticFrac);
 			float refAng = DeltaMath.Lerp(_oldAngle, _currAngle, ticFrac);
 			Vector3 diff = level.Vec3Diff(playerPos, targetPos);
 			float ang = player.DeltaAngle(refAng, VectorAngle(diff.x, diff.y));
-			float alpha = min(1, (indicators[i].timer - ticFrac) / INDICATOR_FADE_TIME);
-			//alpha *= min(1, (abs(ang) - INDICATOR_HIDE_ANGLE) / INDICATOR_HIDE_ANGLE);
-			float distance = 75;
+			float alpha = min(1, (damageIndicators[i].timer - ticFrac) / DAMAGE_INDICATOR_FADE_TIME);
+			float distance = 90;
+			Vector2 hudScale = GetHUDScale() / 2;
 			
-			DrawTextureRotated(
+			DrawTextureRotated (
 				_damageIndicator,
-				(distance * sin(-ang), -distance * cos(ang)),
+				(distance * sin(-ang) / hudScale.x, -distance * cos(ang) / hudScale.y),
 				DI_SCREEN_CENTER | DI_ITEM_OFFSETS,
 				ang,
 				alpha,
+				hudScale,
 				col: 0xff000000 | player.GetPainFlash()
 			);
 			//DrawString(_consoleFont, "Angle: " .. ang, (0, 0));
+		}
+	}
+	
+	protected void DrawGrazeIndicators(double ticFrac)
+	{
+		for (int i = 0; i < grazeIndicators.Size(); i++)
+		{
+			if (grazeIndicators[i].timer <= 0 || !grazeIndicators[i].grazing)
+				continue;
+			
+			Vector3 targetPos = grazeIndicators[i].sourcePos;
+			let player = CPlayer.mo;
+			Vector3 playerPos = DeltaMath.Vector3Lerp(_oldPos, _currPos, ticFrac);
+			float refAng = DeltaMath.Lerp(_oldAngle, _currAngle, ticFrac);
+			Vector3 diff = level.Vec3Diff(playerPos, targetPos);
+			float ang = player.DeltaAngle(refAng, VectorAngle(diff.x, diff.y));
+			float alpha = min(1, (grazeIndicators[i].timer - ticFrac) / GRAZE_INDICATOR_TIME);
+			float distance = 120;
+			Vector2 hudScale = GetHUDScale() / 2;
+			
+			DrawTextureRotated (
+				_grazeIndicator,
+				(distance * sin(-ang) / hudScale.x, -distance * cos(ang) / hudScale.y),
+				DI_SCREEN_CENTER | DI_ITEM_OFFSETS,
+				ang,
+				alpha,
+				hudScale,
+				col: 0xffffffff
+			);
 		}
 	}
 	
@@ -183,33 +227,40 @@ class DeltaHud : BaseStatusBar
 		if (!ply)
 			return;
 		
-		double tpTimer = float(ply.tensionDrainTimer) / ply.DRAIN_TIMER_START;
-		
-		curY -= 3 * yMultiplier + panelYSpacing;
-		
-		Fill(0xffffffff, _hBorder + panelXSpacing + barXOffset, curY, tpTimer * barWidth, 3 * yMultiplier, DI_SCREEN_LEFT_BOTTOM);
-		
-		double tp = infiniteAmmo ? ply.maxTensionPoints : ply.tensionPoints;
-		double maxTp = ply.maxTensionPoints;
-		
 		TextureID currentFace = GetMugshot(4, Mugshot.DISABLEOUCH);
 		
 		int temp, panelYSize, faceYSize;
 		[temp, panelYSize] = TexMan.GetSize(_leftPanelBack);
 		[temp, faceYSize] = TexMan.GetSize(currentFace);
 		
-		DrawTexture(currentFace, (_hBorder + panelXSpacing*2, panelY + panelYSize * yMultiplier - 40 * yMultiplier), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_TOP, scale: _universalScale);
+		DrawTexture(currentFace, (_hBorder + panelXSpacing*2, panelY + panelYSize*yMultiplier - 46*yMultiplier),
+			DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_TOP, scale: _universalScale);
+		
+		if (!deathmatch)
+			DrawKeys(_hBorder + panelXSpacing + barXOffset, curY - 1*yMultiplier);
+		else
+			DrawDeathmatch();
 		
 		/// ---- DRAWING TENSION POINTS ----
-		// draw TP bar
-		curY -= barHeight + panelYSpacing;
+		// draw TP timer and bar
+		curY -= 4*yMultiplier + panelYSpacing;
+		
+		double tpTimer = float(ply.tensionDrainTimer) / ply.DRAIN_TIMER_START;
+		Fill(0xffffffff, _hBorder + panelXSpacing + barXOffset, curY, tpTimer * barWidth, 3*yMultiplier, DI_SCREEN_LEFT_BOTTOM);
+		
+		curY -= 3*yMultiplier + barHeight;
+		
+		double tp = infiniteAmmo ? ply.maxTensionPoints : ply.tensionPoints;
+		double maxTp = ply.maxTensionPoints;
 		
 		if (ply.ticLastGrazed >= 0)
 		{
 			int timePassed = level.Time - ply.ticLastGrazed;
 			int alpha = 255 * (1 - (timePassed / 5.));
 			
-			DrawTexture(_tpHighlight, (_hBorder + panelXSpacing + labelXOffset - 1, curY - yMultiplier), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_TOP, scale: _universalScale, col: Color(alpha, 255, 255, 255));
+			DrawTexture(_tpHighlight, (_hBorder + panelXSpacing + labelXOffset - 1, curY - yMultiplier),
+				DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_TOP, scale: _universalScale,
+				col: Color(alpha, 255, 255, 255));
 		}
 		
 		Fill(Color(255, 255, 0, 0), _hBorder + panelXSpacing + barXOffset, curY,
@@ -231,7 +282,7 @@ class DeltaHud : BaseStatusBar
 					scale: _universalScale * 2);
 			else
 				DrawTexture(_tpMaxText,
-					(_hBorder + barWidth + barXOffset, curY + panelYSpacing + barHeight/2),
+					(_hBorder + barWidth + barXOffset, curY + panelYSpacing + barHeight/2 + 1),
 					DI_SCREEN_LEFT_BOTTOM | DI_ITEM_RIGHT, scale: _universalScale * 2);
 		}
 		else
@@ -242,7 +293,6 @@ class DeltaHud : BaseStatusBar
 		// ================
 		//  DRAWING HEALTH
 		// ================
-		
 		curY -= panelYSpacing + barHeight;
 		Fill(ply.GetCharacterColor(), _hBorder + panelXSpacing + barXOffset,
 			curY, min(1, GetHealthPerc()) * barWidth, barHeight, DI_SCREEN_LEFT_BOTTOM);
@@ -311,15 +361,13 @@ class DeltaHud : BaseStatusBar
 				DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT | DI_ITEM_VCENTER, box: (28, 16), scale: _universalScale * 15/8);
 	}
 	
-	protected void DrawKeys()
+	protected void DrawKeys(double x, double y)
 	{
-		int
-			count = Key.GetKeyTypeCount(),
-			keyX = GetKeyCount() * 5,
-			keyY = -_vBorder;
+		int count = Key.GetKeyTypeCount();
+		double newX = x;
 		Key inv;
 		
-		for (int i = count - 1; i >= 0; i--)
+		for (int i = 0; i <= count - 1; i++)
 		{
 			if (inv = Key(CPlayer.mo.FindInventory(Key.GetKeyType(i))))
 			{
@@ -340,9 +388,9 @@ class DeltaHud : BaseStatusBar
 				
 				if (icon.IsValid())
 				{
-					DrawTexture(icon, (keyX, keyY),
-						DI_SCREEN_CENTER_BOTTOM | DI_ITEM_BOTTOM, box: (8, 10));
-					keyX -= 10;
+					DrawTexture(icon, (newX, y),
+						DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_TOP, box: (8, 8));
+					newX += 10;
 				}
 			}
 		}
@@ -361,24 +409,63 @@ class DeltaHud : BaseStatusBar
 		int smallestTimer = -1;
 		int smallestTimerIndex;
 		
-		for (int i = 0; i < indicators.Size(); i++)
+		for (int i = 0; i < grazeIndicators.Size(); i++)
 		{
-			if (indicators[i].timer <= 0)
+			if (!grazeIndicators[i].grazing || !grazeIndicators[i].grazing.target
+				|| grazeIndicators[i].grazing.target != source) continue;
+			
+			grazeIndicators[i].timer = 0;
+		}
+		
+		for (int i = 0; i < damageIndicators.Size(); i++)
+		{
+			if (damageIndicators[i].timer <= 0)
 			{
-				indicators[i].timer = INDICATOR_TIME;
-				indicators[i].sourcePos = source.Pos;
+				damageIndicators[i].timer = DAMAGE_INDICATOR_TIME;
+				damageIndicators[i].sourcePos = source.Pos;
 				return;
 			}
 			
-			if (smallestTimer > 0 && indicators[i].timer > smallestTimer)
+			if (smallestTimer > 0 && damageIndicators[i].timer > smallestTimer)
 				continue;
 			
-			smallestTimer = indicators[i].timer;
+			smallestTimer = damageIndicators[i].timer;
 			smallestTimerIndex = i;
 		}
 		
-		indicators[smallestTimerIndex].timer = INDICATOR_TIME;
-		indicators[smallestTimerIndex].sourcePos = source.Pos;
+		damageIndicators[smallestTimerIndex].timer = DAMAGE_INDICATOR_TIME;
+		damageIndicators[smallestTimerIndex].sourcePos = source.Pos;
+	}
+	
+	void CreateGrazeIndicator(Actor source)
+	{
+		if (!source)
+			return;
+		
+		int smallestTimer = -1;
+		int smallestTimerIndex;
+		
+		for (int i = 0; i < grazeIndicators.Size(); i++)
+		{
+			if (grazeIndicators[i].timer <= 0 || !grazeIndicators[i].grazing
+				|| grazeIndicators[i].grazing == source)
+			{
+				grazeIndicators[i].timer = GRAZE_INDICATOR_TIME;
+				grazeIndicators[i].grazing = source;
+				grazeIndicators[i].sourcePos = source.Pos;
+				return;
+			}
+			
+			if (smallestTimer > 0 && grazeIndicators[i].timer > smallestTimer)
+				continue;
+			
+			smallestTimer = grazeIndicators[i].timer;
+			smallestTimerIndex = i;
+		}
+		
+		grazeIndicators[smallestTimerIndex].timer = GRAZE_INDICATOR_TIME;
+		grazeIndicators[smallestTimerIndex].grazing = source;
+		grazeIndicators[smallestTimerIndex].sourcePos = source.Pos;
 	}
 }
 

@@ -6,8 +6,6 @@ class KrisPlayer : DeltaPlayer
 	protected float _slideAdjustSpeed;	// speed at which strafing will move you while sliding
 	protected float _slideSlowing;		// time it takes sliding to slow to a stop on flat surface
 	
-	protected bool _blushing;
-	
 	private float _currentSlideSpeed;
 	private float _savedSlideSpeed;
 	private int _savedSlideSpeedTimer;
@@ -323,7 +321,7 @@ class KrisPlayer : DeltaPlayer
 		
 		while (mis = Actor(it.Next()))
 		{
-			if (mis.Damage == 0 && !mis.bIsMonster)
+			if (!mis.GetMissileDamage(0, 1) && !mis.bIsMonster)
 				continue;
 			if (mis.bRipper) // rippers can't be parried
 				continue;
@@ -398,7 +396,7 @@ class KrisPlayer : DeltaPlayer
 		
 		if (parried.bMissile)
 		{
-			int dam = parried.GetMissileDamage(0, 10);
+			int dam = parried.GetMissileDamage(0, 12);
 			parried.SetDamage(dam);
 			parried.SetOrigin(pos + (0, 0, viewHeight), false);
 			
@@ -410,6 +408,9 @@ class KrisPlayer : DeltaPlayer
 			parried.bForcePain = true;
 			parried.bSeekerMissile = false;
 			parried.bStrifeDamage = true;
+			
+			if (dam < 100)
+				parried.bNoExtremeDeath = true;
 		}
 		else if (parried.bSkullfly)
 		{

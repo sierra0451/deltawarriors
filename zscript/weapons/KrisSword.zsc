@@ -37,7 +37,7 @@ class KrisSword : DeltaWeapon
 		
 		for (double ang = -45; ang <= 45; ang += 45./TRACER_COUNT)
 		{
-			dmg = random[swordDamage](30, 45);
+			dmg = random[swordDamage](35, 50);
 			FTranslatedLineTarget t;
 			FLineTraceData l;
 			

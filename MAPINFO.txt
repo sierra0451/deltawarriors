@@ -2,7 +2,7 @@ GameInfo
 {
 	StatusBarClass = "DeltaHud"
 	AltHUDClass = "DeltaAltHud"
-	AddEventHandlers = "DeltaDoomEvents"
+	AddEventHandlers = "DeltaWarriorsEvents"
 	CursorPic = "CURSOR03"
 	TitlePage = "DELTATT1"
 	TitleMusic = "music/mus_deltaMenu.ogg"

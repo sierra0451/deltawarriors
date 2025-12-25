@@ -1,14 +1,14 @@
-enum DELTA_PSP
-{
-	PSP_LEGS = -10,
-	PSP_OFFHAND = -5
-}
-
 enum TP_RESULT
 {
 	TP_FAIL = 0,
 	TP_USE = 1,
 	TP_INFINITE = 2
+}
+
+enum DELTA_PSP
+{
+	PSP_LEGS = -10,
+	PSP_OFFHAND = -5
 }
 
 class DeltaPlayer : PlayerPawn abstract
@@ -653,12 +653,12 @@ class DeltaPlayer : PlayerPawn abstract
 		{
 			for (int y = -1; y <= 1; y++)
 			{
-				for (int z = -1; z <= 1; z++)
+				for (int z = 0; z <= 2; z++)
 				{
 					blocked = LineTrace(
 						angle,
 						dist, pitch, TRF_ABSOFFSET | TRF_BLOCKSELF | TRF_THRUACTORS,
-						(height / 2 - 2) * z + (z == -1 ? MaxStepHeight : 0),
+						(height / 2) * z + (z == 0 ? MaxStepHeight : 0),
 						(radius / 2 - 2) * x, (radius / 2 - 2) * y
 					);
 					
@@ -740,10 +740,11 @@ class DeltaPlayer : PlayerPawn abstract
 	
 	clearscope int GetTension(double amount, bool playSound = true)
 	{
-		if (amount < 0)
-			amount = 0;
 		if (sv_infiniteAmmo || (FindInventory('PowerInfiniteAmmo', true) != null))
 			return TP_INFINITE;
+		
+		if (amount < 0)
+			amount = 0;
 		
 		if (tensionPoints < amount)
 		{
@@ -930,6 +931,12 @@ class DeltaPlayer : PlayerPawn abstract
 			
 			bool firstGraze = grazed.Find(mis) == grazed.Size();
 			double grazeAmount = max(5, misDmg);
+			
+			GrazeEvent e;
+			e.thing = self;
+			e.grazeSource = mis;
+			
+			DeltaWarriorsEvents(EventHandler.Find('DeltaWarriorsEvents')).PlayerGrazed(e);
 			
 			if (firstGraze)
 			{

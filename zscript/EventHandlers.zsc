@@ -1,4 +1,10 @@
-class DeltaDoomEvents : EventHandler
+struct GrazeEvent play version("2.4")
+{
+	DeltaPlayer thing;
+	Actor grazeSource;
+}
+
+class DeltaWarriorsEvents : EventHandler
 {
 	override void WorldThingDamaged(WorldEvent e)
 	{
@@ -13,10 +19,11 @@ class DeltaDoomEvents : EventHandler
 			ply.AddTension(e.damage / 8);
 		}
 		
-		if (e.thing is "DeltaPlayer" && e.thing != e.damageSource)
+		if (e.thing is "DeltaPlayer" && e.thing != e.damageSource
+			&& DeltaPlayer(e.thing).GetDamageTics() == 0)
 		{
-			if (DeltaPlayer(e.thing).GetDamageTics() == 0)
-				EventHandler.SendInterfaceEvent(e.thing.PlayerNumber(), "DeltaPlayerDamage", e.damageSource ? e.damageSource.GetNetworkID() : 0);
+			EventHandler.SendInterfaceEvent(e.thing.PlayerNumber(), "DeltaPlayerDamage",
+				e.damageSource ? e.damageSource.GetNetworkID() : 0);
 		}
 	}
 	
@@ -28,6 +35,17 @@ class DeltaDoomEvents : EventHandler
 	override void PlayerRespawned(PlayerEvent e)
 	{
 		EventHandler.SendInterfaceEvent(e.playerNumber, "ResetTP");
+	}
+	
+	virtual void PlayerGrazed(GrazeEvent e)
+	{
+		EnableNetworking(true);
+		
+		if (e.thing != e.grazeSource)
+		{
+			EventHandler.SendInterfaceEvent(e.thing.PlayerNumber(), "DeltaPlayerGraze",
+				e.grazeSource ? e.grazeSource.GetNetworkID() : 0);
+		}
 	}
 	
 	override void InterfaceProcess(ConsoleEvent e)
@@ -49,6 +67,14 @@ class DeltaDoomEvents : EventHandler
 			
 			let hud = DeltaHud(statusBar);
 			hud.CreateDamageIndicator(Actor(GetNetworkEntity(e.Args[0])));
+		}
+		else if (e.name ~== "DeltaPlayerGraze")
+		{
+			if (!(statusBar is "DeltaHud"))
+				return;
+			
+			let hud = DeltaHud(statusBar);
+			hud.CreateGrazeIndicator(Actor(GetNetworkEntity(e.Args[0])));
 		}
 	}
 }
