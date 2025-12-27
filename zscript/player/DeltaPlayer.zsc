@@ -37,6 +37,7 @@ class DeltaPlayer : PlayerPawn abstract
 	protected Array<Actor> grazed;
 	
 	protected bool isUsingOffhand;
+	protected string offhandIcon;
 	
 	protected LinearValueInterpolator heartbeat;
 	
@@ -46,6 +47,7 @@ class DeltaPlayer : PlayerPawn abstract
 	// used for weapon flinching when taking damage
 	private Vector2 _currentFlinch;
 	private int _flinchTics;
+	private TextureID _offhandIconId;
 	
 	// Damage types that ignore I-frames and Kris's shield.
 	static const Name DAMAGE_TYPES_IGNORE_IFRAMES[] =
@@ -67,6 +69,7 @@ class DeltaPlayer : PlayerPawn abstract
 	property FlinchMultiplier: flinchMultiplier;
 	property StartFlinchTics: startFlinchTics;
 	property LungeSpeed: lungeSpeed;
+	property OffhandIcon: offhandIcon;
 	
 	Default
 	{
@@ -104,6 +107,12 @@ class DeltaPlayer : PlayerPawn abstract
 		+PLAYERPAWN.MAKEFOOTSTEPS
 		+DONTGIB					// prevents us from being turned into a pile of flattened meat by crushers
 		+NOICEDEATH
+	}
+	
+	override void BeginPlay()
+	{
+		Super.BeginPlay();
+		_offhandIconId = TexMan.CheckForTexture(offhandIcon); // load texture before we do the rest of our initialization
 	}
 	
 	override void PostBeginPlay()
@@ -760,8 +769,14 @@ class DeltaPlayer : PlayerPawn abstract
 	bool TryTakeTension(double amount, bool playSound = true)
 	{
 		let tpResult = GetTension(amount, playSound);
+		
 		if (tpResult != TP_USE)
+		{
+			if (playSound && tpResult == TP_FAIL)
+				A_StartSound("delta/tp_fail", CHAN_ITEM, CHANF_LOCAL | CHANF_NOSTOP);
+			
 			return tpResult == TP_INFINITE; // false if fail, true if infinite
+		}
 		
 		tensionPoints -= amount;
 		
@@ -1113,6 +1128,11 @@ class DeltaPlayer : PlayerPawn abstract
 			return (player.cheats & CF_PREDICTING);
 		
 		return false;
+	}
+	
+	clearscope TextureID GetOffhandIconID()
+	{
+		return _offhandIconId;
 	}
 	
 	States

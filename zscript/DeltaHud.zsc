@@ -25,18 +25,31 @@ class DeltaHud : BaseStatusBar
 	DynamicValueInterpolator _tpInterp;
 	private DamageIndicatorInfo[10] damageIndicators;
 	private GrazeIndicatorInfo[10] grazeIndicators;
+	
 	const DAMAGE_INDICATOR_TIME = floor(TICRATE * 2);
 	const DAMAGE_INDICATOR_FADE_TIME = floor(TICRATE * 0.75);
 	const GRAZE_INDICATOR_TIME = floor(TICRATE * 0.25);
 	
+	enum CONTROL_ICON_IDS
+	{
+		DELTA_CONTROLICON_TEXT = 0, // use text for this one!
+		
+		DELTA_CONTROLICON_MOUSE1, DELTA_CONTROLICON_MOUSE2, DELTA_CONTROLICON_MOUSE3,
+		DELTA_CONTROLICON_MOUSE4, DELTA_CONTROLICON_MOUSE5, DELTA_CONTROLICON_MOUSE6,
+		DELTA_CONTROLICON_MOUSE7, DELTA_CONTROLICON_MOUSE8,
+		
+		DELTA_CONTROLICON_MAX
+	}
+	
+	private TextureID[DELTA_CONTROLICON_MAX] controlIcons;
+	
 	enum AMMO_ICON_TYPES
 	{
 		DELTA_AMMOICON_NONE = 0,
-		DELTA_AMMOICON_BULLETS,
-		DELTA_AMMOICON_SHELLS,
-		DELTA_AMMOICON_ROCKETS,
-		DELTA_AMMOICON_PLASMA,
-		DELTA_AMMOICON_FUEL,
+		
+		DELTA_AMMOICON_BULLETS, DELTA_AMMOICON_SHELLS, DELTA_AMMOICON_ROCKETS,
+		DELTA_AMMOICON_PLASMA, DELTA_AMMOICON_FUEL,
+		
 		DELTA_AMMOICON_MAX
 	}
 	
@@ -60,6 +73,15 @@ class DeltaHud : BaseStatusBar
 		_infiniteText = TexMan.CheckForTexture("DRINFTXT");
 		_damageIndicator = TexMan.CheckForTexture("DRDMGIND");
 		_grazeIndicator = TexMan.CheckForTexture("DRGRZIND");
+		
+		controlIcons[DELTA_CONTROLICON_MOUSE1]	= TexMan.CheckForTexture("DRMSELCL");
+		controlIcons[DELTA_CONTROLICON_MOUSE2]	= TexMan.CheckForTexture("DRMSERCL");
+		controlIcons[DELTA_CONTROLICON_MOUSE3]	= TexMan.CheckForTexture("DRMSEMCL");
+		controlIcons[DELTA_CONTROLICON_MOUSE4]	= TexMan.CheckForTexture("DRMSEBT4");
+		controlIcons[DELTA_CONTROLICON_MOUSE5]	= TexMan.CheckForTexture("DRMSEBT5");
+		controlIcons[DELTA_CONTROLICON_MOUSE6]	= TexMan.CheckForTexture("DRMSEBT6");
+		controlIcons[DELTA_CONTROLICON_MOUSE7]	= TexMan.CheckForTexture("DRMSEBT7");
+		controlIcons[DELTA_CONTROLICON_MOUSE8]	= TexMan.CheckForTexture("DRMSEBT8");
 		
 		ammoIcons[DELTA_AMMOICON_BULLETS]	= TexMan.CheckForTexture("DRAMBULL");
 		ammoIcons[DELTA_AMMOICON_SHELLS]	= TexMan.CheckForTexture("DRAMSHEL");
@@ -156,6 +178,8 @@ class DeltaHud : BaseStatusBar
 			float alpha = min(1, (damageIndicators[i].timer - ticFrac) / DAMAGE_INDICATOR_FADE_TIME);
 			float distance = 90;
 			Vector2 hudScale = GetHUDScale() / 2;
+			hudScale.x *= _universalScale.x;
+			hudScale.y *= _universalScale.y;
 			
 			DrawTextureRotated (
 				_damageIndicator,
@@ -186,6 +210,8 @@ class DeltaHud : BaseStatusBar
 			float alpha = min(1, (grazeIndicators[i].timer - ticFrac) / GRAZE_INDICATOR_TIME);
 			float distance = 120;
 			Vector2 hudScale = GetHUDScale() / 2;
+			hudScale.x *= _universalScale.x;
+			hudScale.y *= _universalScale.y;
 			
 			DrawTextureRotated (
 				_grazeIndicator,
@@ -202,6 +228,37 @@ class DeltaHud : BaseStatusBar
 	protected float GetHealthPerc()
 	{
 		return CPlayer.mo.GetMaxHealth() == 0 ? 0 : min(2, CPlayer.Health / float(CPlayer.mo.GetMaxHealth()));
+	}
+	
+	protected TextureID GetMainBindingIcon(string cmd)
+	{
+		int k = Bindings.GetKeysForCommand(cmd);
+		
+		// not a mouse button!
+		if (k < 0x100 || k > 0x108)
+			return null;
+		
+		k -= 0xff;
+		return controlIcons[k];
+	}
+	
+	protected void DisplayBinding(string cmd, Vector2 pos, int flags, Vector2 scale)
+	{
+		let tex = GetMainBindingIcon(cmd);
+		
+		if (tex)
+			DrawTexture(tex, pos, flags, scale: scale);
+		else
+		{
+			int k = Bindings.GetKeysForCommand(cmd);
+			string keys = Keybindings.NameKeys(k, 0);
+			double newY = pos.y;
+			
+			if (flags & DI_ITEM_VCENTER)
+				newY -= _consoleFont.mFont.GetHeight() / 2;
+			
+			DrawString(_consoleFont, keys, (pos.x, newY), flags, scale: scale);
+		}
 	}
 	
 	protected void DrawLeftPanel(bool infiniteAmmo, double ticFrac)
@@ -318,6 +375,21 @@ class DeltaHud : BaseStatusBar
 			(_hBorder + labelXOffset + panelXSpacing, curY + panelYSpacing + barHeight/2),
 			DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT, scale: (1, yMultiplier),
 			col: GetHealthPerc() <= 0.33 ? 0xffffff00 : 0xffffffff);
+		
+		// =============================
+		//  DRAWING OFFHAND INFORMATION
+		// =============================
+		double offhandPanelHeight = 36 * yMultiplier;
+		bool canUse = ply.CanUseOffhand();
+		curY -= offhandPanelHeight + panelYSpacing*2;
+		Fill(0x80000000, _hBorder, curY, panelXSpacing*3 + 48, offhandPanelHeight);
+		// control icons should all be 16px x 16px (or equivalent if scaled)
+		DisplayBinding("+user1", (_hBorder + panelXSpacing, curY + offhandPanelHeight/2),
+			DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT | DI_ITEM_VCENTER, _universalScale);
+		// offhand icons should all be 32px x 32px (or equivalent if scaled)
+		DrawTexture(ply.GetOffhandIconID(), (_hBorder + panelXSpacing*2 + 16, curY + 2*yMultiplier),
+			DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_TOP, scale: _universalScale,
+			col: canUse ? (ply.GetIsUsingOffhand() ? Color(255, 255, 160, 64) : 0xffffffff) : 0x80606060);
 	}
 	
 	protected void DrawRightPanel(bool infiniteAmmo)
@@ -388,8 +460,8 @@ class DeltaHud : BaseStatusBar
 				
 				if (icon.IsValid())
 				{
-					DrawTexture(icon, (newX, y),
-						DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_TOP, box: (8, 8));
+					DrawTexture(icon, (newX, y), DI_SCREEN_LEFT_BOTTOM
+						| DI_ITEM_LEFT_TOP, box: 8 * _universalScale, scale: _universalScale);
 					newX += 10;
 				}
 			}

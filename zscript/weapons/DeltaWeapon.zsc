@@ -2,11 +2,14 @@ class DeltaWeapon : Weapon
 {
 	protected float _maxLungeDistance;	// maximum distance the lunge check will detect targets from
 	protected float _stopLungeDistance;	// distance user must be at during lunge before they stop and attack
+	protected string _altFireIcon;		// used for displaying alt fire key and cost (keep as null if you don't want anything there)
 	
 	private bool _lungeReadyToStop;
+	private TextureID _altFireIconId;
 	
 	property MaxLungeDistance: _maxLungeDistance;
 	property StopLungeDistance: _stopLungeDistance;
+	property AltFireIcon: _altFireIcon;
 	
 	Default
 	{
@@ -23,6 +26,12 @@ class DeltaWeapon : Weapon
 		OffhandLoop:
 			TNT1 A 1 A_CheckOffhand;
 			Wait;
+	}
+	
+	override void BeginPlay()
+	{
+		Super.BeginPlay();
+		_altFireIconId = TexMan.CheckForTexture(_altFireIcon);
 	}
 	
 	virtual bool TryUseTension(double amount)
@@ -71,7 +80,7 @@ class DeltaWeapon : Weapon
 	{
 		if (!(flags & WRF_NOFIRE) && (player.cmd.buttons & BT_USER1))
 		{
-			if (DeltaPlayer(invoker.owner).CanUseOffhand())
+			if (DeltaPlayer(invoker.owner).StartOffhand())
 				return ResolveState("OffhandStart");
 		}
 		
@@ -193,5 +202,10 @@ class DeltaWeapon : Weapon
 	void MarkReadyToStopLunging()
 	{
 		_lungeReadyToStop = true;
+	}
+	
+	ui TextureID GetAltFireIcon()
+	{
+		return _altFireIconId;
 	}
 }

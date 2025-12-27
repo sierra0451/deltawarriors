@@ -40,6 +40,7 @@ class KrisPlayer : DeltaPlayer
 		
 		DeltaPlayer.HugReactionTime 20;
 		DeltaPlayer.CharacterColor Color(0, 162, 232);
+		DeltaPlayer.OffhandIcon "SHLDPRRY";
 	}
 	
 	override void PostBeginPlay()
@@ -376,10 +377,9 @@ class KrisPlayer : DeltaPlayer
 		}
 		
 		if (largestDotIndex == -1)
-		{
-			AddTension(80);
 			return;
-		}
+		
+		TryTakeTension(80, false);
 		
 		let parried = targets[largestDotIndex];
 		
@@ -425,24 +425,17 @@ class KrisPlayer : DeltaPlayer
 		}
 	}
 	
-	protected action state A_ShieldHoldLogic()
-	{
-		let dp = DeltaPlayer(self);
-		dp.ViewBob = 0.1;
-		dp.Speed = 0.35;
-		dp.AddTension(7. / TICRATE, resetTimer: false);
-		return A_CheckOffhand("PutAwayShield");
-	}
-	
 	override bool StartOffhand()
 	{
-		TryTakeTension(80);
+		if (!GetTension(80))
+			return false;
+		
 		return Super.StartOffhand();
 	}
 	
 	override bool CanUseOffhand()
 	{
-		return Super.CanUseOffhand() && (GetTension(80) != TP_FAIL);
+		return Super.CanUseOffhand() && (GetTension(80, false) != TP_FAIL);
 	}
 	
 	States
