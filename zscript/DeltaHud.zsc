@@ -59,8 +59,6 @@ class DeltaHud : BaseStatusBar
 	{
 		Super.Init();
 		
-		_hBorder = 30;
-		
 		_drHudFont = HUDFont.Create("DRHUDFONT");
 		_consoleFont = HUDFont.Create("DRCONFONT");
 		
@@ -134,7 +132,11 @@ class DeltaHud : BaseStatusBar
 		if (state == HUD_None || !delta_showHud)
 			return;
 		
-		_universalScale = (1, (hud_aspectScale ? (1/1.2) : 1));
+		_universalScale = GetHudScale();
+		
+		_universalScale = (2 / _universalScale.x, 2 / _universalScale.y);
+		
+		_hBorder = 30 * _universalScale.x;
 		_vBorder = 30 * _universalScale.y;
 		
 		if (CPlayer.Health <= 40 && delta_lowHealthVignette)
@@ -146,6 +148,7 @@ class DeltaHud : BaseStatusBar
 		}
 		
 		BeginHUD(1, false);
+		
 		DrawDamageIndicators(ticFrac);
 		DrawGrazeIndicators(ticFrac);
 		
@@ -158,6 +161,9 @@ class DeltaHud : BaseStatusBar
 	
 	protected void DrawDamageIndicators(double ticFrac)
 	{
+		float distance = 120;
+		Vector2 indicatorScale = (2, 2);
+		
 		for (int i = 0; i < damageIndicators.Size(); i++)
 		{
 			/*
@@ -176,18 +182,14 @@ class DeltaHud : BaseStatusBar
 			Vector3 diff = level.Vec3Diff(playerPos, targetPos);
 			float ang = player.DeltaAngle(refAng, VectorAngle(diff.x, diff.y));
 			float alpha = min(1, (damageIndicators[i].timer - ticFrac) / DAMAGE_INDICATOR_FADE_TIME);
-			float distance = 90;
-			Vector2 hudScale = GetHUDScale() / 2;
-			hudScale.x *= _universalScale.x;
-			hudScale.y *= _universalScale.y;
 			
 			DrawTextureRotated (
 				_damageIndicator,
-				(distance * sin(-ang) / hudScale.x, -distance * cos(ang) / hudScale.y),
+				(distance * sin(-ang) / indicatorScale.x, -distance * cos(ang) / indicatorScale.y),
 				DI_SCREEN_CENTER | DI_ITEM_OFFSETS,
 				ang,
 				alpha,
-				hudScale,
+				indicatorScale,
 				col: 0xff000000 | player.GetPainFlash()
 			);
 			//DrawString(_consoleFont, "Angle: " .. ang, (0, 0));
@@ -196,6 +198,9 @@ class DeltaHud : BaseStatusBar
 	
 	protected void DrawGrazeIndicators(double ticFrac)
 	{
+		float distance = 120;
+		Vector2 indicatorScale = (2, 2);
+		
 		for (int i = 0; i < grazeIndicators.Size(); i++)
 		{
 			if (grazeIndicators[i].timer <= 0 || !grazeIndicators[i].grazing)
@@ -208,18 +213,14 @@ class DeltaHud : BaseStatusBar
 			Vector3 diff = level.Vec3Diff(playerPos, targetPos);
 			float ang = player.DeltaAngle(refAng, VectorAngle(diff.x, diff.y));
 			float alpha = min(1, (grazeIndicators[i].timer - ticFrac) / GRAZE_INDICATOR_TIME);
-			float distance = 120;
-			Vector2 hudScale = GetHUDScale() / 2;
-			hudScale.x *= _universalScale.x;
-			hudScale.y *= _universalScale.y;
 			
-			DrawTextureRotated (
+			DrawTextureRotated(
 				_grazeIndicator,
-				(distance * sin(-ang) / hudScale.x, -distance * cos(ang) / hudScale.y),
+				(distance * sin(-ang) / indicatorScale.x, -distance * cos(ang) / indicatorScale.y),
 				DI_SCREEN_CENTER | DI_ITEM_OFFSETS,
 				ang,
 				alpha,
-				hudScale,
+				indicatorScale,
 				col: 0xffffffff
 			);
 		}
@@ -255,7 +256,7 @@ class DeltaHud : BaseStatusBar
 			double newY = pos.y;
 			
 			if (flags & DI_ITEM_VCENTER)
-				newY -= _consoleFont.mFont.GetHeight() / 2;
+				newY -= _consoleFont.mFont.GetHeight() / 2 * _universalScale.y;
 			
 			DrawString(_consoleFont, keys, (pos.x, newY), flags, scale: scale);
 		}
@@ -263,17 +264,18 @@ class DeltaHud : BaseStatusBar
 	
 	protected void DrawLeftPanel(bool infiniteAmmo, double ticFrac)
 	{
+		double xMultiplier = _universalScale.x;
 		double yMultiplier = _universalScale.y;
-		double panelXSpacing = 4;
+		double panelXSpacing = 4 * xMultiplier;
 		double panelYSpacing = 4 * yMultiplier;
 		double curY = -_vBorder;
-		double barWidth = 144;
+		double barWidth = 144 * xMultiplier;
 		double barHeight = 16 * yMultiplier;
-		double labelXOffset = 50;
-		double barXOffset = 14 + labelXOffset + panelXSpacing;
-		double panelY = curY - barHeight * 2 - panelYSpacing * 4 - (3 * yMultiplier);
+		double labelXOffset = 50 * xMultiplier;
+		double barXOffset = 14 * xMultiplier + labelXOffset + panelXSpacing;
+		double panelY = curY;
 		
-		DrawTexture(_leftPanelBack, (_hBorder, panelY), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_TOP, scale: _universalScale);
+		DrawTexture(_leftPanelBack, (_hBorder, panelY), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM, scale: _universalScale);
 		
 		double smallFontHeight = _drHudFont.mFont.GetGlyphHeight("0") * yMultiplier;
 		double halfDifference = (barHeight * yMultiplier - smallFontHeight) / 2;
@@ -290,17 +292,19 @@ class DeltaHud : BaseStatusBar
 		[temp, panelYSize] = TexMan.GetSize(_leftPanelBack);
 		[temp, faceYSize] = TexMan.GetSize(currentFace);
 		
-		DrawTexture(currentFace, (_hBorder + panelXSpacing*2, panelY + panelYSize*yMultiplier - 46*yMultiplier),
+		DrawTexture(currentFace, (_hBorder + panelXSpacing*2, panelY - panelYSize*yMultiplier + 18*yMultiplier),
 			DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_TOP, scale: _universalScale);
 		
+		curY -= 19*yMultiplier;
+		
 		if (!deathmatch)
-			DrawKeys(_hBorder + panelXSpacing + barXOffset, curY - 1*yMultiplier);
+			DrawKeys(_hBorder + panelXSpacing + barXOffset, curY);
 		else
 			DrawDeathmatch();
 		
 		/// ---- DRAWING TENSION POINTS ----
 		// draw TP timer and bar
-		curY -= 4*yMultiplier + panelYSpacing;
+		curY -= 2*yMultiplier + panelYSpacing;
 		
 		double tpTimer = float(ply.tensionDrainTimer) / ply.DRAIN_TIMER_START;
 		Fill(0xffffffff, _hBorder + panelXSpacing + barXOffset, curY, tpTimer * barWidth, 3*yMultiplier, DI_SCREEN_LEFT_BOTTOM);
@@ -315,7 +319,7 @@ class DeltaHud : BaseStatusBar
 			int timePassed = level.Time - ply.ticLastGrazed;
 			int alpha = 255 * (1 - (timePassed / 5.));
 			
-			DrawTexture(_tpHighlight, (_hBorder + panelXSpacing + labelXOffset - 1, curY - yMultiplier),
+			DrawTexture(_tpHighlight, (_hBorder + panelXSpacing + labelXOffset - xMultiplier, curY - yMultiplier),
 				DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_TOP, scale: _universalScale,
 				col: Color(alpha, 255, 255, 255));
 		}
@@ -327,24 +331,24 @@ class DeltaHud : BaseStatusBar
 			tp / maxTp * barWidth, barHeight, DI_SCREEN_LEFT_BOTTOM);
 		
 		if (tp >= 1 && tp <= maxTp - 1)
-			Fill(Color(255, 255, 255, 255), _hBorder + panelXSpacing + barXOffset + barWidth * (tp / maxTp) - 1, curY, 1, barHeight, DI_SCREEN_LEFT_BOTTOM);
+			Fill(Color(255, 255, 255, 255), _hBorder + panelXSpacing + barXOffset + barWidth * (tp / maxTp) - xMultiplier, curY, xMultiplier, barHeight, DI_SCREEN_LEFT_BOTTOM);
 		
 		// draw TP text
 		if (!infiniteAmmo)
 		{
 			if (tp < maxTp)
 				DrawString(_drHudFont, String.Format("%d", tp * 100 / maxTp),
-					(_hBorder + barWidth + barXOffset + 1, curY + textYOffset/2),
+					(_hBorder + barWidth + barXOffset + xMultiplier, curY + textYOffset/2 + yMultiplier),
 					DI_SCREEN_LEFT_BOTTOM | DI_TEXT_ALIGN_RIGHT,
 					scale: _universalScale * 2);
 			else
 				DrawTexture(_tpMaxText,
-					(_hBorder + barWidth + barXOffset, curY + panelYSpacing + barHeight/2 + 1),
-					DI_SCREEN_LEFT_BOTTOM | DI_ITEM_RIGHT, scale: _universalScale * 2);
+					(_hBorder + barWidth + barXOffset, curY + textYOffset/2 + yMultiplier),
+					DI_SCREEN_LEFT_BOTTOM | DI_ITEM_RIGHT_TOP, scale: _universalScale * 2);
 		}
 		else
 			DrawTexture(_infiniteText,
-				(_hBorder + barWidth + barXOffset + 1, curY + panelYSpacing + barHeight/2),
+				(_hBorder + barWidth + barXOffset + xMultiplier, curY + panelYSpacing + barHeight/2 + yMultiplier),
 				DI_SCREEN_LEFT_BOTTOM | DI_ITEM_RIGHT, scale: _universalScale * 1.25);
 		
 		// ================
@@ -360,20 +364,20 @@ class DeltaHud : BaseStatusBar
 		
 		string format = GetHealthPerc() <= 0.33 ? "\c[DeltaLowHealth]%s" : "%s";
 		string maxHp = String.Format(format, "" .. ply.GetMaxHealth());
-		int maxHpWidth = _drHudFont.mFont.StringWidth(maxHp);
-		int slashWidth = _drHudFont.mFont.GetCharWidth("/");
+		int maxHpWidth = _drHudFont.mFont.StringWidth(maxHp) * xMultiplier;
+		int slashWidth = _drHudFont.mFont.GetCharWidth("/") * xMultiplier;
 		DrawString(_drHudFont, String.Format(format, "" .. CPlayer.Health),
-			(_hBorder + barWidth + barXOffset - maxHpWidth - (2*slashWidth), curY + textYOffset/2),
+			(_hBorder + barWidth + barXOffset - maxHpWidth - (2*slashWidth), curY + textYOffset/2 + yMultiplier),
 			DI_SCREEN_LEFT_BOTTOM | DI_TEXT_ALIGN_RIGHT, scale: _universalScale * 2);
 		DrawString(_drHudFont, String.Format(format, "/"),
-			(_hBorder + barWidth + barXOffset - maxHpWidth - slashWidth, curY + textYOffset/2),
+			(_hBorder + barWidth + barXOffset - maxHpWidth - slashWidth, curY + textYOffset/2 + yMultiplier),
 			DI_SCREEN_LEFT_BOTTOM | DI_TEXT_ALIGN_RIGHT, scale: _universalScale);
 		DrawString(_drHudFont, maxHp,
-			(_hBorder + barWidth + barXOffset + 1, curY + textYOffset/2),
+			(_hBorder + barWidth + barXOffset + xMultiplier, curY + textYOffset/2 + yMultiplier),
 			DI_SCREEN_LEFT_BOTTOM | DI_TEXT_ALIGN_RIGHT, scale: _universalScale * 2);
 		DrawTexture(_hpText,
 			(_hBorder + labelXOffset + panelXSpacing, curY + panelYSpacing + barHeight/2),
-			DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT, scale: (1, yMultiplier),
+			DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT, scale: (xMultiplier, yMultiplier),
 			col: GetHealthPerc() <= 0.33 ? 0xffffff00 : 0xffffffff);
 		
 		// =============================
@@ -382,12 +386,12 @@ class DeltaHud : BaseStatusBar
 		double offhandPanelHeight = 36 * yMultiplier;
 		bool canUse = ply.CanUseOffhand();
 		curY -= offhandPanelHeight + panelYSpacing*2;
-		Fill(0x80000000, _hBorder, curY, panelXSpacing*3 + 48, offhandPanelHeight);
+		Fill(0x80000000, _hBorder, curY, panelXSpacing*3 + 48*xMultiplier, offhandPanelHeight);
 		// control icons should all be 16px x 16px (or equivalent if scaled)
-		DisplayBinding("+user1", (_hBorder + panelXSpacing, curY + offhandPanelHeight/2),
+		DisplayBinding("+offhand", (_hBorder + panelXSpacing, curY + offhandPanelHeight/2),
 			DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT | DI_ITEM_VCENTER, _universalScale);
 		// offhand icons should all be 32px x 32px (or equivalent if scaled)
-		DrawTexture(ply.GetOffhandIconID(), (_hBorder + panelXSpacing*2 + 16, curY + 2*yMultiplier),
+		DrawTexture(ply.GetOffhandIconID(), (_hBorder + panelXSpacing*2 + 16*xMultiplier, curY + 2*yMultiplier),
 			DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_TOP, scale: _universalScale,
 			col: canUse ? (ply.GetIsUsingOffhand() ? Color(255, 255, 160, 64) : 0xffffffff) : 0x80606060);
 	}
@@ -399,8 +403,9 @@ class DeltaHud : BaseStatusBar
 		if (weap == null || weap.AmmoType1 == null)
 			return;
 		
+		double xMultiplier = _universalScale.x;
 		double yMultiplier = _universalScale.y;
-		double widgetWidth = 40 + 22, widgetHeight = 28 * yMultiplier;
+		double widgetWidth = (40 + 22) * xMultiplier, widgetHeight = 28 * yMultiplier;
 		int ammo1 = CPlayer.mo.FindInventory(CPlayer.ReadyWeapon.AmmoType1).Amount;
 		let ammoType1 = CPlayer.ReadyWeapon.AmmoType1;
 		int ammoIcon = DELTA_AMMOICON_NONE;
@@ -421,16 +426,16 @@ class DeltaHud : BaseStatusBar
 			widgetHeight, DI_SCREEN_RIGHT_BOTTOM);
 		
 		if (ammoIcon != DELTA_AMMOICON_NONE)
-			DrawTexture(ammoIcons[ammoIcon], (-_hBorder - widgetWidth + 12, -_vBorder - widgetHeight/2 + 4),
-				DI_ITEM_CENTER | DI_SCREEN_RIGHT_BOTTOM, box: (16, 16));
+			DrawTexture(ammoIcons[ammoIcon], (-_hBorder - widgetWidth + 12*xMultiplier, -_vBorder - widgetHeight/2 + 4*yMultiplier),
+				DI_ITEM_CENTER | DI_SCREEN_RIGHT_BOTTOM, box: _universalScale * 16, scale: _universalScale);
 		
 		if (!infiniteAmmo)
 			DrawString(_drHudFont, String.Format("%d", ammo1),
-				(-_hBorder - 4, -_vBorder - (18 * yMultiplier)),
+				(-_hBorder - 4*xMultiplier, -_vBorder - 18*yMultiplier),
 				DI_SCREEN_RIGHT_BOTTOM | DI_TEXT_ALIGN_RIGHT, scale: 3 * _universalScale);
 		else
-			DrawTexture(_infiniteText, (-_hBorder - 4, -_vBorder - (10 * yMultiplier)),
-				DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT | DI_ITEM_VCENTER, box: (28, 16), scale: _universalScale * 15/8);
+			DrawTexture(_infiniteText, (-_hBorder - 4*xMultiplier, -_vBorder - (10 * yMultiplier)),
+				DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT | DI_ITEM_VCENTER, box: (28 * xMultiplier, 16 * yMultiplier), scale: _universalScale * 15/8);
 	}
 	
 	protected void DrawKeys(double x, double y)
@@ -438,6 +443,7 @@ class DeltaHud : BaseStatusBar
 		int count = Key.GetKeyTypeCount();
 		double newX = x;
 		Key inv;
+		double xMultiplier = _universalScale.x;
 		
 		for (int i = 0; i <= count - 1; i++)
 		{
@@ -461,8 +467,8 @@ class DeltaHud : BaseStatusBar
 				if (icon.IsValid())
 				{
 					DrawTexture(icon, (newX, y), DI_SCREEN_LEFT_BOTTOM
-						| DI_ITEM_LEFT_TOP, box: 8 * _universalScale, scale: _universalScale);
-					newX += 10;
+						| DI_ITEM_LEFT_TOP, box: 16 * _universalScale, scale: _universalScale);
+					newX += 18*xMultiplier;
 				}
 			}
 		}

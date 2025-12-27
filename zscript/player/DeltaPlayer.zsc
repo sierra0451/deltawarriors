@@ -151,6 +151,7 @@ class DeltaPlayer : PlayerPawn abstract
 		isUsingOffhand = false;
 		
 		_targetRoll = 0;
+		Vel = (0, 0, 0);
 	}
 	
 	override void PlayerThink()
@@ -255,6 +256,9 @@ class DeltaPlayer : PlayerPawn abstract
 				Bob(a, cmd.sidemove * bobfactor / 256., false);
 				Thrust(sidemove, a);
 			}
+			
+			if (lunging)
+				Bob(Angle, 0, true);
 			
 			if (!IsPredicting())
 			{
@@ -541,7 +545,7 @@ class DeltaPlayer : PlayerPawn abstract
 	
 	override Vector2 BobWeapon(double ticfrac)
 	{
-		let originalBob = Super.BobWeapon(ticfrac);
+		let originalBob = lunging ? (0, 0) : Super.BobWeapon(ticfrac);
 		double perc = 1 - airBobTics / float(MAX_AIR_BOB_TICS);
 		
 		Vector2 bobFlinch = (0, 0);
@@ -690,7 +694,6 @@ class DeltaPlayer : PlayerPawn abstract
 			return;
 		}
 		
-		player.bob = 0;
 		Vector3 diff = level.Vec3Diff(pos, lungeTarget.pos);
 		
 		A_SetAngle(VectorAngle(diff.x, diff.y), SPF_INTERPOLATE);
@@ -739,7 +742,7 @@ class DeltaPlayer : PlayerPawn abstract
 	
 	void AddTension(double amount, bool graze = false, bool resetTimer = true)
 	{
-		tensionPoints = min(maxTensionPoints, tensionPoints + amount);
+		tensionPoints = min(maxTensionPoints, tensionPoints + amount * G_SkillPropertyFloat(SKILLP_AmmoFactor) * sv_ammofactor);
 		
 		if (resetTimer)
 			tensionDrainTimer = DRAIN_TIMER_START;
@@ -791,8 +794,6 @@ class DeltaPlayer : PlayerPawn abstract
 	{
 		if (sv_infiniteAmmo || (FindInventory('PowerInfiniteAmmo', true) != null))
 			return;
-		if (GetIsUsingOffhand())
-			return;
 		
 		if (tensionDrainTimer > 0)
 			tensionDrainTimer--;
@@ -817,7 +818,7 @@ class DeltaPlayer : PlayerPawn abstract
 			
 			heartbeat.Update(_targetVol);
 		}
-		else if (Health > 0 && cvar_heartbeatSound)
+		else if (Health > 0 && delta_heartbeatSound)
 			heartbeat.Update(0);
 		else
 			heartbeat.Reset(0);
@@ -1013,9 +1014,12 @@ class DeltaPlayer : PlayerPawn abstract
 			// animated
 			if (player)
 			{
-				player.SetPsprite(PSP_FLASH, null);
-				player.SetPsprite(PSP_WEAPON, null);
-				player.SetPsprite(PSP_OFFHAND, null);
+				player.SetPSprite(PSP_FLASH, null);
+				player.SetPSprite(PSP_WEAPON, null);
+				player.SetPSprite(PSP_OFFHAND, null);
+				
+				if (player.FindPSprite(PSP_LEGS))
+					player.SetPSprite(PSP_LEGS, null);
 			}
 			A_StopSound(CHAN_WEAPON);
 		}

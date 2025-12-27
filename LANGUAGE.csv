@@ -1,5 +1,5 @@
 identifier,default,remarks
-DELTAWARRIORS_VERSION,Playtest Build 1,Version display
+DELTAWARRIORS_VERSION,Playtest Build 2,Version display
 ,,Doom endings
 E1TEXT,,
 E2TEXT,,
@@ -31,7 +31,7 @@ MENU_QUIT,End Program,
 MENU_UZDOOM_OPTIONS,ZDoom Options,
 MENU_UZDOOM_CONTROLS,ZDoom Controls Menu,
 MENU_CTRLHEADER,Controls,
-MENU_CTRLCONFIG,"Configure controls. ESC to cancel, Backspace to clear.",
+MENU_CTRLCONFIG,Configure controls. Press ESC to cancel. Hover over a control and press Backspace to clear it.,
 MENU_MOVEMENT,Movement,
 MENU_MOVEFRWD,Move Forward,
 MENU_MOVEBACK,Move Backward,

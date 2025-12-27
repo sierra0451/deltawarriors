@@ -80,7 +80,8 @@
 	
 	// Kris
 		// Sliding
-		delta/kris/slide = "sounds/player/kris/kris_slideLoop.wav"
+		delta/kris/slide_loop = "sounds/player/kris/kris_slideLoop.wav"
+		$alias delta/kris/slide_start delta/impact
 		// Shield
 		delta/kris/shield_swing = "sounds/player/kris/kris_shieldSwing.wav"
 		delta/kris/shield_parry = "sounds/player/kris/kris_shieldParry.wav"

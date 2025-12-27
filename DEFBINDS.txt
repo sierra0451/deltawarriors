@@ -1,2 +1,3 @@
 unbind x
 bind q +offhand
+bind ctrl +crouch

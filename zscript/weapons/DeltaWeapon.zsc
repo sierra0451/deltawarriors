@@ -62,6 +62,8 @@ class DeltaWeapon : Weapon
 		if (!psp)
 			return;
 		
+		A_SetCrosshair(-1);
+		
 		// set weapon sprite upfront immediately, we want to do our own deploy animations
 		psp.y = WEAPONTOP;
 	}
@@ -162,7 +164,9 @@ class DeltaWeapon : Weapon
 			// skip lunge and immediately attack if we don't have a target
 			// or if our target is a charging lost soul or equivalent
 			// (i.e. if lunging at them would end up hurting us)
-			if (!targetMo || targetMo.bSkullfly)
+			if (!targetMo)
+				return attackState;
+			if (targetMo.bSkullfly)
 				return attackState;
 			
 			deltaOwner.StartLunge(targetMo, invoker._stopLungeDistance);
