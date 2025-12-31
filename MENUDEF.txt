@@ -17,7 +17,7 @@ ListMenu "MainMenu"
 	TextItem "$MENU_ABOUT", "r", "ReadThisMenu"
 	TextItem "$MENU_QUIT", "q", "QuitMenu"
 
-	StaticTextCentered 150, 220, "Please do not distribute!", "Black"
+	// StaticTextCentered 150, 220, "Please do not distribute!", "Black"
 }
 
 ListMenu "PlayerClassMenu"

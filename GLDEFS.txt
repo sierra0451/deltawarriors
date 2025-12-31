@@ -1,19 +1,3 @@
-// Brightmaps
-brightmap sprite DKRVB0
-{
-	map "brightmaps/kris_revolver/DKRVB0.png"
-}
-
-brightmap sprite DKSGB0
-{
-	map "brightmaps/kris_shotgun/DKSGB0.png"
-}
-
-brightmap sprite DKSAA0
-{
-	map "brightmaps/kris_shotgun/DKSAA0.png"
-}
-
 // Dynamic lights
 pointlight DeltaGenericMuzzle
 {

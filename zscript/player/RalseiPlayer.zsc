@@ -18,9 +18,9 @@ class RalseiPlayer : DeltaPlayer
 		// Player.WeaponSlot 1, "RalseiScarf";
 		// Player.WeaponSlot 2, "RalseiPistol";
 		// Player.WeaponSlot 3, "RalseiShotgun";
-		// Player.WeaponSlot 4, "RalseiAK47";
-		// Player.WeaponSlot 5, " ";
-		// Player.WeaponSlot 6, " ";
+		// Player.WeaponSlot 4, "RalseiAK";
+		// Player.WeaponSlot 5, "";
+		// Player.WeaponSlot 6, "";
 		
 		// Player.StartItem "RalseiScarf";
 		// Player.StartItem "RalseiPistol";

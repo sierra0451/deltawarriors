@@ -1,6 +1,7 @@
 class DeltaSoul : Actor
 {
 	double alpha;
+	const BASE_LINGER_TIME = floor(TICRATE * 0.75);
 	
 	Default
 	{
@@ -11,11 +12,11 @@ class DeltaSoul : Actor
 	States
 	{
 		Spawn:
-			DRSL A floor(TICRATE * 0.75);
-			DRSL B TICRATE A_StartSound("delta/soul_break");
+			DRSL A random(BASE_LINGER_TIME - 5, BASE_LINGER_TIME + 5);
+			DRSL B TICRATE A_StartSound("delta/soul_break", attenuation: 0.2);
 			TNT1 A 0
 			{
-				A_StartSound("delta/soul_shatter");
+				A_StartSound("delta/soul_shatter", attenuation: 0.2);
 				
 				let ang = cfrandom(0, 89);
 				

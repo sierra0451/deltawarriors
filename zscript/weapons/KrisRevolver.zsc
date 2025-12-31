@@ -10,17 +10,19 @@ class KrisRevolver : DeltaWeapon
 		Inventory.RestrictedTo "KrisPlayer";
 		Inventory.PickupMessage "$PICKUP_DELTA_REVOLVER";
 		
-		Weapon.SlotNumber 3;
+		Weapon.SlotNumber 2;
 		Weapon.SelectionOrder 900;
 		Weapon.AmmoUse 1;
 		Weapon.AmmoGive 15;
 		Weapon.AmmoType "Clip";
+		DeltaWeapon.Crosshair "DRPSTRET";
 		
 		+SQUAREPIXELS
 	}
 	
 	override void BeginPlay()
 	{
+		Super.BeginPlay();
 		cocked = true;
 	}
 	

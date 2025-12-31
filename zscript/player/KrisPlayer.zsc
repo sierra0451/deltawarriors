@@ -12,6 +12,8 @@ class KrisPlayer : DeltaPlayer
 	private int _slideTics;				// used for smooth transitions into sliding effects
 	const MAX_SLIDE_TICS = 5;
 	
+	const PARRY_TP_COST = 100;
+	
 	Default
 	{
 		Height 36;
@@ -28,13 +30,15 @@ class KrisPlayer : DeltaPlayer
 		Player.WeaponSlot 1, "KrisSword";
 		Player.WeaponSlot 2, "KrisRevolver";
 		Player.WeaponSlot 3, "KrisShotgun";
-		// Player.WeaponSlot 4, "KrisMP5";
+		// Player.WeaponSlot 4, "KrisSMG";
 		// Player.WeaponSlot 5, "KrisGrenadeLauncher";
 		// Player.WeaponSlot 6, "KrisCrossbow";
 		
 		Player.StartItem "KrisSword";
 		Player.StartItem "KrisRevolver";
 		Player.StartItem "Clip", 15;
+		Player.StartItem "DeltaParryDamage"; 	// hacky af workaround for more consistent
+												// projectile parry damage
 		
 		Player.Face "KRF";
 		
@@ -185,8 +189,8 @@ class KrisPlayer : DeltaPlayer
 	override float GetViewRoll()
 	{
 		float _roll = Super.GetViewRoll();
-		
 		_roll += 3 * (float(_slideTics) / MAX_SLIDE_TICS);
+		
 		return _roll;
 	}
 	
@@ -224,6 +228,9 @@ class KrisPlayer : DeltaPlayer
 		{
 			if (_slideTics < MAX_SLIDE_TICS)
 				_slideTics++;
+			
+			if (reactionTime)
+				return;
 			
 			let
 				sideInput = GetPlayerInput(INPUT_SIDEMOVE) / 10240.,
@@ -304,6 +311,8 @@ class KrisPlayer : DeltaPlayer
 		{
 			overlay.bAddWeapon = false;
 			overlay.bAddBob = false;
+			overlay.bPivotPercent = true;
+			A_OverlayPivot(PSP_LEGS);
 		}
 	}
 	
@@ -348,7 +357,10 @@ class KrisPlayer : DeltaPlayer
 				if (!mis.bIsMonster)
 					continue;
 				if ((!mis.curState.InStateSequence(mis.ResolveState("Melee"))
-						&& !mis.curState.InStateSequence(mis.ResolveState("Missile")))
+						&& (!mis.curState.InStateSequence(mis.ResolveState("Missile")) || !(mis is "Cacodemon")))
+						// we only wanna be able to parry an enemy's missile
+						// state if it's a cacodemon, as that's the state they
+						// use for their bite attack
 					|| damageTics != 0)
 					continue;
 			}
@@ -394,7 +406,7 @@ class KrisPlayer : DeltaPlayer
 		if (largestDotIndex == -1)
 			return;
 		
-		TryTakeTension(80, false);
+		TryTakeTension(PARRY_TP_COST, false);
 		
 		let parried = targets[largestDotIndex];
 		
@@ -412,20 +424,17 @@ class KrisPlayer : DeltaPlayer
 		if (parried.bMissile)
 		{
 			int dam = parried.GetMissileDamage(0, 12);
-			parried.SetDamage(dam);
 			parried.SetOrigin(pos + (0, 0, viewHeight), false);
 			
 			parried.target = self;
 			parried.tracer = null;
 			
 			parried.Vel = newVel;
+			parried.Angle = Angle;
+			parried.Pitch = parryPitch;
 			parried.bForceRadiusDmg = true;
 			parried.bForcePain = true;
-			parried.bSeekerMissile = false;
-			parried.bStrifeDamage = true;
-			
-			if (dam < 100)
-				parried.bNoExtremeDeath = true;
+			parried.GiveInventory("DeltaParried", 1);
 		}
 		else if (parried.bSkullfly)
 		{
@@ -442,7 +451,7 @@ class KrisPlayer : DeltaPlayer
 	
 	override bool StartOffhand()
 	{
-		if (!GetTension(80))
+		if (!GetTension(PARRY_TP_COST))
 			return false;
 		
 		return Super.StartOffhand();
@@ -450,7 +459,7 @@ class KrisPlayer : DeltaPlayer
 	
 	override bool CanUseOffhand()
 	{
-		return Super.CanUseOffhand() && (GetTension(80, false) != TP_FAIL);
+		return Super.CanUseOffhand() && (GetTension(PARRY_TP_COST, false) != TP_FAIL);
 	}
 	
 	States
@@ -460,8 +469,6 @@ class KrisPlayer : DeltaPlayer
 			{
 				if (!IsGrounded())
 					return ResolveState("Airborne");
-				if (invoker.beingHugged)
-					return ResolveState("Blush");
 				
 				return ResolveState(null);
 			}
@@ -474,8 +481,6 @@ class KrisPlayer : DeltaPlayer
 				
 				if (!IsGrounded())
 					return ResolveState("Airborne");
-				if (invoker.beingHugged)
-					return ResolveState("BlushWalk");
 				
 				return ResolveState(null);
 			}

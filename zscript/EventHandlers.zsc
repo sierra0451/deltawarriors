@@ -16,7 +16,9 @@ class DeltaWarriorsEvents : EventHandler
 		if (e.damageSource is "DeltaPlayer" && e.damageSource != e.thing)
 		{
 			DeltaPlayer ply = DeltaPlayer(e.damageSource);
-			ply.AddTension(e.damage / 8);
+			
+			if (!ply.GetDamageTics())
+				ply.AddTension(e.damage / 8);
 		}
 		
 		if (e.thing is "DeltaPlayer" && e.thing != e.damageSource

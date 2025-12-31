@@ -13,7 +13,7 @@ GameInfo
 					"$QUIT_DELTA_7", "$QUIT_DELTA_8"
 	
 	NoRandomPlayerClass = false
-	PlayerClasses = "KrisPlayer"/*, "SusiePlayer", "RalseiPlayer", "NoellePlayer" */
+	PlayerClasses = "KrisPlayer", "SusiePlayer"/*, "RalseiPlayer", "NoellePlayer" */
 	MenuFontColor_Title = "DeltaMenuTitle"
 	MenuFontColor_Label = "DeltaOptMenuLabel"
 	MenuFontColor_Value = "DeltaOptMenuValue"

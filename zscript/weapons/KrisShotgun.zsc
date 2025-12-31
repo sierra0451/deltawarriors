@@ -16,6 +16,7 @@ class KrisShotgun : DeltaWeapon
 		Weapon.AmmoGive 10;
 		Weapon.AmmoType "Shell";
 		Weapon.AmmoType2 "Shell";
+		DeltaWeapon.Crosshair "DRSHGRET";
 		
 		+SQUAREPIXELS
 		+WEAPON.NOALERT
@@ -23,6 +24,7 @@ class KrisShotgun : DeltaWeapon
 	
 	override void BeginPlay()
 	{
+		Super.BeginPlay();
 		pumped = true;
 	}
 	

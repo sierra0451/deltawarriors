@@ -79,10 +79,14 @@ class DeltaPlayer : PlayerPawn abstract
 		Mass 100;
 		PainChance 256;
 		
+		Health 100;
+		Player.MaxHealth 100;
+		
 		Player.MugShotMaxHealth -1;
 		
 		Player.DisplayName "DeltaPlayer";
 		Player.SoundClass "delta";
+		Player.ViewHeight 32.0;
 		
 		// strafing should be same speed as moving forward
 		Player.ForwardMove 1, 1;
@@ -93,7 +97,6 @@ class DeltaPlayer : PlayerPawn abstract
 		Player.GruntSpeed 3;
 		Player.ViewBob 0.2;
 		Player.ViewBobSpeed 12;
-		Player.ViewHeight 32.0;
 		Player.FlyBob 0;
 		Player.InvulnerabilityMode "Reflective";
 		
@@ -245,27 +248,21 @@ class DeltaPlayer : PlayerPawn abstract
 			forwardmove = fm * movefactor * (35 / TICRATE);
 			sidemove = sm * movefactor * (35 / TICRATE);
 			
-			if (forwardmove)
-			{
-				Bob(Angle, cmd.forwardmove * bobfactor / 256., true);
-				ForwardThrust(forwardmove, Angle);
-			}
-			if (sidemove)
-			{
-				let a = Angle - 90;
-				Bob(a, cmd.sidemove * bobfactor / 256., false);
-				Thrust(sidemove, a);
-			}
-			
 			if (lunging)
-				Bob(Angle, 0, true);
-			
-			if (!IsPredicting())
+				player.vel = (0, 0);
+			else
 			{
-				if (doingMoveInput && Vel.LengthSquared() > 0)
-					PlayRunning();
-				else
-					PlayIdle();
+				if (forwardmove)
+				{
+					Bob(Angle, cmd.forwardmove * bobfactor / 256., true);
+					ForwardThrust(forwardmove, Angle);
+				}
+				if (sidemove)
+				{
+					let a = Angle - 90;
+					Bob(a, cmd.sidemove * bobfactor / 256., false);
+					Thrust(sidemove, a);
+				}
 			}
 			
 			if (player.cheats & CF_REVERTPLEASE)
@@ -273,6 +270,14 @@ class DeltaPlayer : PlayerPawn abstract
 				player.cheats &= ~CF_REVERTPLEASE;
 				player.camera = player.mo;
 			}
+		}
+			
+		if (!IsPredicting())
+		{
+			if (doingMoveInput && Vel.LengthSquared() > 0)
+				PlayRunning();
+			else
+				PlayIdle();
 		}
 	}
 	
@@ -304,7 +309,7 @@ class DeltaPlayer : PlayerPawn abstract
 		{
 			A_StartSound("delta/hurt", CHAN_VOICE, 0, 1, 0.5);
 			if (!ignoreIFrames)
-				damageTics = -1;
+				damageTics = (inflictor && inflictor.bIsPuff) ? -1 : DAMAGE_IFRAMES;
 			if (mod == 'Falling')
 				A_StartSound("delta/fall_damage", CHAN_AUTO);
 			
@@ -531,7 +536,9 @@ class DeltaPlayer : PlayerPawn abstract
 	
 	override bool CanCollideWith(Actor other, bool passive)
 	{
-		if (other.bIsMonster && lunging)
+		if (other.bIsMonster && lunging && other != lungeTarget)
+			return false;
+		if (other.bMissile && damageTics)
 			return false;
 		
 		return Super.CanCollideWith(other, passive);
@@ -659,29 +666,7 @@ class DeltaPlayer : PlayerPawn abstract
 	
 	bool LungeBlocked()
 	{
-		bool blocked = false;
-		double dist = level.Vec3Diff(pos, lungeTarget.pos).Length() - radius - lungeTarget.radius;
-		
-		for (int x = -1; x <= 1; x++)
-		{
-			for (int y = -1; y <= 1; y++)
-			{
-				for (int z = 0; z <= 2; z++)
-				{
-					blocked = LineTrace(
-						angle,
-						dist, pitch, TRF_ABSOFFSET | TRF_BLOCKSELF | TRF_THRUACTORS,
-						(height / 2) * z + (z == 0 ? MaxStepHeight : 0),
-						(radius / 2 - 2) * x, (radius / 2 - 2) * y
-					);
-					
-					if (blocked)
-						return true;
-				}
-			}
-		}
-		
-		return false;
+		return !CheckMove(lungeTarget.pos.XY, PCM_NOACTORS) || lungeTarget.health <= 0;
 	}
 	
 	void HandleLunging()
@@ -695,32 +680,35 @@ class DeltaPlayer : PlayerPawn abstract
 		}
 		
 		Vector3 diff = level.Vec3Diff(pos, lungeTarget.pos);
+		Vector3 diffUnit = diff.Unit();
+		
+		if (freelook && false)
+			A_SetPitch(asin(diffUnit.z), SPF_INTERPOLATE);
+		
+		float pitchFactor = 1 - ((diffUnit.z / 2) + 0.5);
+		
+		//A_Log("pitch: " .. pitch .. ", factor: " .. pitchFactor);
+		diff = level.Vec3Diff(pos, lungeTarget.pos.PlusZ(lungeTarget.height * pitchFactor));
 		
 		A_SetAngle(VectorAngle(diff.x, diff.y), SPF_INTERPOLATE);
 		
-		if (freelook && false)
-			A_SetPitch(sin(diff.z), SPF_INTERPOLATE);
-		
-		Vector3 diffUnit = diff.Unit();
 		float dist = diff.Length() - radius - lungeTarget.radius;
-		
 		Vel = diffUnit * min(lungeSpeed, dist);
 		
-		if (dist <= lungeStopDistance + Vel.Length())
+		if (dist <= lungeStopDistance + Vel.Length()
+			|| (diff.XY.Length() < lungeStopDistance + Vel.Length()
+			&& abs(diff.z) - height - Vel.Length() <= lungeStopDistance))
 		{
-			if (!player)
-				return;
-			
-			let weap = DeltaWeapon(player.ReadyWeapon);
-			
-			if (!weap)
-				return;
-			
-			weap.MarkReadyToStopLunging();
+			if (player && player.ReadyWeapon && player.ReadyWeapon is "DeltaWeapon")
+				DeltaWeapon(player.ReadyWeapon).MarkReadyToStopLunging();
 		}
 		
-		if (dist <= lungeStopDistance || lungeTarget.health <= 0 || LungeBlocked())
+		//A_Log("Diff: " .. diff .. ", height: " .. height);
+		if (dist <= lungeStopDistance || (diff.XY.Length() < lungeStopDistance
+			&& abs(diff.z) - height <= lungeStopDistance) || LungeBlocked())
+		{
 			StopLunge();
+		}
 	}
 	
 	void StopLunge()
@@ -729,15 +717,10 @@ class DeltaPlayer : PlayerPawn abstract
 		lunging = bNoGravity = false;
 		bSolid = true;
 		
-		if (!player)
+		if (!player || !player.ReadyWeapon || !(player.ReadyWeapon is "DeltaWeapon"))
 			return;
 		
-		let weap = DeltaWeapon(player.ReadyWeapon);
-		
-		if (!weap)
-			return;
-		
-		weap.MarkReadyToStopLunging();
+		DeltaWeapon(player.ReadyWeapon).MarkReadyToStopLunging();
 	}
 	
 	void AddTension(double amount, bool graze = false, bool resetTimer = true)
@@ -932,7 +915,7 @@ class DeltaPlayer : PlayerPawn abstract
 			
 			if (misDmg <= 0)
 				continue;
-			if (mis.target && IsFriend(mis.target))
+			if (!mis.bSkullfly && mis.target && IsFriend(mis.target))
 				continue;
 			
 			// code largely taken from ThinkerIterator documentation page
@@ -1149,3 +1132,23 @@ class DeltaPlayer : PlayerPawn abstract
 			Loop;
 	}
 }
+
+// used to modify projectile damage directly!
+class DeltaParryDamage : Inventory
+{
+	Default
+	{
+		+Inventory.UNDROPPABLE;
+		+Inventory.UNTOSSABLE;
+	}
+	
+	override void ModifyDamage(int damage, Name damageType, out int newDamage, bool passive, Actor inflictor, Actor source, int flags)
+	{
+		if (passive || !inflictor || !inflictor.CountInv("DeltaParried"))
+			return;
+		
+		newDamage = random[parryDamage](15, 20) * max(5, inflictor.GetMissileDamage(0, 1));
+	}
+}
+
+class DeltaParried : Inventory {}

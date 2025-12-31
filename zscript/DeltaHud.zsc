@@ -20,7 +20,7 @@ class DeltaHud : BaseStatusBar
 	private HUDFont _consoleFont, _drHudFont;
 	private TextureID _hpText, _tpText, _tpMaxText, _tpHighlight,
 		_leftPanelBack, _vignette, _infiniteText, _damageIndicator,
-		_grazeIndicator;
+		_grazeIndicator, _defaultCrosshair;
 	private double _oldTp;
 	DynamicValueInterpolator _tpInterp;
 	private DamageIndicatorInfo[10] damageIndicators;
@@ -71,6 +71,7 @@ class DeltaHud : BaseStatusBar
 		_infiniteText = TexMan.CheckForTexture("DRINFTXT");
 		_damageIndicator = TexMan.CheckForTexture("DRDMGIND");
 		_grazeIndicator = TexMan.CheckForTexture("DRGRZIND");
+		_defaultCrosshair = TexMan.CheckForTexture("DRMTYRET");
 		
 		controlIcons[DELTA_CONTROLICON_MOUSE1]	= TexMan.CheckForTexture("DRMSELCL");
 		controlIcons[DELTA_CONTROLICON_MOUSE2]	= TexMan.CheckForTexture("DRMSERCL");
@@ -133,13 +134,12 @@ class DeltaHud : BaseStatusBar
 			return;
 		
 		_universalScale = GetHudScale();
-		
 		_universalScale = (2 / _universalScale.x, 2 / _universalScale.y);
 		
 		_hBorder = 30 * _universalScale.x;
 		_vBorder = 30 * _universalScale.y;
 		
-		if (CPlayer.Health <= 40 && delta_lowHealthVignette)
+		if (CPlayer.Health <= 40 && delta_lowHealthVignette && !automapActive)
 		{
 			double alpha = 1 - CPlayer.Health / 40.;
 			Screen.DrawTexture(_vignette, false, 0, 0, DTA_Fullscreen, true,
@@ -148,7 +148,6 @@ class DeltaHud : BaseStatusBar
 		}
 		
 		BeginHUD(1, false);
-		
 		DrawDamageIndicators(ticFrac);
 		DrawGrazeIndicators(ticFrac);
 		
@@ -156,13 +155,14 @@ class DeltaHud : BaseStatusBar
 		{
 			DrawLeftPanel(sv_infiniteAmmo || (CPlayer.mo.FindInventory('PowerInfiniteAmmo', true) != null), ticFrac);
 			DrawRightPanel(sv_infiniteAmmo || (CPlayer.mo.FindInventory('PowerInfiniteAmmo', true) != null));
+			DrawReticle();
 		}
 	}
 	
 	protected void DrawDamageIndicators(double ticFrac)
 	{
-		float distance = 120;
-		Vector2 indicatorScale = (2, 2);
+		float distance = 100;
+		Vector2 indicatorScale = (1.5, 1.5);
 		
 		for (int i = 0; i < damageIndicators.Size(); i++)
 		{
@@ -198,8 +198,8 @@ class DeltaHud : BaseStatusBar
 	
 	protected void DrawGrazeIndicators(double ticFrac)
 	{
-		float distance = 120;
-		Vector2 indicatorScale = (2, 2);
+		float distance = 80;
+		Vector2 indicatorScale = (1.5, 1.5);
 		
 		for (int i = 0; i < grazeIndicators.Size(); i++)
 		{
@@ -479,6 +479,26 @@ class DeltaHud : BaseStatusBar
 		
 	}
 	
+	protected void DrawReticle()
+	{
+		if (CPlayer.cheats & CF_CHASECAM || automapActive)
+			return;
+		
+		if (!CPlayer.ReadyWeapon)
+		{
+			// draw default reticle!
+			DrawTexture(_defaultCrosshair, (0, 0), DI_SCREEN_CENTER | DI_ITEM_CENTER, scale: _universalScale * 0.5);
+			return;
+		}
+		
+		let weap = DeltaWeapon(CPlayer.ReadyWeapon);
+		if (!weap)
+			return;
+		
+		let crosshair = weap.GetCrosshair();
+		DrawTexture(crosshair, (0, 0), DI_SCREEN_CENTER | DI_ITEM_CENTER, scale: _universalScale * 0.5);
+	}
+	
 	void CreateDamageIndicator(Actor source)
 	{
 		if (!source)
@@ -489,8 +509,9 @@ class DeltaHud : BaseStatusBar
 		
 		for (int i = 0; i < grazeIndicators.Size(); i++)
 		{
-			if (!grazeIndicators[i].grazing || !grazeIndicators[i].grazing.target
-				|| grazeIndicators[i].grazing.target != source) continue;
+			let grz = grazeIndicators[i].grazing;
+			if (!grz || !grz.target || (grz.target.bMissile && grz.target != source))
+				continue;
 			
 			grazeIndicators[i].timer = 0;
 		}

@@ -828,87 +828,60 @@ Sprite "DKSLE0", 640, 240
 	Patch "DKSLE0", 0, 0
 }
 
-Sprite "DKSLF0", 640, 240
-{
-	YScale 1.200
-	Offset 160, 38
-	Patch "DKSLF0", 0, 0
-}
-
-Sprite "DKSLG0", 640, 240
-{
-	YScale 1.200
-	Offset 160, 38
-	Patch "DKSLG0", 0, 0
-}
-
-Sprite "DKSLH0", 640, 240
-{
-	YScale 1.200
-	Offset 160, 38
-	Patch "DKSLH0", 0, 0
-}
-
-Sprite "DKSLI0", 640, 240
-{
-	YScale 1.200
-	Offset 160, 38
-	Patch "DKSLI0", 0, 0
-}
-
-Sprite "DKSLJ0", 640, 240
-{
-	YScale 1.200
-	Offset 160, 38
-	Patch "DKSLJ0", 0, 0
-}
-
 Sprite "KRSLA0", 300, 200
 {
 	YScale 1.200
 	Patch "KRSLA0", 0, 0
+	NoTrim
 }
 
 Sprite "KRSLB0", 300, 200
 {
 	YScale 1.200
 	Patch "KRSLB0", 0, 0
+	NoTrim
 }
 
 Sprite "KRSLC0", 300, 200
 {
 	YScale 1.200
 	Patch "KRSLC0", 0, 0
+	NoTrim
 }
 
 Sprite "KRSLD0", 300, 200
 {
 	YScale 1.200
 	Patch "KRSLD0", 0, 0
+	NoTrim
 }
 
 Sprite "KRSLE0", 300, 200
 {
 	YScale 1.200
 	Patch "KRSLE0", 0, 0
+	NoTrim
 }
 
 Sprite "KRSLF0", 300, 200
 {
 	YScale 1.200
 	Patch "KRSLF0", 0, 0
+	NoTrim
 }
 
 Sprite "KRSLG0", 300, 200
 {
 	YScale 1.200
 	Patch "KRSLG0", 0, 0
+	NoTrim
 }
 
 Sprite "KRSLH0", 300, 200
 {
 	YScale 1.200
 	Patch "KRSLH0", 0, 0
+	NoTrim
 }
 
 Graphic "DRSELECT", 16, 16

@@ -30,7 +30,7 @@ class SusiePlayer : DeltaPlayer
 	
 	override void DeltaExtraDeathStuff()
 	{
-		A_StartSound("delta/susie/gasp", CHAN_VOICE, CHANF_OVERLAP, attenuation: 20);
+		A_StartSound("delta/susie/gasp", CHAN_VOICE, CHANF_OVERLAP, attenuation: 0.2);
 	}
 	
 	States

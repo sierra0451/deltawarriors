@@ -3,13 +3,16 @@ class DeltaWeapon : Weapon
 	protected float _maxLungeDistance;	// maximum distance the lunge check will detect targets from
 	protected float _stopLungeDistance;	// distance user must be at during lunge before they stop and attack
 	protected string _altFireIcon;		// used for displaying alt fire key and cost (keep as null if you don't want anything there)
+	protected string _crosshair;
 	
 	private bool _lungeReadyToStop;
 	private TextureID _altFireIconId;
+	private TextureID _crosshairId;
 	
 	property MaxLungeDistance: _maxLungeDistance;
 	property StopLungeDistance: _stopLungeDistance;
 	property AltFireIcon: _altFireIcon;
+	property Crosshair: _crosshair;
 	
 	Default
 	{
@@ -32,6 +35,7 @@ class DeltaWeapon : Weapon
 	{
 		Super.BeginPlay();
 		_altFireIconId = TexMan.CheckForTexture(_altFireIcon);
+		_crosshairId = TexMan.CheckForTexture(_crosshair);
 	}
 	
 	virtual bool TryUseTension(double amount)
@@ -138,8 +142,9 @@ class DeltaWeapon : Weapon
 					|| invoker.owner.IsFriend(currMo)) continue;
 				
 				Vector3 diff = level.Vec3Diff(pos, currMo.pos);
+				Vector3 diffNorm = diff.Unit();
 				double targetAngle = VectorAngle(diff.x, diff.y);
-				double targetPitch = sin(diff.z);
+				double targetPitch = asin(diffNorm.z);
 				double distance = diff.Length();
 				let forward = DeltaMath.GetActorForward(deltaOwner, false);
 				
@@ -148,7 +153,7 @@ class DeltaWeapon : Weapon
 				
 				//A_Log("target: " .. targetPitch .. ", pitch: " .. deltaOwner.pitch .. ", abs diff: " .. abs(targetPitch - deltaOwner.pitch));
 				
-				if (abs(targetPitch - deltaOwner.pitch) > 45)
+				if (abs(targetPitch) > 80)
 					continue;
 				
 				if (distance <= shortestDistance)
@@ -211,5 +216,10 @@ class DeltaWeapon : Weapon
 	ui TextureID GetAltFireIcon()
 	{
 		return _altFireIconId;
+	}
+	
+	ui TextureID GetCrosshair()
+	{
+		return _crosshairId;
 	}
 }
