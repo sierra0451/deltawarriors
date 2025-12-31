@@ -303,8 +303,11 @@ class DeltaPlayer : PlayerPawn abstract
 		if (finalDamage > 0 && Health > 0)
 		{
 			A_StartSound("delta/hurt", CHAN_VOICE, 0, 1, 0.5);
+			
+			A_Log("inflictor: " .. inflictor.GetTag());
+			
 			if (!ignoreIFrames)
-				damageTics = (inflictor && inflictor.bIsPuff) ? -1 : DAMAGE_IFRAMES;
+				damageTics = (inflictor && (inflictor.bIsPuff || inflictor.bIsMonster)) ? -1 : DAMAGE_IFRAMES;
 			if (mod == 'Falling')
 				A_StartSound("delta/fall_damage", CHAN_AUTO);
 			
