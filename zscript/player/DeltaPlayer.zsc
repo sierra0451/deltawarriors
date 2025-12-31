@@ -180,14 +180,6 @@ class DeltaPlayer : PlayerPawn abstract
 		CheckGraze();
 	}
 	
-	override void DeathThink()
-	{
-		Super.DeathThink();
-		
-		if (!IsPredicting())
-			deathTimer++;
-	}
-	
 	// grabbing code from uzdoom.pk3 and retooling for more preferred feeling
 	override void MovePlayer()
 	{
@@ -347,6 +339,9 @@ class DeltaPlayer : PlayerPawn abstract
 	// taking implementation from uzdoom.pk3, slightly retooling for different look on death
 	override void DeathThink()
 	{
+		if (!IsPredicting())
+			deathTimer++;
+		
 		if (!player)
 			return;
 		
