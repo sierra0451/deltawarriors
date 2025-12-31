@@ -165,24 +165,27 @@ class DeltaPlayer : PlayerPawn abstract
 		HandleViewRoll();
 		
 		if (player.PlayerState == PST_DEAD)
-		{
-			deathTimer++;
 			return;
-		}
+		
+		HandleFlinch();
+		
+		if (IsPredicting())
+			return;
 		
 		HandleLunging();
 		HandleIFrames();
 		DrainTension();
 		HandleRalseiHugs();
 		HandleAirStuff();
-		HandleFlinch();
 		CheckGraze();
 	}
-
-	override void ApplyAirControl(out double movefactor, out double bobfactor)
+	
+	override void DeathThink()
 	{
-		movefactor *= level.aircontrol;
-		bobfactor *= level.aircontrol;
+		Super.DeathThink();
+		
+		if (!IsPredicting())
+			deathTimer++;
 	}
 	
 	// grabbing code from uzdoom.pk3 and retooling for more preferred feeling
@@ -540,6 +543,8 @@ class DeltaPlayer : PlayerPawn abstract
 			return false;
 		if (other.bMissile && damageTics)
 			return false;
+		if (other.player && (other.player.cheats & CF_PREDICTING))
+			return true;
 		
 		return Super.CanCollideWith(other, passive);
 	}
@@ -880,9 +885,6 @@ class DeltaPlayer : PlayerPawn abstract
 		else
 			airTimer++;
 		
-		if (IsPredicting())
-			return;
-		
 		if (IsGrounded() && airBobTics)
 			airBobTics--;
 		else if (!IsGrounded() && airBobTics < MAX_AIR_BOB_TICS)
@@ -945,7 +947,7 @@ class DeltaPlayer : PlayerPawn abstract
 			else
 				AddTension(grazeAmount * GetGrazeMultiplier() / TICRATE, true);
 			
-			if (!grazeSound && !IsPredicting())
+			if (!grazeSound)
 			{
 				grazeSound = true;
 				A_StartSound("delta/graze", 5, 0, firstGraze ? 1 : 0.5);

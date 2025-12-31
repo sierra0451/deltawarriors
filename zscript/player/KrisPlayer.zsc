@@ -67,7 +67,9 @@ class KrisPlayer : DeltaPlayer
 	override void PlayerThink()
 	{
 		Super.PlayerThink();
-		HandleSlide();
+		
+		if (!IsPredicting())
+			HandleSlide();
 	}
 	
 	override void CheckJump()
@@ -160,7 +162,7 @@ class KrisPlayer : DeltaPlayer
 		
 		//A_Log("Collided with mass of " .. other.mass);
 		
-		if (other.bIsMonster && other.mass <= 200)
+		if (other.bIsMonster && other.mass <= 200 && (!other.player || !other.player.cheats & CF_PREDICTING))
 			return false;
 		
 		return Super.CanCollideWith(other, passive);
@@ -300,8 +302,7 @@ class KrisPlayer : DeltaPlayer
 		_slideAngle = slideAngle;
 		_isSliding = true;
 		
-		if (!IsPredicting())
-			A_StartSound("delta/kris/slide_start", CHAN_AUTO);
+		A_StartSound("delta/kris/slide_start", CHAN_AUTO);
 		
 		if (resetSpeed)
 			_currentSlideSpeed = max(_savedSlideSpeed, Vel.PlusZ(-Vel.Z).Length());
