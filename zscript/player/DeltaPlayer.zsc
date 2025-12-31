@@ -814,9 +814,6 @@ class DeltaPlayer : PlayerPawn abstract
 	
 	protected virtual float GetViewRoll()
 	{
-		if (IsPredicting())
-			return 0;
-		
 		let relVel = (Vel.x * cos(-Angle) - (Vel.y * sin(-Angle)), Vel.x * sin(-Angle) + Vel.y * cos(-Angle), Vel.z);
 		let rollTarget = min(10, max(-10, -relVel.y * 0.25));
 		
@@ -980,29 +977,26 @@ class DeltaPlayer : PlayerPawn abstract
 		invoker.isUsingOffhand = false;
 		A_Fall();
 		
-		if (!invoker.IsPredicting())
+		A_StopSound();
+		A_StartSound("delta/hurt", CHAN_VOICE);
+		invoker.DeltaExtraDeathStuff(); // can't be an action cuz we need to be able to override it
+		
+		// if we have partial invisibility or anything like that, turn it off
+		A_SetRenderStyle(1, STYLE_Normal);
+		
+		// hide our weapon sprites IMMEDIATELY. classic doom and default zdoom
+		// use deselect state, which would look weird since it's actually
+		// animated
+		if (player)
 		{
-			A_StopSound();
-			A_StartSound("delta/hurt", CHAN_VOICE);
-			invoker.DeltaExtraDeathStuff();
+			player.SetPSprite(PSP_FLASH, null);
+			player.SetPSprite(PSP_WEAPON, null);
+			player.SetPSprite(PSP_OFFHAND, null);
 			
-			// if we have partial invisibility or anything like that, turn it off
-			A_SetRenderStyle(1, STYLE_Normal);
-			
-			// hide our weapon sprites IMMEDIATELY. classic doom and default zdoom
-			// use deselect state, which would look weird since it's actually
-			// animated
-			if (player)
-			{
-				player.SetPSprite(PSP_FLASH, null);
-				player.SetPSprite(PSP_WEAPON, null);
-				player.SetPSprite(PSP_OFFHAND, null);
-				
-				if (player.FindPSprite(PSP_LEGS))
-					player.SetPSprite(PSP_LEGS, null);
-			}
-			A_StopSound(CHAN_WEAPON);
+			if (player.FindPSprite(PSP_LEGS))
+				player.SetPSprite(PSP_LEGS, null);
 		}
+		A_StopSound(CHAN_WEAPON);
 		
 		if (!freeze)
 			invoker.bCanPass = false;		// make sure our corpse doesn't get
@@ -1024,10 +1018,7 @@ class DeltaPlayer : PlayerPawn abstract
 			A_StartSound("delta/impact", CHAN_BODY, 0, 0.75);
 	}
 	
-	virtual void DeltaExtraDeathStuff()
-	{
-		
-	}
+	virtual void DeltaExtraDeathStuff() {}
 	
 	virtual bool StartOffhand()
 	{
