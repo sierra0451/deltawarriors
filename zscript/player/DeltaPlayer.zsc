@@ -118,8 +118,8 @@ class DeltaPlayer : PlayerPawn abstract
 	
 	override void BeginPlay()
 	{
-		_originalHeight = height;
-		height = 56;
+		/*_originalHeight = height;
+		height = 56;*/
 		Super.BeginPlay();
 		_offhandIconId = TexMan.CheckForTexture(offhandIcon); // load texture before we do the rest of our initialization
 	}
@@ -128,6 +128,7 @@ class DeltaPlayer : PlayerPawn abstract
 	{
 		Super.PostBeginPlay();
 		
+		/*
 		// making sure maps that use ceilings to stop voodoo dolls on conveyor belts
 		// (relying on them being Doom Guy's height, i.e. 56 units tall) still work
 		// properly
@@ -135,7 +136,7 @@ class DeltaPlayer : PlayerPawn abstract
 		{
 			fullHeight = _originalHeight;
 			height = fullHeight;
-		}
+		}*/
 		
 		airTimer = 0;
 		jumpBuffer = 0;
@@ -175,18 +176,15 @@ class DeltaPlayer : PlayerPawn abstract
 	override void PlayerThink()
 	{
 		Super.PlayerThink();
-		
-		HandleHeartbeat();
 		HandleViewRoll();
 		
 		if (player.PlayerState == PST_DEAD)
 			return;
-		
-		HandleFlinch();
-		
 		if (IsPredicting())
 			return;
 		
+		HandleHeartbeat();
+		HandleFlinch();
 		HandleLunging();
 		HandleIFrames();
 		DrainTension();

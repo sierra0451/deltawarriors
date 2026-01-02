@@ -1,5 +1,5 @@
 identifier,default,remarks
-DELTAWARRIORS_VERSION,Development Build,Version display
+DELTAWARRIORS_VERSION,Playtest Build 1.1,Version display
 ,,Doom endings
 E1TEXT,,
 E2TEXT,,
@@ -160,7 +160,7 @@ ID24_GOTFUELTANK,(You took a \c[DeltaHighlight]fuel tank\c-.),
 ,,Failed activate messages
 PD_ANY,(It's locked. It looks like \c[DeltaHighlight]any key will unlock it\c-...),
 PD_ANYOBJ,(The object needs some sort of key in order to activate. It looks like \c[DeltaHighlight]any key will work\c-...),
-PD_ALL3,(It's locked. It seems to need \c[DeltaBlue]all \c[DeltaRed]three \c[DeltaYellow]keys\c-…),
+PD_ALL3,(It's locked. It seems to need \c[DeltaBlue]all \c[DeltaRed]three \c[DeltaYellow]keys\c-Â…),
 PD_ALL3O,(It seems this object needs \c[DeltaBlue]all \c[DeltaRed]three \c[DeltaYellow]keys\c- to activate...),
 PD_ALL6,(It's locked. It seems you will need \c[DeltaBlue]all \c[DeltaRed]six \c[DeltaYellow]keys\c- to unlock it...),
 PD_ALL6O,(It seems this object needs \c[DeltaBlue]all \c[DeltaRed]six \c[DeltaYellow]keys\c- to activate...),
