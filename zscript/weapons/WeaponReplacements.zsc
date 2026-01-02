@@ -26,6 +26,34 @@ class ShotgunReplacer : Inventory replaces Shotgun
 	}
 }
 
+class SuperShotgunReplacer : Inventory replaces SuperShotgun
+{
+	States
+	{
+		Spawn:
+			TNT1 A 0 NoDelay
+			{
+				A_SpawnItem("KrisShotgun");
+				GoAwayAndDie();
+			}
+			Stop;
+	}
+}
+
+class ChaingunReplacer : Inventory replaces Chaingun
+{
+	States
+	{
+		Spawn:
+			TNT1 A 0 NoDelay
+			{
+				A_SpawnItem("KrisSmg");
+				GoAwayAndDie();
+			}
+			Stop;
+	}
+}
+
 /// -----------------------------------------------------------------
 /// TEMPORARY REPLACERS FOR WEAPONS THAT HAVEN'T BEEN IMPLEMENTED YET
 /// -----------------------------------------------------------------
@@ -57,56 +85,6 @@ class TempChainsaw : DeltaTempReplacer replaces Chainsaw
 	{
 		let replacee = Spawn(_replacedClass);
 		other.A_Print("You picked up a cardboard cutout of a " .. replacee.GetTag().MakeLower() .. ". It's completely useless. Someone should really replace that...", 4);
-		replacee.Destroy();
-		Super.AttachToOwner(other);
-	}
-}
-
-class TempSuperShotgun : DeltaTempReplacer replaces SuperShotgun
-{
-	Default
-	{
-		Inventory.PickupMessage "";
-		Inventory.PickupSound "misc/w_pkup";
-		Inventory.MaxAmount 1;
-		DeltaTempReplacer.ReplacedClass 'SuperShotgun';
-	}
-	
-	States
-	{
-		Spawn:
-			SGN2 A -1;
-			Stop;
-	}
-	
-	override void AttachToOwner(Actor other)
-	{
-		other.A_Print("You picked up a double-barreled shotgun, but it doesn't seem to do anything yet. Someone should really get on fixing that...", 4);
-		Super.AttachToOwner(other);
-	}
-}
-
-class TempChaingun : DeltaTempReplacer replaces Chaingun
-{
-	Default
-	{
-		Inventory.PickupMessage "";
-		Inventory.PickupSound "misc/w_pkup";
-		Inventory.MaxAmount 1;
-		DeltaTempReplacer.ReplacedClass 'Chaingun';
-	}
-	
-	States
-	{
-		Spawn:
-			MGUN A -1;
-			Stop;
-	}
-	
-	override void AttachToOwner(Actor other)
-	{
-		let replacee = Spawn(_replacedClass);
-		other.A_Print("You picked up a " .. replacee.GetTag().MakeLower() .. ", but it doesn't seem to do anything yet. Someone should really get on fixing that...", 4);
 		replacee.Destroy();
 		Super.AttachToOwner(other);
 	}

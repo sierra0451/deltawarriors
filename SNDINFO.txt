@@ -101,36 +101,6 @@
 // Weapon sounds
 	// Generic
 	delta/dry_fire = "sounds/weapons/generic_dryfire.wav"
-	// Fists
-	delta/fists/swing1 = "sounds/weapons/fists/fists_punch1.wav"
-	delta/fists/swing2 = "sounds/weapons/fists/fists_punch2.wav"
-	
-	$random delta/fists/swing
-	{
-		delta/fists/swing1
-		delta/fists/swing2
-	}
-	
-	delta/fists/hook = "sounds/weapons/fists/fists_hook.wav"
-	
-	delta/fists/hit1 = "sounds/weapons/fists/fists_hit1.wav"
-	delta/fists/hit2 = "sounds/weapons/fists/fists_hit2.wav"
-	delta/fists/hit3 = "sounds/weapons/fists/fists_hit3.wav"
-	
-	$random delta/fists/hit
-	{
-		delta/fists/hit1
-		delta/fists/hit2
-		delta/fists/hit3
-	}
-
-	// Revolver
-	delta/revolver/deploy1 = "sounds/weapons/revolver/revolver_deploy1.wav"
-	delta/revolver/deploy2 = "sounds/weapons/revolver/revolver_deploy2.wav"
-	delta/revolver/holster = "sounds/weapons/revolver/revolver_holster.wav"
-	delta/revolver/fire = "sounds/weapons/revolver/revolver_fire.wav"
-	delta/revolver/cock1 = "sounds/weapons/revolver/revolver_cock1.wav"
-	delta/revolver/cock2 = "sounds/weapons/revolver/revolver_cock2.wav"
 	
 	// Sword
 	delta/sword/deploy = "sounds/weapons/sword/sword_unsheathe.wav"
@@ -138,6 +108,15 @@
 	delta/sword/holster = "sounds/weapons/sword/sword_sheathe.wav"
 	$alias delta/sword/swing delta/generic_attack
 	$alias delta/sword/hit delta/generic_hit
+
+	// Revolver
+	delta/revolver/deploy1 = "sounds/weapons/revolver/revolver_deploy1.wav"
+	delta/revolver/deploy2 = "sounds/weapons/revolver/revolver_deploy2.wav"
+	$alias delta/revolver/holster1 delta/shotgun/holster
+	delta/revolver/holster2 = "sounds/weapons/revolver/revolver_holster.wav"
+	delta/revolver/fire = "sounds/weapons/revolver/revolver_fire.wav"
+	delta/revolver/cock1 = "sounds/weapons/revolver/revolver_cock1.wav"
+	delta/revolver/cock2 = "sounds/weapons/revolver/revolver_cock2.wav"
 	
 	// Shotgun
 	delta/shotgun/deploy1 = "sounds/weapons/shotgun/shotgun_deploy1.wav"
@@ -146,6 +125,23 @@
 	delta/shotgun/pumpIn = "sounds/weapons/shotgun/shotgun_pumpIn.wav"
 	delta/shotgun/pumpOut = "sounds/weapons/shotgun/shotgun_pumpOut.wav"
 	delta/shotgun/holster = "sounds/weapons/shotgun/shotgun_holster.wav"
+	
+	// SMG
+	$alias delta/smg/deploy1 delta/shotgun/deploy1
+	$alias delta/smg/deploy2 delta/shotgun/deploy2
+	delta/smg/fire1 = "sounds/weapons/smg/smg_fire_01.wav"
+	delta/smg/fire2 = "sounds/weapons/smg/smg_fire_02.wav"
+	delta/smg/fire3 = "sounds/weapons/smg/smg_fire_03.wav"
+	delta/smg/fire4 = "sounds/weapons/smg/smg_fire_04.wav"
+	
+	$random delta/smg/fire
+	{
+		delta/smg/fire1
+		delta/smg/fire2
+		delta/smg/fire3
+		delta/smg/fire4
+	}
+	$alias delta/smg/holster delta/shotgun/holster
 
 // Player sounds
 	$playeralias		delta	neutral	*jump		delta/jump

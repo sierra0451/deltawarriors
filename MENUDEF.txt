@@ -1,12 +1,13 @@
 DefaultListMenu
 {
+	Position 110, 64
 	Font "DRCONFONT", "DeltaMenuInactive", "DeltaMenuActive"
 	Selector "DRSELECT", -14, 4
+	Size Clean
 }
 
 ListMenu "MainMenu"
 {
-	Position 110, 64
 	StaticPatchCentered 150, 0, "graphics/delta_logo.png"
 	StaticTextCentered 150, 34, "$DELTAWARRIORS_VERSION"
 	
@@ -25,19 +26,21 @@ ListMenu "PlayerClassMenu"
 	Position 48, 63
 	NetgameMessage "$NEWGAME"
 	StaticTextCentered 160, 15, "$MENU_CLASS_HEADER"
-	MouseWindow 0, 220
+	ForceList
 }
 
 ListMenu "EpisodeMenu"
 {
 	Position 48, 63
 	StaticTextCentered 160, 15, "$MNU_EPISODE"
+	ForceList
 }
 
 ListMenu "SkillMenu"
 {
 	Position 48, 63
 	StaticTextCentered 160, 15, "$MNU_CHOOSESKILL"
+	ForceList
 }
 
 OptionValue "ShowHide"

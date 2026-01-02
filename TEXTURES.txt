@@ -793,6 +793,140 @@ Sprite "DSHGA0", 95, 20
 	Patch "DSHGA0", 0, 0
 }
 
+Sprite "DKSMA0", 640, 240
+{
+	YScale 1.200
+	Offset 160, 38
+	Patch "DKSMA0", 0, 0
+}
+
+Sprite "DKSMB0", 640, 240
+{
+	YScale 1.200
+	Offset 160, 38
+	Patch "DKSMB0", 0, 0
+}
+
+Sprite "DKSMC0", 640, 240
+{
+	YScale 1.200
+	Offset 160, 38
+	Patch "DKSMC0", 0, 0
+}
+
+Sprite "DKSMD0", 640, 240
+{
+	YScale 1.200
+	Offset 160, 38
+	Patch "DKSMD0", 0, 0
+}
+
+Sprite "DKSME0", 640, 240
+{
+	YScale 1.200
+	Offset 160, 38
+	Patch "DKSME0", 0, 0
+}
+
+Sprite "DKSMF0", 640, 240
+{
+	YScale 1.200
+	Offset 160, 38
+	Patch "DKSMF0", 0, 0
+}
+
+Sprite "DKSMG0", 640, 240
+{
+	YScale 1.200
+	Offset 160, 38
+	Patch "DKSMG0", 0, 0
+}
+
+Sprite "DKSMH0", 640, 240
+{
+	YScale 1.200
+	Offset 160, 38
+	Patch "DKSMH0", 0, 0
+}
+
+Sprite "DKSMI0", 640, 240
+{
+	YScale 1.200
+	Offset 160, 38
+	Patch "DKSMI0", 0, 0
+}
+
+Sprite "DKSMJ0", 640, 240
+{
+	YScale 1.200
+	Offset 160, 38
+	Patch "DKSMJ0", 0, 0
+}
+
+Sprite "DKSMK0", 640, 240
+{
+	YScale 1.200
+	Offset 160, 38
+	Patch "DKSMK0", 0, 0
+}
+
+Sprite "DKSML0", 640, 240
+{
+	YScale 1.200
+	Offset 160, 38
+	Patch "DKSML0", 0, 0
+}
+
+Sprite "DKSMM0", 640, 240
+{
+	YScale 1.200
+	Offset 160, 38
+	Patch "DKSMM0", 0, 0
+}
+
+Sprite "DKSMN0", 640, 240
+{
+	YScale 1.200
+	Offset 160, 38
+	Patch "DKSMN0", 0, 0
+}
+
+Sprite "DKSMO0", 640, 240
+{
+	YScale 1.200
+	Offset 160, 38
+	Patch "DKSMO0", 0, 0
+}
+
+Sprite "DKSMP0", 640, 240
+{
+	YScale 1.200
+	Offset 160, 38
+	Patch "DKSMP0", 0, 0
+}
+
+Sprite "DKSMQ0", 640, 240
+{
+	YScale 1.200
+	Offset 160, 38
+	Patch "DKSMQ0", 0, 0
+}
+
+Sprite "DKSMR0", 640, 240
+{
+	YScale 1.200
+	Offset 160, 38
+	Patch "DKSMR0", 0, 0
+}
+
+Sprite "DSMGA0", 85, 33
+{
+	XScale 2.000
+	YScale 2.000
+	Offset 42, 33
+	Patch "DSMGA0", 0, 0
+}
+
 Sprite "DKSLA0", 640, 240
 {
 	YScale 1.200

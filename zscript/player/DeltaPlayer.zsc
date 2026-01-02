@@ -24,11 +24,11 @@ class DeltaPlayer : PlayerPawn abstract
 	protected int airTimer; 						// when alive, used to coyote time. when dead, used to determine if we made a thud sound upon corpse landing
 	protected int jumpBuffer, airBobTics, hugTimer;
 	protected int damageTics; 						// invulnerability frames, essentially
-	protected int deathTimer; 						// used for first person death animation
+	protected int deathTimer; 						// used for first person death animation and for "Press E to respawn" prompt
 	protected Color characterColor, overhealColor;
 	protected double deathPitchFP, deathPitchTP;
 	
-	protected float flinchMultiplier;
+	protected float flinchMultiplier;				// wanna be able to make certain characters flinch more or flinch less at incoming damage
 	protected int startFlinchTics;
 	
 	protected bool lunging;
@@ -44,12 +44,16 @@ class DeltaPlayer : PlayerPawn abstract
 	private float _targetRoll;
 	private bool _frozenDeath;						// using this for custom ice death that doesn't automatically shatter us lol
 	
-	// used for weapon flinching when taking damage
-	private Vector2 _currentFlinch;
+	private Vector2 _currentFlinch;					// used for weapon flinching when taking damage
 	private int _flinchTics;
+	
+	private int _turnTics;
 	private TextureID _offhandIconId;
 	
-	// Damage types that ignore I-frames and Kris's shield.
+	private float _originalHeight;					// used for fixing compatibility issues with maps that use voodoo dolls
+													// and conveyor belts
+	
+	// Damage types that ignore I-frames.
 	static const Name DAMAGE_TYPES_IGNORE_IFRAMES[] =
 	{
 		'Crush',
@@ -114,6 +118,8 @@ class DeltaPlayer : PlayerPawn abstract
 	
 	override void BeginPlay()
 	{
+		_originalHeight = height;
+		height = 56;
 		Super.BeginPlay();
 		_offhandIconId = TexMan.CheckForTexture(offhandIcon); // load texture before we do the rest of our initialization
 	}
@@ -121,6 +127,15 @@ class DeltaPlayer : PlayerPawn abstract
 	override void PostBeginPlay()
 	{
 		Super.PostBeginPlay();
+		
+		// making sure maps that use ceilings to stop voodoo dolls on conveyor belts
+		// (relying on them being Doom Guy's height, i.e. 56 units tall) still work
+		// properly
+		if (!IsVoodooDoll())
+		{
+			fullHeight = _originalHeight;
+			height = fullHeight;
+		}
 		
 		airTimer = 0;
 		jumpBuffer = 0;
@@ -304,7 +319,7 @@ class DeltaPlayer : PlayerPawn abstract
 		{
 			A_StartSound("delta/hurt", CHAN_VOICE, 0, 1, 0.5);
 			
-			A_Log("inflictor: " .. inflictor.GetTag());
+			//A_Log("inflictor: " .. inflictor.GetTag());
 			
 			if (!ignoreIFrames)
 				damageTics = (inflictor && (inflictor.bIsPuff || inflictor.bIsMonster)) ? -1 : DAMAGE_IFRAMES;
@@ -669,7 +684,19 @@ class DeltaPlayer : PlayerPawn abstract
 	
 	bool LungeBlocked()
 	{
-		return !CheckMove(lungeTarget.pos.XY, PCM_NOACTORS) || lungeTarget.health <= 0;
+		Vector3 diff = level.Vec3Diff(pos, lungeTarget.pos);
+		Vector3 diffUnit = diff.Unit();
+		let playMo = player.mo;
+		FLineTraceData output;
+		
+		LineTrace(asin(diffUnit.y), diff.Length(), -asin(diffUnit.z), TRF_SOLIDACTORS | TRF_BLOCKSELF,
+			playMo.height * 0.5 - playMo.floorclip + playMo.AttackZOffset * player.crouchFactor,
+			data: output);
+		bool pcm = CheckMove(lungeTarget.pos.XY, PCM_NOACTORS)
+			&& output.HitType == TRACE_HitActor;
+		
+		//A_Log("checkMove: " .. pcm);
+		return !pcm || lungeTarget.health <= 0;
 	}
 	
 	void HandleLunging()
@@ -685,9 +712,6 @@ class DeltaPlayer : PlayerPawn abstract
 		Vector3 diff = level.Vec3Diff(pos, lungeTarget.pos);
 		Vector3 diffUnit = diff.Unit();
 		
-		if (freelook && false)
-			A_SetPitch(asin(diffUnit.z), SPF_INTERPOLATE);
-		
 		float pitchFactor = 1 - ((diffUnit.z / 2) + 0.5);
 		
 		//A_Log("pitch: " .. pitch .. ", factor: " .. pitchFactor);
@@ -698,6 +722,8 @@ class DeltaPlayer : PlayerPawn abstract
 		float dist = diff.Length() - radius - lungeTarget.radius;
 		Vel = diffUnit * min(lungeSpeed, dist);
 		
+		// basically, we wanna start our post-lunge attack a frame before we're
+		// actually DONE lunging
 		if (dist <= lungeStopDistance + Vel.Length()
 			|| (diff.XY.Length() < lungeStopDistance + Vel.Length()
 			&& abs(diff.z) - height - Vel.Length() <= lungeStopDistance))
@@ -705,10 +731,12 @@ class DeltaPlayer : PlayerPawn abstract
 			if (player && player.ReadyWeapon && player.ReadyWeapon is "DeltaWeapon")
 				DeltaWeapon(player.ReadyWeapon).MarkReadyToStopLunging();
 		}
+		else if (level.IsFreelookAllowed() && abs(pitch + asin(diffUnit.z)) > 15)
+			A_SetPitch(-asin(diffUnit.z), SPF_INTERPOLATE);
 		
 		//A_Log("Diff: " .. diff .. ", height: " .. height);
-		if (dist <= lungeStopDistance || (diff.XY.Length() < lungeStopDistance
-			&& abs(diff.z) - height <= lungeStopDistance) || LungeBlocked())
+		if (LungeBlocked() || dist <= lungeStopDistance || (diff.XY.Length() < lungeStopDistance
+			&& abs(diff.z) - height <= lungeStopDistance))
 		{
 			StopLunge();
 		}
@@ -904,7 +932,14 @@ class DeltaPlayer : PlayerPawn abstract
 		while (mis = Actor(it.Next()))
 		{
 			if (!mis.bMissile && !mis.bSkullfly)
+			{
+				uint misIndex = grazed.Find(mis);
+				if (misIndex != grazed.Size())
+					grazed.Delete(misIndex);
+				
 				continue;
+			}
+			
 			if (!mis.bSkullfly && mis.target == self) // "target" with projectiles is used to figure out who threw it
 				continue;
 			
@@ -1108,9 +1143,20 @@ class DeltaPlayer : PlayerPawn abstract
 		return false;
 	}
 	
+	// returns -1 if not dead, otherwise returns how many ticks this character has been dead for
+	clearscope int GetDeathTimer()
+	{
+		return deathTimer;
+	}
+	
 	clearscope TextureID GetOffhandIconID()
 	{
 		return _offhandIconId;
+	}
+	
+	clearscope bool IsVoodooDoll()
+	{
+		return !player || !player.mo || player.mo != self;
 	}
 	
 	States

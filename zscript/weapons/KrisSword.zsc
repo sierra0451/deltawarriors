@@ -5,11 +5,10 @@ class KrisSword : DeltaWeapon
 	
 	Default
 	{
-		Tag "$DELTA_SWORD_TAG";
+		Tag "$TAG_DELTA_SWORD";
 		Obituary "$OBIT_DELTA_SWORD";
-		
 		Inventory.RestrictedTo "KrisPlayer";
-		Inventory.PickupMessage "$DELTA_SWORD_PICKUP";
+		Inventory.PickupMessage "$PICKUP_DELTA_SWORD";
 		
 		Weapon.SlotNumber 1;
 		Weapon.SelectionOrder 1000;

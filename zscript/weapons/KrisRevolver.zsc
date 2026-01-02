@@ -48,10 +48,10 @@ class KrisRevolver : DeltaWeapon
 			}
 			Loop;
 		Deselect:
-			DKRH A 2 A_StartSound("delta/shotgun/holster", CHAN_WEAPON, CHANF_OVERLAP);
+			DKRH A 2 A_StartSound("delta/revolver/holster1", CHAN_WEAPON, CHANF_OVERLAP);
 			DKRH BC 2;
 			DKRH D 3;
-			TNT1 A 4 A_StartSound("delta/revolver/holster", CHAN_WEAPON, CHANF_OVERLAP);
+			TNT1 A 4 A_StartSound("delta/revolver/holster2", CHAN_WEAPON, CHANF_OVERLAP);
 			TNT1 A 0 A_SwapWeapon;
 			Stop;
 		Select:

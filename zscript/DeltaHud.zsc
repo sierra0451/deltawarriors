@@ -157,6 +157,10 @@ class DeltaHud : BaseStatusBar
 			DrawRightPanel(sv_infiniteAmmo || (CPlayer.mo.FindInventory('PowerInfiniteAmmo', true) != null));
 			DrawReticle();
 		}
+		else
+		{
+			DrawDeathStuff();
+		}
 	}
 	
 	protected void DrawDamageIndicators(double ticFrac)
@@ -286,7 +290,7 @@ class DeltaHud : BaseStatusBar
 		if (!ply)
 			return;
 		
-		TextureID currentFace = GetMugshot(4, Mugshot.DISABLEOUCH);
+		TextureID currentFace = GetMugshot(4, Mugshot.DISABLEOUCH | Mugshot.DISABLERAMPAGE);
 		
 		int temp, panelYSize, faceYSize;
 		[temp, panelYSize] = TexMan.GetSize(_leftPanelBack);
@@ -497,6 +501,11 @@ class DeltaHud : BaseStatusBar
 		
 		let crosshair = weap.GetCrosshair();
 		DrawTexture(crosshair, (0, 0), DI_SCREEN_CENTER | DI_ITEM_CENTER, scale: _universalScale * 0.5);
+	}
+	
+	protected void DrawDeathStuff()
+	{
+		
 	}
 	
 	void CreateDamageIndicator(Actor source)

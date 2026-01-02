@@ -12,7 +12,7 @@ class KrisPlayer : DeltaPlayer
 	private int _slideTics;				// used for smooth transitions into sliding effects
 	const MAX_SLIDE_TICS = 5;
 	
-	const PARRY_TP_COST = 100;
+	const PARRY_TP_COST = floor(0.4 * 250);
 	
 	Default
 	{
@@ -30,7 +30,7 @@ class KrisPlayer : DeltaPlayer
 		Player.WeaponSlot 1, "KrisSword";
 		Player.WeaponSlot 2, "KrisRevolver";
 		Player.WeaponSlot 3, "KrisShotgun";
-		// Player.WeaponSlot 4, "KrisSMG";
+		Player.WeaponSlot 4, "KrisSMG";
 		// Player.WeaponSlot 5, "KrisGrenadeLauncher";
 		// Player.WeaponSlot 6, "KrisCrossbow";
 		
@@ -62,6 +62,8 @@ class KrisPlayer : DeltaPlayer
 		
 		if (_isSliding)
 			EndSlide();
+		
+		_slideTics = 0;
 	}
 	
 	override void PlayerThink()

@@ -1,16 +1,16 @@
 Terrain Generic
 {
 	StepSounds		delta/step_generic
-	WalkStepTics	20
-	RunStepTics		12
+	WalkStepTics	14
+	RunStepTics		10
 	StepVolume		1
 }
 
 Terrain LiquidTerrain
 {
 	StepSounds		delta/step_liquid
-	WalkStepTics	20
-	RunStepTics		12
+	WalkStepTics	14
+	RunStepTics		10
 	StepVolume		1
 	Liquid
 }

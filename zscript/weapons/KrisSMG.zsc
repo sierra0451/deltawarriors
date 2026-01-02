@@ -1,37 +1,76 @@
-class KrisSMG : DeltaWeapon
+class KrisSmg : DeltaWeapon
 {
 	Default
 	{
 		Tag "$TAG_DELTA_SMG";
-		Obituary "$OBIT_DELTA_SMG";
+		Obituary "$OBIT_DELTA_KSMG";
 		Inventory.RestrictedTo "KrisPlayer";
-		Inventory.PickupMessage "$PICKUP_DELTA_SMG";
+		Inventory.PickupMessage "$PICKUP_DELTA_KSMG";
 		
 		Weapon.SlotNumber 4;
 		Weapon.SelectionOrder 800;
 		Weapon.AmmoUse 1;
-		Weapon.AmmoGive 15;
+		Weapon.AmmoGive 30;
 		Weapon.AmmoType "Clip";
 		DeltaWeapon.Crosshair "DRPSTRET";
 		
 		+SQUAREPIXELS
 	}
 	
+	protected action void A_KrisSmgFire()
+	{
+		let spread = min(6, (player.refire/4.) + 0.5);
+		A_FireBullets(spread, spread, -1, random[smgDmg](10, 15), "KrisSmgPuff", FBF_USEAMMO | FBF_NORANDOM);
+		A_AlertMonsters();
+		A_StartSound("delta/smg/fire", CHAN_WEAPON, CHANF_OVERLAP, pitch: cfrandom(0.93, 1.07));
+		A_ZoomFactor(0.99, ZOOM_INSTANT | ZOOM_NOSCALETURNING);
+		A_AttachLightDef("smgMuzzle", "DeltaGenericMuzzle");
+		
+		if (level.IsFreelookAllowed())
+		{
+			let kickback = 0.5;
+			invoker.owner.pitch = max(-CVar.GetCVar("maxviewpitch", player).GetFloat(), invoker.owner.pitch - kickback);
+		}
+	}
+	
 	States
 	{
 		Ready:
-			DKMP A 1 A_DeltaWeaponReady;
+			DKSM A 1 A_DeltaWeaponReady;
 			Loop;
 		Deselect:
-			DKMP A 10;
-			TNT1 A 0 A_SwapWeapon;
+			DKSM O 2 A_StartSound("delta/smg/holster", CHAN_WEAPON, CHANF_OVERLAP);
+			#### PQR 2;
+			TNT1 A 4;
+			#### # 1 A_SwapWeapon;
 			Stop;
 		Select:
-			TNT1 A 2 A_StartRaiseWeapon;
-			DKMP A 6 A_FinishRaiseWeapon;
+			TNT1 A 1 A_StartRaiseWeapon;
+			DKSM G 2 A_StartSound("delta/smg/deploy1", CHAN_WEAPON, CHANF_OVERLAP);
+			#### HIJ 2;
+			#### K 1 A_DeltaWeaponReady(WRF_NOBOB);
+			#### # 1 A_StartSound("delta/smg/deploy2", CHAN_WEAPON, CHANF_OVERLAP, pitch: 1.2);
+			#### LMN 2 A_DeltaWeaponReady(WRF_NOBOB);
+			#### A 2 A_FinishRaiseWeapon;
 			Stop;
 		Fire:
-			DKMP A 1;
+			DKSM B 1 A_KrisSmgFire;
+			#### # 1 A_ZoomFactor(1, ZOOM_NOSCALETURNING);
+			#### C 2 A_RemoveLight("smgMuzzle");
+			#### D 1;
+			#### EFA 2 A_ReFire;
 			Goto Ready;
+		Spawn:
+			DSMG A -1;
+			Stop;
+	}
+}
+
+class KrisSmgPuff : BulletPuff
+{
+	Default
+	{
+		ProjectileKickBack 1;
+		+NOEXTREMEDEATH
 	}
 }

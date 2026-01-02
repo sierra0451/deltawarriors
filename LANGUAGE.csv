@@ -103,7 +103,10 @@ GMPLYMNU_PISTOLSTART,Reset inventory at beginning of map,
 ,,Obituaries
 OBIT_DELTA_SWORD,%o was cut down by %k's sword.,
 OBIT_DELTA_REVOLVER,%o couldn't take %k's gunslinging.,
-OBIT_DELTA_KRISSHOTGUN,%o was peppered by %k's shotgun.,
+OBIT_DELTA_KSHOTGUN,%o was peppered by %k's shotgun.,
+OBIT_DELTA_KSHOTGUNALT,%k's shotgun blast was too much for %o.,
+OBIT_DELTA_KSMG,%o succumbed to %k's flurry of bullets.,
+OBIT_DELTA_KSMGALT,%o should've stepped out of %k's way.,
 OBIT_DELTA_AXE,%o was cleaved in half by %k's axe.,
 OB_SUICIDE,%o killed %hself.,
 OB_EXIT,%o tried to escape.,
@@ -119,8 +122,9 @@ OB_FRIENDLY4,%k killed %p teammate.,
 TXT_DEFAULTPICKUPMSG,(You found an \c[DeltaHighlight]unknown item\c-.),
 PICKUP_DELTA_SWORD,(You retrieved \c[DeltaHighlight]your sword\c-.),
 PICKUP_DELTA_REVOLVER,(You found a \c[DeltaHighlight]revolver\c-.),
-PICKUP_DELTA_KRISSHOTGUN,(You found a \c[DeltaHighlight]shotgun\c-.),
-PICKUP_DELTA_AXE,"\c[Susie](Oh sweet, I found my axe!)\c-","wanting to make it seem like characters are giving their own thoughts on items they pick up (obvs except Kris, whose messages are in second person)"
+PICKUP_DELTA_KSHOTGUN,(You found a \c[DeltaHighlight]shotgun\c-.),
+PICKUP_DELTA_KSMG,(You found an \c[DeltaHighlight]SMG\c-.),
+PICKUP_DELTA_AXE,"\c[DeltaSusie](Oh sweet, I found my axe!)\c-","wanting to make it seem like characters are giving their own thoughts on items they pick up (obvs except Kris, whose messages are in second person)"
 PICKUP_DELTA_TPSMALL,(You found a \c[DeltaHighlight]Tension Bit\c-.),
 PICKUP_DELTA_TPMED,(You found a \c[DeltaHighlight]Tension Gem\c-.),
 PICKUP_DELTA_TPLARGE,(You found a \c[DeltaHighlight]Tension Max\c-.),
@@ -180,11 +184,12 @@ PD_BLUESO,(It seems this object needs a \c[DeltaBlue]Blue Skull Key\c- to activa
 PD_REDSO,(It seems this object needs a \c[DeltaRed]Red Skull Key\c- to activate...),
 PD_YELLOWSO,(It seems this object needs a \c[DeltaYellow]Yellow Skull Key\c- to activate...),
 ,,Automap
-AM_MONSTERS,Enemies:,
+AM_MONSTERS,Enemies:,"Not using the word ""monsters"" because Susie and Noelle (and maybe Ralsei? we're not 100% sure yet) are monsters themselves, yet they are players, not enemies."
 ,,Inventory tags
 TAG_DELTA_AXE,Axe,
 TAG_DELTA_REVOLVER,Revolver,
 TAG_DELTA_SHOTGUN,Shotgun,
+TAG_DELTA_SMG,SMG,
 TAG_DELTA_SWORD,Sword,Specifically Kris's sword
 TAG_DELTA_TPLARGE,Tension Max,
 TAG_DELTA_TPMED,Tension Gem,
@@ -192,5 +197,5 @@ TAG_DELTA_TPSMALL,Tension Bit,
 ,,Misc. text
 TXT_BADDIE_KILLED,1 enemy killed,
 TXT_BADDIES_KILLED,%d enemies killed,
-TXT_MONSTER_KILLED,1 demon killed,Susie and Noelle are both monsters ?
-TXT_MONSTERS_KILLED,%d demons killed,
+TXT_MONSTER_KILLED,1 demon killed,See remarks on AM_MONSTERS
+TXT_MONSTERS_KILLED,%d demons killed,See remarks on AM_MONSTERS

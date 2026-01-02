@@ -27,3 +27,4 @@ decalgroup KrisSwordSlash
 generator KrisSword KrisSwordSlash
 generator KrisRevolver BulletChip
 generator KrisShotgun BulletChip
+generator KrisSmg BulletChip
