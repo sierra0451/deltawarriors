@@ -304,10 +304,13 @@ class KrisPlayer : DeltaPlayer
 		_slideAngle = slideAngle;
 		_isSliding = true;
 		
-		A_StartSound("delta/kris/slide_start", CHAN_AUTO);
-		
 		if (resetSpeed)
 			_currentSlideSpeed = max(_savedSlideSpeed, Vel.PlusZ(-Vel.Z).Length());
+		
+		if (IsPredicting())
+			return;
+		
+		A_StartSound("delta/kris/slide_start", CHAN_AUTO);
 		
 		A_Overlay(PSP_LEGS, "SlideOverlay");
 		let overlay = player.FindPSprite(PSP_LEGS);
