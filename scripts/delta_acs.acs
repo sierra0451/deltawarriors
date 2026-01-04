@@ -1,6 +1,6 @@
 #include "zcommon.acs"
 
-script "AirControl" OPEN
+script "Delta_AirControl" OPEN
 {
 	SetAirControl(0.6);
 }

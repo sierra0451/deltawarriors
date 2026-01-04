@@ -54,7 +54,8 @@ class KrisShotgun : DeltaWeapon
 		A_FireBullets(5.5, 5.5, 8, 9, flags: FBF_USEAMMO | FBF_NORANDOM);
 		A_AlertMonsters();
 		A_StartSound("delta/shotgun/fire", CHAN_WEAPON, CHANF_OVERLAP);
-		A_ZoomFactor(0.97, ZOOM_INSTANT | ZOOM_NOSCALETURNING);
+// 		A_ZoomFactor(0.97, ZOOM_INSTANT | ZOOM_NOSCALETURNING);
+		A_AddRecoil(10, 1, p: -3);
 		self.A_AttachLightDef("shotgunMuzzle", "DeltaGenericMuzzle");
 		invoker.pumped = false;
 	}
@@ -69,6 +70,7 @@ class KrisShotgun : DeltaWeapon
 		A_FireBullets(6.5, 6.5, 16, 10, "KrisShotgunAltPuff", FBF_NORANDOM);
 		A_StartSound("delta/shotgun/fire", CHAN_WEAPON, CHANF_OVERLAP);
 		A_ZoomFactor(0.97, ZOOM_INSTANT | ZOOM_NOSCALETURNING);
+		A_AddRecoil(20, 3, p: -7);
 		self.A_AttachLightDef("shotgunMuzzle", "DeltaGenericMuzzle");
 		invoker.pumped = false;
 		

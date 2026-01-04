@@ -31,7 +31,7 @@ class KrisRevolver : DeltaWeapon
 		A_FireBullets(1, 1, 1, random[revolverDmg](30, 50), "KrisRevolverPuff", FBF_USEAMMO | FBF_NORANDOM);
 		A_AlertMonsters();
 		A_StartSound("delta/revolver/fire", CHAN_WEAPON, CHANF_OVERLAP);
-		A_ZoomFactor(0.97, ZOOM_INSTANT | ZOOM_NOSCALETURNING);
+// 		A_ZoomFactor(0.97, ZOOM_INSTANT | ZOOM_NOSCALETURNING);
 		self.A_AttachLightDef("revolverMuzzle", "DeltaGenericMuzzle");
 		invoker.cocked = false;
 	}
@@ -49,29 +49,30 @@ class KrisRevolver : DeltaWeapon
 			Loop;
 		Deselect:
 			DKRH A 2 A_StartSound("delta/revolver/holster1", CHAN_WEAPON, CHANF_OVERLAP);
-			DKRH BC 2;
-			DKRH D 3;
+			#### BC 2;
+			#### D 3;
 			TNT1 A 4 A_StartSound("delta/revolver/holster2", CHAN_WEAPON, CHANF_OVERLAP);
-			TNT1 A 0 A_SwapWeapon;
+			#### # 0 A_SwapWeapon;
 			Stop;
 		Select:
 			TNT1 A 2 A_StartRaiseWeapon;
 			DKRD A 2 A_StartSound("delta/revolver/deploy1", CHAN_WEAPON, CHANF_OVERLAP);
-			DKRD C 2;
-			DKRD DF 2 A_DeltaWeaponReady(WRF_NOBOB | WRF_NOSWITCH);
-			DKRD G 3 A_StartSound("delta/revolver/deploy2", CHAN_WEAPON, CHANF_OVERLAP);
-			DKRD H 2 A_DeltaWeaponReady(WRF_NOBOB);
-			DKRD IJ 2 A_DeltaWeaponReady(WRF_NOBOB);
+			#### C 2;
+			#### DF 2 A_DeltaWeaponReady(WRF_NOBOB | WRF_NOSWITCH);
+			#### G 3 A_StartSound("delta/revolver/deploy2", CHAN_WEAPON, CHANF_OVERLAP);
+			#### H 2 A_DeltaWeaponReady(WRF_NOBOB);
+			#### IJ 2 A_DeltaWeaponReady(WRF_NOBOB);
 			DKRV A 3 A_FinishRaiseWeapon;
 			Stop;
 		Fire:
-			DKRV B 2 A_KrisRevolverFire;
-			DKRV C 1 A_RemoveLight("revolverMuzzle");
-			DKRV D 2 A_ZoomFactor;
-			DKRV E 3;
-			DKRV FG 2;
-			DKRV H 1;
-			DKRV H 1 A_CheckReload; // fall-through is intentional
+			DKRV B 1 A_KrisRevolverFire;
+			#### # 1 A_AddRecoil(10, 1, p: -4);
+			#### C 1 A_RemoveLight("revolverMuzzle");
+			#### D 2 A_ZoomFactor;
+			#### E 3;
+			#### FG 2;
+			#### H 1;
+			#### # 1 A_CheckReload; // fall-through is intentional
 		Cock:
 			DKRV I 2 A_DeltaWeaponReady(WRF_NOFIRE | WRF_NOBOB);
 			DKRV J 3 A_StartSound("delta/revolver/cock1", CHAN_WEAPON, CHANF_OVERLAP);

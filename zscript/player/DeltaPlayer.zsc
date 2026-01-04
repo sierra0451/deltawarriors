@@ -11,6 +11,12 @@ enum DELTA_PSP
 	PSP_OFFHAND = -5
 }
 
+struct RecoilEvent
+{
+	Vector3 recoil;
+	int startTime, curTime, leadInTime;
+}
+
 class DeltaPlayer : PlayerPawn abstract
 {
 	double tensionPoints;
@@ -23,6 +29,7 @@ class DeltaPlayer : PlayerPawn abstract
 	
 	protected int airTimer; 						// when alive, used to coyote time. when dead, used to determine if we made a thud sound upon corpse landing
 	protected int jumpBuffer, airBobTics, hugTimer;
+	protected float customBobPerc;
 	protected int damageTics; 						// invulnerability frames, essentially
 	protected int deathTimer; 						// used for first person death animation and for "Press E to respawn" prompt
 	protected Color characterColor, overhealColor;
@@ -30,14 +37,16 @@ class DeltaPlayer : PlayerPawn abstract
 	
 	protected float flinchMultiplier;				// wanna be able to make certain characters flinch more or flinch less at incoming damage
 	protected int startFlinchTics;
+	protected int shakinessMaxHealth;				// lowest possible health where we'll still be at minimum hand shakiness
+	protected float minShakiness, maxShakiness;
 	
 	protected bool lunging;
-	protected float lungeSpeed;
-	protected float lungeStopDistance;
+	protected float lungeSpeed, lungeStopDistance;
 	protected Array<Actor> grazed;
 	
 	protected bool isUsingOffhand;
 	protected string offhandIcon;
+	protected string characterIcon;
 	
 	protected LinearValueInterpolator heartbeat;
 	
@@ -48,10 +57,14 @@ class DeltaPlayer : PlayerPawn abstract
 	private int _flinchTics;
 	
 	private int _turnTics;
+	
 	private TextureID _offhandIconId;
+	private TextureID _characterIconId;				// used for health displays in co-op and team deathmatch
 	
 	private float _originalHeight;					// used for fixing compatibility issues with maps that use voodoo dolls
 													// and conveyor belts
+	
+	private RecoilEvent[10] _recoils;
 	
 	// Damage types that ignore I-frames.
 	static const Name DAMAGE_TYPES_IGNORE_IFRAMES[] =
@@ -63,9 +76,11 @@ class DeltaPlayer : PlayerPawn abstract
 		'Exit',
 		'Poison'
 	};
+	
 	const MAX_AIR_BOB_TICS = 5;
 	const DAMAGE_IFRAMES = 10;
 	const DRAIN_TIMER_START = TICRATE * 12;			// tp lasts for 12 seconds before we start draining it
+	const RECOIL_TICS = 5;
 	
 	property HugReactionTime: hugReactionTime;
 	property CharacterColor: characterColor;		// mostly used for hud elements
@@ -74,6 +89,10 @@ class DeltaPlayer : PlayerPawn abstract
 	property StartFlinchTics: startFlinchTics;
 	property LungeSpeed: lungeSpeed;
 	property OffhandIcon: offhandIcon;
+	property CharacterIcon: characterIcon;
+	property ShakinessMaxHealth: shakinessMaxHealth;
+	property MinShakiness: minShakiness;
+	property MaxShakiness: maxShakiness;
 	
 	Default
 	{
@@ -107,34 +126,45 @@ class DeltaPlayer : PlayerPawn abstract
 		DeltaPlayer.HugReactionTime 20;
 		DeltaPlayer.CharacterColor Color(127, 127, 127);
 		DeltaPlayer.OverhealColor Color(60, 220, 60);
+		
 		DeltaPlayer.FlinchMultiplier 10;
 		DeltaPlayer.StartFlinchTics 5;
 		DeltaPlayer.LungeSpeed 35;
 		
+		DeltaPlayer.OffhandIcon "";
+		DeltaPlayer.CharacterIcon "";
+		
+		DeltaPlayer.ShakinessMaxHealth 50;
+		DeltaPlayer.MinShakiness 0.2;
+		DeltaPlayer.MaxShakiness 1;
+		
 		+PLAYERPAWN.MAKEFOOTSTEPS
-		+DONTGIB					// prevents us from being turned into a pile of flattened meat by crushers
 		+NOICEDEATH
+		+DONTGIB					// prevents us from being turned into a pile of flattened meat by crushers
 	}
 	
 	override void BeginPlay()
 	{
 		_originalHeight = height;
 		height = 56;
+		
 		Super.BeginPlay();
-		_offhandIconId = TexMan.CheckForTexture(offhandIcon); // load texture before we do the rest of our initialization
+		
+		// load icon textures before we do (most of) the rest of our initialization
+		_offhandIconId = TexMan.CheckForTexture(offhandIcon);
+		_characterIconId = TexMan.CheckForTexture(characterIcon);
 	}
 	
 	override void PostBeginPlay()
 	{
 		Super.PostBeginPlay();
 		
+		// fixing issues with maps that make use of voodoo dolls and currents
 		if (player != NULL && player.mo == self)
 		{
 			fullHeight = _originalHeight;
 			height = _originalHeight;
 		}
-		
-		A_Log("height: " .. height);
 		
 		airTimer = 0;
 		jumpBuffer = 0;
@@ -174,14 +204,16 @@ class DeltaPlayer : PlayerPawn abstract
 	override void PlayerThink()
 	{
 		Super.PlayerThink();
-		HandleViewRoll();
+		HandleViewAngles();
 		
-		if (player.PlayerState == PST_DEAD)
-			return;
 		if (IsPredicting())
 			return;
 		
 		HandleHeartbeat();
+		
+		if (player.PlayerState == PST_DEAD)
+			return;
+		
 		HandleFlinch();
 		HandleLunging();
 		HandleIFrames();
@@ -315,8 +347,6 @@ class DeltaPlayer : PlayerPawn abstract
 		{
 			A_StartSound("delta/hurt", CHAN_VOICE, 0, 1, 0.5);
 			
-			//A_Log("inflictor: " .. inflictor.GetTag());
-			
 			if (!ignoreIFrames)
 				damageTics = (inflictor && (inflictor.bIsPuff || inflictor.bIsMonster)) ? -1 : DAMAGE_IFRAMES;
 			if (mod == 'Falling')
@@ -325,12 +355,12 @@ class DeltaPlayer : PlayerPawn abstract
 			if (source && source != self)
 			{
 				float ang = DeltaAngle(self.angle, AngleTo(inflictor)) + cfrandom(-15, 15);
-				DamageFlinch(ang);
+				DamageFlinch(ang, finalDamage, flags);
 			}
 		}
 		
-		if (player && player.damageCount > 25)
-			player.damageCount = 25;
+		if (player)
+			player.damageCount = min(35, player.damageCount);
 		
 		return finalDamage;
 	}
@@ -560,7 +590,7 @@ class DeltaPlayer : PlayerPawn abstract
 	
 	override void HasReceived(Inventory item)
 	{
-		if (!IsPredicting() && item is "Health" && item.GetClass() != "Health" && !item.bQuiet)
+		if (item is "Health" && item.GetClass() != "Health" && !item.bQuiet)
 			A_StartSound("delta/heal", CHAN_VOICE);
 	}
 	
@@ -568,6 +598,7 @@ class DeltaPlayer : PlayerPawn abstract
 	{
 		let originalBob = lunging ? (0, 0) : Super.BobWeapon(ticfrac);
 		double perc = 1 - airBobTics / float(MAX_AIR_BOB_TICS);
+		perc *= customBobPerc;
 		
 		Vector2 bobFlinch = (0, 0);
 		if (_flinchTics)
@@ -575,7 +606,12 @@ class DeltaPlayer : PlayerPawn abstract
 		
 		bobFlinch.y = abs(bobFlinch.y);
 		
-		return originalBob * perc + bobFlinch;
+		float shakinessFactor = DeltaMath.Lerp(maxShakiness, minShakiness, (health - 1) / (shakinessMaxHealth - 1.));
+		float x = sin(level.time/11.) * 2 - sin(level.time*23.*shakinessFactor) + 4*shakinessFactor,
+			y = max(0, (0.5+sin(level.time*2)/2) * 5 + sin(level.time*14.*shakinessFactor));
+		
+		Vector2 shakiness = (x, y * 0.5);
+		return originalBob * perc + bobFlinch + shakiness * shakinessFactor;
 	}
 	
 	override void CheatGive(string name, int amount)
@@ -608,8 +644,6 @@ class DeltaPlayer : PlayerPawn abstract
 	
 	override void CheatTake(string name, int amount)
 	{
-		//A_Log("Taking " .. amount .. " of " .. name .. " away.", true);
-		
 		if (name ~== "armor")
 			return;
 			
@@ -662,15 +696,7 @@ class DeltaPlayer : PlayerPawn abstract
 		
 		if (LungeBlocked())
 		{
-			if (!player)
-				return;
-			
-			let weap = DeltaWeapon(player.ReadyWeapon);
-			
-			if (!weap)
-				return;
-			
-			weap.MarkReadyToStopLunging();
+			StopLunge();
 			return;
 		}
 		
@@ -685,13 +711,12 @@ class DeltaPlayer : PlayerPawn abstract
 		let playMo = player.mo;
 		FLineTraceData output;
 		
-		LineTrace(asin(diffUnit.y), diff.Length(), -asin(diffUnit.z), TRF_SOLIDACTORS | TRF_BLOCKSELF,
-			playMo.height * 0.5 - playMo.floorclip + playMo.AttackZOffset * player.crouchFactor,
+		LineTrace(AngleTo(lungeTarget), diff.Length(), PitchTo(lungeTarget), TRF_BLOCKSELF,
+			playMo.height * 0.5 * player.crouchFactor,
 			data: output);
 		bool pcm = CheckMove(lungeTarget.pos.XY, PCM_NOACTORS)
-			&& output.HitType == TRACE_HitActor;
+			&& output.HitActor;
 		
-		//A_Log("checkMove: " .. pcm);
 		return !pcm || lungeTarget.health <= 0;
 	}
 	
@@ -699,18 +724,12 @@ class DeltaPlayer : PlayerPawn abstract
 	{
 		if (!lunging || !player)
 			return;
-		if (!lungeTarget)
-		{
-			StopLunge();
-			return;
-		}
 		
 		Vector3 diff = level.Vec3Diff(pos, lungeTarget.pos);
 		Vector3 diffUnit = diff.Unit();
 		
 		float pitchFactor = 1 - ((diffUnit.z / 2) + 0.5);
 		
-		//A_Log("pitch: " .. pitch .. ", factor: " .. pitchFactor);
 		diff = level.Vec3Diff(pos, lungeTarget.pos.PlusZ(lungeTarget.height * pitchFactor));
 		
 		A_SetAngle(VectorAngle(diff.x, diff.y), SPF_INTERPOLATE);
@@ -720,21 +739,15 @@ class DeltaPlayer : PlayerPawn abstract
 		
 		// basically, we wanna start our post-lunge attack a frame before we're
 		// actually DONE lunging
-		if (dist <= lungeStopDistance + Vel.Length()
-			|| (diff.XY.Length() < lungeStopDistance + Vel.Length()
-			&& abs(diff.z) - height - Vel.Length() <= lungeStopDistance))
-		{
-			if (player && player.ReadyWeapon && player.ReadyWeapon is "DeltaWeapon")
-				DeltaWeapon(player.ReadyWeapon).MarkReadyToStopLunging();
-		}
-		else if (level.IsFreelookAllowed() && abs(pitch + asin(diffUnit.z)) > 15)
+		if (level.IsFreelookAllowed() && abs(pitch + asin(diffUnit.z)) > 15)
 			A_SetPitch(-asin(diffUnit.z), SPF_INTERPOLATE);
 		
-		//A_Log("Diff: " .. diff .. ", height: " .. height);
-		if (LungeBlocked() || dist <= lungeStopDistance || (diff.XY.Length() < lungeStopDistance
-			&& abs(diff.z) - height <= lungeStopDistance))
+		if (LungeBlocked() || dist <= lungeStopDistance + Vel.Length() || (diff.XY.Length() < lungeStopDistance
+			&& abs(diff.z) - height <= lungeStopDistance + Vel.Length()))
 		{
+			let targetPos = vel + pos;
 			StopLunge();
+			TryMove(targetPos.XY, 0);
 		}
 	}
 	
@@ -857,9 +870,54 @@ class DeltaPlayer : PlayerPawn abstract
 		return _targetRoll;
 	}
 	
-	protected void HandleViewRoll()
+	protected virtual Vector3 GetRecoilAngles()
 	{
-		viewRoll = (player.cheats & CF_CHASECAM) ? 0 : GetViewRoll();
+		Vector3 recoil;
+		
+		for (int i = 0; i < _recoils.Size(); i++)
+		{
+			int start = _recoils[i].startTime, cur = _recoils[i].curTime,
+				lead = _recoils[i].leadInTime;
+			
+			if (cur <= 0)
+				continue;
+			
+			float factor;
+			
+			if (start - cur < lead)
+				factor = (start - cur) / float(lead);
+			else
+				factor = cur / float(start - lead);
+			
+			factor *= factor;
+			recoil += _recoils[i].recoil * factor;
+		}
+		
+		return recoil;
+	}
+	
+	protected void HandleViewAngles()
+	{
+		if (player.cheats & CF_CHASECAM)
+		{
+			A_SetViewPitch(0, SPF_INTERPOLATE);
+			A_SetViewAngle(0, SPF_INTERPOLATE);
+			A_SetViewRoll(0, SPF_INTERPOLATE);
+			return;
+		}
+		
+		for (int i = 0; i < _recoils.Size(); i++)
+		{
+			if (_recoils[i].curTime <= 0)
+				continue;
+			
+			_recoils[i].curTime--;
+		}
+		
+		let recoil = GetRecoilAngles().PlusZ(GetViewRoll());
+		A_SetViewPitch(recoil.x, SPF_INTERPOLATE);
+		A_SetViewAngle(recoil.y, SPF_INTERPOLATE);
+		A_SetViewRoll(recoil.z, SPF_INTERPOLATE);
 	}
 	
 	protected void HandleIFrames()
@@ -981,10 +1039,65 @@ class DeltaPlayer : PlayerPawn abstract
 		}
 	}
 	
-	protected void DamageFlinch(float ang)
+	protected void DamageFlinch(float ang, int dmg, int dmgFlags)
 	{
-		_flinchTics = startFlinchTics;
+		if (dmgFlags & DMG_NO_PAIN)
+			return;
+		
+		double damageMultiplier = min(0.25, dmg / 50.);
+		int damageAddTics = max(0, min(20, dmg / 2.));
+		bool isExplosion = (dmgFlags & DMG_EXPLOSION);
+		
+		_flinchTics = startFlinchTics + damageAddTics/2;
 		_currentFlinch = (sin(ang), cos(ang)) * flinchMultiplier;
+		
+		double yrMult = isExplosion ? -3*sin(ang) : sin(ang),
+			pMult = cos(ang);
+		
+		if (abs(sin(ang)) <= 0.1)
+			yrMult = 0;
+		if (abs(cos(ang)) <= 0.1)
+			pMult = 0;
+		
+		AddRecoil(7 + damageAddTics, 2, p: -cos(ang) * flinchMultiplier * damageMultiplier,
+			y: isExplosion ? yrMult * flinchMultiplier * damageMultiplier : 0,
+			r: isExplosion ? 0 : yrMult * flinchMultiplier * damageMultiplier);
+	}
+	
+	void AddRecoil(int startTime, int leadInTime = 0, double p = 0, double y = 0, double r = 0)
+	{
+		int targetIndex = -1;
+		int shortestTime = -1;
+		
+		for (int i = 0; i < _recoils.Size(); i++)
+		{
+			if (_recoils[i].curTime <= 0)
+			{
+				targetIndex = i;
+				break;
+			}
+			
+			if (shortestTime < 0 || _recoils[i].curTime < shortestTime)
+			{
+				targetIndex = i;
+				shortestTime = _recoils[i].curTime;
+			}
+		}
+		
+		if (targetIndex < 0)
+			return;
+		
+		_recoils[targetIndex].startTime = _recoils[targetIndex].curTime = startTime;
+		_recoils[targetIndex].leadInTime = leadInTime;
+		_recoils[targetIndex].recoil = (p, y, r);
+	}
+	
+	virtual void DeltaExtraDeathStuff() {}
+	
+	virtual bool StartOffhand()
+	{
+		isUsingOffhand = true;
+		return true;
 	}
 	
 	// retooling zdoom's implementation of freeze death for our own freeze death!
@@ -1052,14 +1165,6 @@ class DeltaPlayer : PlayerPawn abstract
 			A_StartSound("delta/impact", CHAN_BODY, 0, 0.75);
 	}
 	
-	virtual void DeltaExtraDeathStuff() {}
-	
-	virtual bool StartOffhand()
-	{
-		isUsingOffhand = true;
-		return true;
-	}
-	
 	// See if we're holding offhand or not
 	action state A_CheckOffhand(statelabel failDest)
 	{
@@ -1120,15 +1225,12 @@ class DeltaPlayer : PlayerPawn abstract
 	
 	clearscope virtual bool CanLunge()
 	{
-		return !GetCrouching();
+		return !GetCrouching() && !(player.cmd.buttons & BT_BACK);
 	}
 	
 	clearscope bool IsGrounded()
 	{
-		if (player)
-			return player.onGround;
-		
-		return pos.Z <= floorZ;
+		return pos.Z <= floorZ || bOnMobj || bMBFBouncer || (player.cheats & CF_NOCLIP2);
 	}
 	
 	clearscope bool IsPredicting()
@@ -1148,6 +1250,11 @@ class DeltaPlayer : PlayerPawn abstract
 	clearscope TextureID GetOffhandIconID()
 	{
 		return _offhandIconId;
+	}
+	
+	clearscope TextureID GetCharacterIconID()
+	{
+		return _characterIconId;
 	}
 	
 	clearscope bool IsVoodooDoll()

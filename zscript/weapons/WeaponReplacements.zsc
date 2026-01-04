@@ -1,11 +1,16 @@
 class PistolReplacer : Inventory replaces Pistol
 {
+	Default
+	{
+		
+	}
+	
 	States
 	{
 		Spawn:
 			TNT1 A 0 NoDelay
 			{
-				A_SpawnItem("KrisRevolver");
+				Spawn("KrisRevolver", pos);
 				GoAwayAndDie();
 			}
 			Stop;
@@ -19,7 +24,7 @@ class ShotgunReplacer : Inventory replaces Shotgun
 		Spawn:
 			TNT1 A 0 NoDelay
 			{
-				A_SpawnItem("KrisShotgun");
+				Spawn("KrisShotgun", pos);
 				GoAwayAndDie();
 			}
 			Stop;
@@ -33,7 +38,7 @@ class SuperShotgunReplacer : Inventory replaces SuperShotgun
 		Spawn:
 			TNT1 A 0 NoDelay
 			{
-				A_SpawnItem("KrisShotgun");
+				Spawn("KrisShotgun", pos);
 				GoAwayAndDie();
 			}
 			Stop;

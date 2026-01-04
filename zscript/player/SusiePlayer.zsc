@@ -4,7 +4,7 @@ class SusiePlayer : DeltaPlayer
 	{
 		Height 42;
 		Radius 18;
-		Speed 0.8;
+		Speed 0.85;
 		Mass 120;
 		
 		Health 130;
@@ -26,6 +26,8 @@ class SusiePlayer : DeltaPlayer
 		
 		DeltaPlayer.HugReactionTime 20;
 		DeltaPlayer.CharacterColor Color(234, 121, 200);
+		DeltaPlayer.OffhandIcon "";
+		DeltaPlayer.CharacterIcon "graphics/susieIcon.png";
 	}
 	
 	override void DeltaExtraDeathStuff()

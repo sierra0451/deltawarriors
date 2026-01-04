@@ -18,7 +18,7 @@ class KrisPlayer : DeltaPlayer
 	{
 		Height 36;
 		Radius 16;
-		Speed 0.7;
+		Speed 0.8;
 		Mass 100;
 		
 		Health 100;
@@ -45,15 +45,17 @@ class KrisPlayer : DeltaPlayer
 		DeltaPlayer.HugReactionTime 20;
 		DeltaPlayer.CharacterColor Color(0, 162, 232);
 		DeltaPlayer.OffhandIcon "SHLDPRRY";
+		DeltaPlayer.CharacterIcon "graphics/krisIcon.png";
 	}
 	
 	override void PostBeginPlay()
 	{
 		Super.PostBeginPlay();
-		_slideSpeed = 15;
+		
+		_slideSpeed = 18;
 		_slideAdjustSpeed = 3;
 		_savedSlideSpeed = _slideSpeed;
-		_slideSlowing = 5.5;
+		_slideSlowing = 6.6;
 	}
 	
 	override void Travelled()
@@ -136,14 +138,6 @@ class KrisPlayer : DeltaPlayer
 		player.crouchoffset = -(ViewHeight) * (1 - player.crouchfactor);
 	}
 	
-	override Vector2 BobWeapon(double ticfrac)
-	{
-		let originalBob = Super.BobWeapon(ticfrac),
-			perc = 1 - (float(_slideTics) / MAX_SLIDE_TICS);
-		
-		return originalBob * perc;
-	}
-	
 	// make sure we're not bobbing if we're sliding
 	override void CalcHeight()
 	{
@@ -223,10 +217,11 @@ class KrisPlayer : DeltaPlayer
 			slideY = -sin(_slideAngle) * _currentSlideSpeed,
 			actorX = cos(Angle),
 			actorY = sin(Angle),
-			legsOffsetY = 80 - 3 * pitch / (GetCVar("fov")/90);
+			legsOffsetX = 3 * viewAngle / (player.fov/90),
+			legsOffsetY = 80 - 3 * (pitch + viewPitch) / (player.fov/90);
 		
 		// 2.35 px every degree up to 34.1 looking down. 0 deg should be 48
-		A_OverlayOffset(PSP_LEGS, 0, max(38, legsOffsetY), WOF_INTERPOLATE);
+		A_OverlayOffset(PSP_LEGS, legsOffsetX, max(38, legsOffsetY), WOF_INTERPOLATE);
 			
 		if (_isSliding)
 		{
@@ -294,6 +289,8 @@ class KrisPlayer : DeltaPlayer
 				}
 			}
 		}
+		
+		customBobPerc = 1 - (float(_slideTics) / MAX_SLIDE_TICS);
 	}
 	
 	protected void StartSlide(float slideAngle, bool resetSpeed = true)
@@ -331,8 +328,13 @@ class KrisPlayer : DeltaPlayer
 		// prevent legs reappearing if we stop sliding as result of death
 		if (Health > 0)
 		{
+			let psp = player.FindPSprite(PSP_LEGS);
+			if (!psp)
+				return;
+			
+			let offset = (psp.x, psp.y);
 			A_Overlay(PSP_LEGS, "StopSlideOverlay");
-			A_OverlayOffset(PSP_LEGS, 0, max(38, 70 - 2.35 * pitch));
+			A_OverlayOffset(PSP_LEGS, offset.x, offset.y);
 		}
 	}
 	
@@ -344,6 +346,7 @@ class KrisPlayer : DeltaPlayer
 	protected void KrisShieldParry()
 	{
 		A_StartSound("delta/kris/shield_swing", CHAN_AUTO);
+		AddRecoil(10, 1, p: -1, y: 5);
 		
 		double distance = 120;
 		Array<Actor> targets;
@@ -562,7 +565,7 @@ class KrisPlayer : DeltaPlayer
 			TNT1 A 0 { invoker.StartOffhand(); }
 		Parry:
 			DKSL A 2 { invoker.KrisShieldParry(); }
-			DKSL B 2 A_QuakeEx(0, 5, 1, 10, 0, 1, "dsempty", QF_RELATIVE | QF_WAVE | QF_SCALEDOWN, 0, 1, -1, rollWave: 5);
+			DKSL B 2;
 			DKSL C 2;
 			DKSL D 4;
 			DKSL E 2;

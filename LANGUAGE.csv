@@ -1,5 +1,5 @@
 identifier,default,remarks
-DELTAWARRIORS_VERSION,Playtest Build 1.1,Version display
+DELTAWARRIORS_VERSION,Development Build,Version display
 ,,Doom endings
 E1TEXT,,
 E2TEXT,,
@@ -86,8 +86,8 @@ TXT_COULDNOTREAD,"Could not read file ""%s"".",
 TXT_NOINFOJSON,"""%s"" is not a valid file. Missing ""info.json"".",
 TXT_FAILEDTOREADSG,"""%s"" failed to load.",
 TXT_INCOMPATIBLESG,"""%s"" was created with an incompatible version.",
-TXT_OTHERENGINESG,"How... interesting. Very interesting. Your file--""%s"", was it?--was created in another world entirely.",
-TXT_TOOOLDSG,"Your ""%s"" file is from an older version: %d. %e is the oldest we can support.",
+TXT_OTHERENGINESG,"How... interesting. Very interesting. Your file--""%s"", was it?--was created in another world entirely...",
+TXT_TOOOLDSG,"Your ""%s"" file is from too old a version: %d. %e is the oldest we can support.",
 TXT_TOONEWSG,"Interesting... your ""%s"" file is from a newer, more updated version. We can only support versions up to %e.",
 TXT_NOMAPSG,"Your ""%s"" file does not have the current map.",
 TXT_NOGLOBALSJSON,"""%s"" is not a valid file. Missing ""globals.json"".",
@@ -98,6 +98,11 @@ TXT_NOTINLEVEL,You cannot save from outside of a vessel.,
 TXT_SPPLAYERDEAD,Your vessel has met an end. You cannot save at this time.,
 TXT_SAVEFAILED,File failed to save.,
 TXT_QUITENDOOM,Press any key or click anywhere to exit. Thanks for playing DeltaWarriors!,
+TXT_DELTA_RESPAWNMSG1,IT APPEARS YOU HAVE REACHED,Meant to be a reference to Chapter 1's death screen. This text is displayed for a little bit before we show respawnMsg2
+TXT_DELTA_RESPAWNMSG2,AN END.,This and respawnMsg1 are meant to be two parts of one sentence with a time delay between showing each
+TXT_DELTA_RESPAWNREMIND,PRESS %s TO TRY AGAIN.,%s is where the player's use key will be put.
+TXT_DELTA_RESPAWNREMINDDM,PRESS %s TO RETURN.,
+,,
 ,,Gameplay menu options
 GMPLYMNU_PISTOLSTART,Reset inventory at beginning of map,
 ,,Obituaries
@@ -112,7 +117,7 @@ OB_SUICIDE,%o killed %hself.,
 OB_EXIT,%o tried to escape.,
 OB_WATER,%o drowned.,
 OB_VOODOO,%o was killed mysteriously.,
-OB_DEFAULT,%o came to an end.,
+OB_DEFAULT,%o reached an end.,
 OB_MPDEFAULT,%o died by %k's hands.,
 OB_FRIENDLY1,%o was betrayed by %k.,
 OB_FRIENDLY2,%k seems to be working for the Knight.,
@@ -160,7 +165,7 @@ ID24_GOTFUELTANK,(You took a \c[DeltaHighlight]fuel tank\c-.),
 ,,Failed activate messages
 PD_ANY,(It's locked. It looks like \c[DeltaHighlight]any key will unlock it\c-...),
 PD_ANYOBJ,(The object needs some sort of key in order to activate. It looks like \c[DeltaHighlight]any key will work\c-...),
-PD_ALL3,(It's locked. It seems to need \c[DeltaBlue]all \c[DeltaRed]three \c[DeltaYellow]keys\c-Â…),
+PD_ALL3,(It's locked. It seems to need \c[DeltaBlue]all \c[DeltaRed]three \c[DeltaYellow]keys\c-…),
 PD_ALL3O,(It seems this object needs \c[DeltaBlue]all \c[DeltaRed]three \c[DeltaYellow]keys\c- to activate...),
 PD_ALL6,(It's locked. It seems you will need \c[DeltaBlue]all \c[DeltaRed]six \c[DeltaYellow]keys\c- to unlock it...),
 PD_ALL6O,(It seems this object needs \c[DeltaBlue]all \c[DeltaRed]six \c[DeltaYellow]keys\c- to activate...),

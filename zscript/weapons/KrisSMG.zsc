@@ -20,17 +20,16 @@ class KrisSmg : DeltaWeapon
 	protected action void A_KrisSmgFire()
 	{
 		let spread = min(6, (player.refire/4.) + 0.5);
+		// -1 for bullets fires one hitscan and applies spread immediately, regardless of player.refire
 		A_FireBullets(spread, spread, -1, random[smgDmg](10, 15), "KrisSmgPuff", FBF_USEAMMO | FBF_NORANDOM);
 		A_AlertMonsters();
 		A_StartSound("delta/smg/fire", CHAN_WEAPON, CHANF_OVERLAP, pitch: cfrandom(0.93, 1.07));
 		A_ZoomFactor(0.99, ZOOM_INSTANT | ZOOM_NOSCALETURNING);
 		A_AttachLightDef("smgMuzzle", "DeltaGenericMuzzle");
+		A_AddRecoil(5, 1, p: -0.5);
 		
 		if (level.IsFreelookAllowed())
-		{
-			let kickback = 0.5;
-			invoker.owner.pitch = max(-CVar.GetCVar("maxviewpitch", player).GetFloat(), invoker.owner.pitch - kickback);
-		}
+			invoker.owner.pitch = max(-CVar.GetCVar("maxviewpitch", player).GetFloat(), invoker.owner.pitch - 1);
 	}
 	
 	States

@@ -20,7 +20,8 @@ class DeltaHud : BaseStatusBar
 	private HUDFont _consoleFont, _drHudFont;
 	private TextureID _hpText, _tpText, _tpMaxText, _tpHighlight,
 		_leftPanelBack, _vignette, _infiniteText, _damageIndicator,
-		_grazeIndicator, _defaultCrosshair;
+		_grazeIndicator, _defaultCrosshair, _offhandCrosshair,
+		_coopPanelBack;
 	private double _oldTp;
 	DynamicValueInterpolator _tpInterp;
 	private DamageIndicatorInfo[10] damageIndicators;
@@ -72,6 +73,8 @@ class DeltaHud : BaseStatusBar
 		_damageIndicator = TexMan.CheckForTexture("DRDMGIND");
 		_grazeIndicator = TexMan.CheckForTexture("DRGRZIND");
 		_defaultCrosshair = TexMan.CheckForTexture("DRMTYRET");
+		_offhandCrosshair = TexMan.CheckForTexture("DROFHRET");
+		_coopPanelBack = TexMan.CheckForTexture("COOPBACK");
 		
 		controlIcons[DELTA_CONTROLICON_MOUSE1]	= TexMan.CheckForTexture("DRMSELCL");
 		controlIcons[DELTA_CONTROLICON_MOUSE2]	= TexMan.CheckForTexture("DRMSERCL");
@@ -150,6 +153,11 @@ class DeltaHud : BaseStatusBar
 		BeginHUD(1, false);
 		DrawDamageIndicators(ticFrac);
 		DrawGrazeIndicators(ticFrac);
+		
+		if (deathmatch)
+			DrawDeathmatch();
+		else if (netgame)
+			DrawCoop();
 		
 		if (CPlayer.Health > 0)
 		{
@@ -230,6 +238,65 @@ class DeltaHud : BaseStatusBar
 		}
 	}
 	
+	protected void DrawCoop()
+	{
+		double curX = _hBorder, curY = _vBorder;
+		
+		for (int i = 0; i < players.Size(); i++)
+		{
+			if (!playerInGame[i] || players[i] == CPlayer)
+				continue;
+			
+			let ply = players[i];
+			
+			if (!ply.mo || !(ply.mo is "DeltaPlayer"))
+				continue;
+			
+			let deltaPly = DeltaPlayer(ply.mo);
+			double barWidth = _universalScale.x * 100,
+				barHeight = _universalScale.y * 8;
+			Color iconColor = ply.health > 0 ? 0xffffffff : 0x80ff4040;
+			let userStr = ply.GetUserName();
+			
+			// this only works because _consoleFont is monospace
+			int charWidth = _consoleFont.mFont.GetCharWidth("0") / 2;
+			int panelW, panelH;
+			[panelW, panelH] = TexMan.GetSize(_coopPanelBack);
+			uint allowedLength = 19;
+			
+			if (ply.health <= 0)
+				allowedLength -= 7;
+			
+			if (userStr.Length() > allowedLength)
+			{
+				userStr.Truncate(allowedLength);
+				userStr = userStr .. "-";
+			}
+			
+			if (ply.health <= 0)
+				userStr = userStr .. " (DEAD)";
+			
+			DrawTexture(_coopPanelBack, (curX, curY), DI_SCREEN_LEFT_TOP | DI_ITEM_LEFT_TOP, scale: _universalScale);
+			DrawTexture(deltaPly.GetCharacterIconID(), (curX, curY) + _universalScale,
+				DI_SCREEN_LEFT_TOP | DI_ITEM_LEFT_TOP, box: (25*_universalScale.x, 20*_universalScale.y),
+				col: iconColor);
+ 			DrawString(_consoleFont, userStr, (curX + 26*_universalScale.x, curY + 2*_universalScale.y),
+ 				scale: _universalScale/2);
+			double healthPerc = DeltaMath.Clamp(float(deltaPly.Health) / deltaPly.GetMaxHealth(), 0, 2);
+			Fill(deltaPly.GetCharacterColor(), curX + (28.3*_universalScale.x), curY + 13*_universalScale.y,
+				barWidth * min(1, healthPerc), barHeight, DI_SCREEN_LEFT_TOP);
+			Fill(deltaPly.GetOverhealColor(), curX + (28.3*_universalScale.x), curY + 13*_universalScale.y,
+				barWidth * max(0, healthPerc - 1), barHeight, DI_SCREEN_LEFT_TOP);
+			
+			curY += 24 * _universalScale.y;
+		}
+	}
+	
+	protected void DrawDeathmatch()
+	{
+		DrawString(_consoleFont, "frags: " .. CPlayer.fragCount, (0, 0));
+	}
+	
 	protected float GetHealthPerc()
 	{
 		return CPlayer.mo.GetMaxHealth() == 0 ? 0 : min(2, CPlayer.Health / float(CPlayer.mo.GetMaxHealth()));
@@ -303,8 +370,6 @@ class DeltaHud : BaseStatusBar
 		
 		if (!deathmatch)
 			DrawKeys(_hBorder + panelXSpacing + barXOffset, curY);
-		else
-			DrawDeathmatch();
 		
 		/// ---- DRAWING TENSION POINTS ----
 		// draw TP timer and bar
@@ -478,34 +543,94 @@ class DeltaHud : BaseStatusBar
 		}
 	}
 	
-	protected void DrawDeathmatch()
-	{
-		
-	}
-	
 	protected void DrawReticle()
 	{
-		if (CPlayer.cheats & CF_CHASECAM || automapActive)
+		if (CPlayer.cheats & CF_CHASECAM || automapActive || !(CPlayer.mo is "DeltaPlayer"))
+			return;
+		
+		DeltaPlayer ply = DeltaPlayer(CPlayer.mo);
+		if (ply.GetIsUsingOffhand())
 			return;
 		
 		if (!CPlayer.ReadyWeapon)
-		{
-			// draw default reticle!
 			DrawTexture(_defaultCrosshair, (0, 0), DI_SCREEN_CENTER | DI_ITEM_CENTER, scale: _universalScale * 0.5);
-			return;
+		else
+		{
+			let weap = DeltaWeapon(CPlayer.ReadyWeapon);
+			
+			if (weap)
+			{
+				let crosshair = weap.GetCrosshair(),
+					xhairState = weap.GetCrosshairState();
+				Color xhairColor = xhairState == DELTA_XHR_NEUTRAL ? 0xffffffff :
+					(xhairState == DELTA_XHR_FRIENDLY ? 0xff00ff00 : 0xffff0000);
+				DrawTexture(crosshair, (0, 0), DI_SCREEN_CENTER | DI_ITEM_CENTER, scale: _universalScale * 0.5, col: xhairColor);
+			}
 		}
 		
-		let weap = DeltaWeapon(CPlayer.ReadyWeapon);
-		if (!weap)
+		if (!ply.CanUseOffhand())
 			return;
 		
-		let crosshair = weap.GetCrosshair();
-		DrawTexture(crosshair, (0, 0), DI_SCREEN_CENTER | DI_ITEM_CENTER, scale: _universalScale * 0.5);
+		DrawTexture(_offhandCrosshair, (0, 0), DI_SCREEN_CENTER | DI_ITEM_CENTER,
+			scale: _universalScale * 0.5, col: Color(255, 255, 160, 64));
 	}
 	
 	protected void DrawDeathStuff()
 	{
+		DeltaPlayer ply = DeltaPlayer(CPlayer.mo);
+		if (!ply)
+			return;
 		
+		int reminderTimer = ply.GetDeathTimer() - TICRATE * 10;
+		double textSpeed = 1/2.;
+		
+		if (multiplayer && !deathmatch) // we can respawn whenever in deathmatch
+			return;
+		if (reminderTimer < 0)
+			return;
+		
+		String respawnReminder = StringTable.Localize("$TXT_DELTA_RESPAWNMSG1"),
+			reminderThisFrame = respawnReminder;
+		reminderThisFrame.Truncate(reminderTimer * textSpeed);
+		
+		int xOffset = -_consoleFont.mFont.StringWidth(respawnReminder) / 2 * _universalScale.x;
+		int yOffset = -50 * _universalScale.y;
+		DrawString(_consoleFont, reminderThisFrame, (xOffset, yOffset),
+			DI_SCREEN_CENTER, scale: _universalScale);
+		
+		reminderTimer -= respawnReminder.Length() / textSpeed + (TICRATE/2);
+		if (reminderTimer < 0)
+			return;
+		
+		respawnReminder = StringTable.Localize("$TXT_DELTA_RESPAWNMSG2");
+		reminderThisFrame = respawnReminder;
+		reminderThisFrame.Truncate(reminderTimer * textSpeed);
+		xOffset = -_consoleFont.mFont.StringWidth(respawnReminder) / 2 * _universalScale.x;
+		yOffset += _consoleFont.mFont.GetHeight() * _universalScale.y * 2;
+		
+		DrawString(_consoleFont, reminderThisFrame, (xOffset, yOffset),
+			DI_SCREEN_CENTER, scale: _universalScale);
+		
+		reminderTimer -= respawnReminder.Length() / textSpeed + (TICRATE);
+		if (reminderTimer < 0)
+			return;
+		
+		int useBind, useless;
+		[useBind, useless] = Bindings.GetKeysForCommand("+use");
+		String keyNames = KeyBindings.NameKeys(useBind, 0);
+		keyNames.ToUpper();
+		
+		string targetFormat = (deathmatch || (dmflags2 & LEVEL2_ALLOWRESPAWN) || sv_singleplayerrespawn
+		|| G_SkillPropertyInt(SKILLP_PlayerRespawn))
+			? "$TXT_DELTA_RESPAWNREMINDDM" : "$TXT_DELTA_RESPAWNREMIND";
+		respawnReminder = String.Format(StringTable.Localize(targetFormat), keyNames);
+		reminderThisFrame = respawnReminder;
+		reminderThisFrame.Truncate(reminderTimer * textSpeed);
+		xOffset = -_consoleFont.mFont.StringWidth(respawnReminder) / 2 * _universalScale.x;
+		yOffset += _consoleFont.mFont.GetHeight() * _universalScale.y * 3;
+		
+		DrawString(_consoleFont, reminderThisFrame, (xOffset, yOffset),
+			DI_SCREEN_CENTER, scale: _universalScale);
 	}
 	
 	void CreateDamageIndicator(Actor source)
