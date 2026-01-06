@@ -598,7 +598,7 @@ class DeltaPlayer : PlayerPawn abstract
 			return false;
 		if (other.player)
 		{
-			if (other.player.cheats & CF_PREDICTING))
+			if (other.player.cheats & CF_PREDICTING)
 				return true;
 			if (IsFriend(other))
 				return false;
