@@ -1,5 +1,6 @@
 version "4.14.3"
 
+#include "zscript/DeltaDamagePopups.zsc"
 #include "zscript/DeltaMath.zsc"
 #include "zscript/DeltaHud.zsc"
 #include "zscript/DeltaSoul.zsc"

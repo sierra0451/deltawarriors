@@ -1,42 +1,75 @@
-Terrain Generic
+Terrain DeltaGenericTerrain
 {
-	StepSounds		delta/step_generic
-	WalkStepTics	14
-	RunStepTics		10
-	StepVolume		1
+	StepSounds			delta/step_generic
+	WalkStepTics		14
+	RunStepTics			10
+	StepVolume			1
 }
 
-Terrain LiquidTerrain
+Terrain DeltaLiquidTerrain
 {
-	StepSounds		delta/step_liquid
-	WalkStepTics	14
-	RunStepTics		10
-	StepVolume		1
+	StepSounds			delta/step_liquid
+	WalkStepTics		14
+	RunStepTics			10
+	StepVolume			1
 	Liquid
 }
 
-DefaultTerrain Generic
+DefaultTerrain DeltaGenericTerrain
 
-Floor FWATER1 LiquidTerrain
-Floor FWATER2 LiquidTerrain
-Floor FWATER3 LiquidTerrain
-Floor FWATER4 LiquidTerrain
-Floor LAVA1 LiquidTerrain
-Floor LAVA2 LiquidTerrain
-Floor LAVA3 LiquidTerrain
-Floor LAVA4 LiquidTerrain
-Floor NUKAGE1 LiquidTerrain
-Floor NUKAGE2 LiquidTerrain
-Floor NUKAGE3 LiquidTerrain
-Floor NUKAGE4 LiquidTerrain
-Floor SLIME01 LiquidTerrain
-Floor SLIME02 LiquidTerrain
-Floor SLIME03 LiquidTerrain
-Floor SLIME04 LiquidTerrain
-Floor SLIME05 LiquidTerrain
-Floor SLIME06 LiquidTerrain
-Floor SLIME07 LiquidTerrain
-Floor SLIME08 LiquidTerrain
-Floor BLOOD1 LiquidTerrain
-Floor BLOOD2 LiquidTerrain
-Floor BLOOD3 LiquidTerrain
+Floor optional BFALL1 DeltaLiquidTerrain
+Floor optional BFALL2 DeltaLiquidTerrain
+Floor optional BFALL3 DeltaLiquidTerrain
+Floor optional BFALL4 DeltaLiquidTerrain
+Floor optional WFALL1 DeltaLiquidTerrain
+Floor optional WFALL2 DeltaLiquidTerrain
+Floor optional WFALL3 DeltaLiquidTerrain
+Floor optional WFALL4 DeltaLiquidTerrain
+Floor optional WFALLA DeltaLiquidTerrain
+Floor optional WFALLB DeltaLiquidTerrain
+Floor optional WFALLC DeltaLiquidTerrain
+Floor optional WFALLD DeltaLiquidTerrain
+Floor optional WFALLE DeltaLiquidTerrain
+Floor optional WFALLF DeltaLiquidTerrain
+Floor optional SFALL1 DeltaLiquidTerrain
+Floor optional SFALL2 DeltaLiquidTerrain
+Floor optional SFALL3 DeltaLiquidTerrain
+Floor optional SFALL4 DeltaLiquidTerrain
+Floor optional DBRAIN1 DeltaLiquidTerrain
+Floor optional DBRAIN2 DeltaLiquidTerrain
+Floor optional DBRAIN3 DeltaLiquidTerrain
+Floor optional DBRAIN4 DeltaLiquidTerrain
+Floor optional FWATER01 DeltaLiquidTerrain
+Floor optional FWATER02 DeltaLiquidTerrain
+Floor optional FWATER03 DeltaLiquidTerrain
+Floor optional FWATER04 DeltaLiquidTerrain
+Floor optional FWATER1 DeltaLiquidTerrain
+Floor optional FWATER2 DeltaLiquidTerrain
+Floor optional FWATER3 DeltaLiquidTerrain
+Floor optional FWATER4 DeltaLiquidTerrain
+Floor optional LAVA1 DeltaLiquidTerrain
+Floor optional LAVA2 DeltaLiquidTerrain
+Floor optional LAVA3 DeltaLiquidTerrain
+Floor optional LAVA4 DeltaLiquidTerrain
+Floor optional NUKAGE1 DeltaLiquidTerrain
+Floor optional NUKAGE2 DeltaLiquidTerrain
+Floor optional NUKAGE3 DeltaLiquidTerrain
+Floor optional NUKAGE4 DeltaLiquidTerrain
+Floor optional SLIME01 DeltaLiquidTerrain
+Floor optional SLIME02 DeltaLiquidTerrain
+Floor optional SLIME03 DeltaLiquidTerrain
+Floor optional SLIME04 DeltaLiquidTerrain
+Floor optional SLIME05 DeltaLiquidTerrain
+Floor optional SLIME06 DeltaLiquidTerrain
+Floor optional SLIME07 DeltaLiquidTerrain
+Floor optional SLIME08 DeltaLiquidTerrain
+Floor optional SBLOOD1 DeltaLiquidTerrain
+Floor optional SBLOOD2 DeltaLiquidTerrain
+Floor optional SBLOOD3 DeltaLiquidTerrain
+Floor optional SWATER1 DeltaLiquidTerrain
+Floor optional SWATER2 DeltaLiquidTerrain
+Floor optional SWATER3 DeltaLiquidTerrain
+Floor optional SWATER4 DeltaLiquidTerrain
+Floor optional BLOOD1 DeltaLiquidTerrain
+Floor optional BLOOD2 DeltaLiquidTerrain
+Floor optional BLOOD3 DeltaLiquidTerrain

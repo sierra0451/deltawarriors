@@ -21,7 +21,7 @@ class DeltaHud : BaseStatusBar
 	private TextureID _hpText, _tpText, _tpMaxText, _tpHighlight,
 		_leftPanelBack, _vignette, _infiniteText, _damageIndicator,
 		_grazeIndicator, _defaultCrosshair, _offhandCrosshair,
-		_coopPanelBack;
+		_coopPanelBack, _deathmatchPanelBack, _deathmatchCurrentPlayer;
 	private double _oldTp;
 	DynamicValueInterpolator _tpInterp;
 	private DamageIndicatorInfo[10] damageIndicators;
@@ -63,18 +63,20 @@ class DeltaHud : BaseStatusBar
 		_drHudFont = HUDFont.Create("DRHUDFONT");
 		_consoleFont = HUDFont.Create("DRCONFONT");
 		
-		_hpText = TexMan.CheckForTexture("DRHPTEXT");
-		_tpText = TexMan.CheckForTexture("DRTPTEXT");
-		_tpMaxText = TexMan.CheckForTexture("DRHUDMAX");
-		_tpHighlight = TexMan.CheckForTexture("DRTPHLGT");
-		_leftPanelBack = TexMan.CheckForTexture("DRLPBACK");
-		_vignette = TexMan.CheckForTexture("sprites/hud/vignette.png");
-		_infiniteText = TexMan.CheckForTexture("DRINFTXT");
-		_damageIndicator = TexMan.CheckForTexture("DRDMGIND");
-		_grazeIndicator = TexMan.CheckForTexture("DRGRZIND");
-		_defaultCrosshair = TexMan.CheckForTexture("DRMTYRET");
-		_offhandCrosshair = TexMan.CheckForTexture("DROFHRET");
-		_coopPanelBack = TexMan.CheckForTexture("COOPBACK");
+		_hpText 					= TexMan.CheckForTexture("DRHPTEXT");
+		_tpText 					= TexMan.CheckForTexture("DRTPTEXT");
+		_tpMaxText 					= TexMan.CheckForTexture("DRHUDMAX");
+		_tpHighlight 				= TexMan.CheckForTexture("DRTPHLGT");
+		_leftPanelBack 				= TexMan.CheckForTexture("DRLPBACK");
+		_vignette 					= TexMan.CheckForTexture("sprites/hud/vignette.png");
+		_infiniteText 				= TexMan.CheckForTexture("DRINFTXT");
+		_damageIndicator 			= TexMan.CheckForTexture("DRDMGIND");
+		_grazeIndicator 			= TexMan.CheckForTexture("DRGRZIND");
+		_defaultCrosshair 			= TexMan.CheckForTexture("DRMTYRET");
+		_offhandCrosshair 			= TexMan.CheckForTexture("DROFHRET");
+		_coopPanelBack 				= TexMan.CheckForTexture("COOPBACK");
+		_deathmatchPanelBack 		= TexMan.CheckForTexture("DTHMBACK");
+		_deathmatchCurrentPlayer 	= TexMan.CheckForTexture("DTHMCPLY");
 		
 		controlIcons[DELTA_CONTROLICON_MOUSE1]	= TexMan.CheckForTexture("DRMSELCL");
 		controlIcons[DELTA_CONTROLICON_MOUSE2]	= TexMan.CheckForTexture("DRMSERCL");
@@ -244,57 +246,290 @@ class DeltaHud : BaseStatusBar
 		
 		for (int i = 0; i < players.Size(); i++)
 		{
-			if (!playerInGame[i] || players[i] == CPlayer)
+			if (!players[i].mo || players[i] == CPlayer)
+				continue;
+			if (!playerInGame[i])
+				continue;
+			if (!(players[i].mo is "DeltaPlayer"))
 				continue;
 			
-			let ply = players[i];
-			
-			if (!ply.mo || !(ply.mo is "DeltaPlayer"))
-				continue;
-			
-			let deltaPly = DeltaPlayer(ply.mo);
-			double barWidth = _universalScale.x * 100,
-				barHeight = _universalScale.y * 8;
-			Color iconColor = ply.health > 0 ? 0xffffffff : 0x80ff4040;
-			let userStr = ply.GetUserName();
-			
-			// this only works because _consoleFont is monospace
-			int charWidth = _consoleFont.mFont.GetCharWidth("0") / 2;
-			int panelW, panelH;
-			[panelW, panelH] = TexMan.GetSize(_coopPanelBack);
-			uint allowedLength = 19;
-			
-			if (ply.health <= 0)
-				allowedLength -= 7;
-			
-			if (userStr.Length() > allowedLength)
-			{
-				userStr.Truncate(allowedLength);
-				userStr = userStr .. "-";
-			}
-			
-			if (ply.health <= 0)
-				userStr = userStr .. " (DEAD)";
-			
-			DrawTexture(_coopPanelBack, (curX, curY), DI_SCREEN_LEFT_TOP | DI_ITEM_LEFT_TOP, scale: _universalScale);
-			DrawTexture(deltaPly.GetCharacterIconID(), (curX, curY) + _universalScale,
-				DI_SCREEN_LEFT_TOP | DI_ITEM_LEFT_TOP, box: (25*_universalScale.x, 20*_universalScale.y),
-				col: iconColor);
- 			DrawString(_consoleFont, userStr, (curX + 26*_universalScale.x, curY + 2*_universalScale.y),
- 				scale: _universalScale/2);
-			double healthPerc = DeltaMath.Clamp(float(deltaPly.Health) / deltaPly.GetMaxHealth(), 0, 2);
-			Fill(deltaPly.GetCharacterColor(), curX + (28.3*_universalScale.x), curY + 13*_universalScale.y,
-				barWidth * min(1, healthPerc), barHeight, DI_SCREEN_LEFT_TOP);
-			Fill(deltaPly.GetOverhealColor(), curX + (28.3*_universalScale.x), curY + 13*_universalScale.y,
-				barWidth * max(0, healthPerc - 1), barHeight, DI_SCREEN_LEFT_TOP);
-			
+			DrawMultiplayerHealth(DeltaPlayer(players[i].mo), (curX, curY));
 			curY += 24 * _universalScale.y;
 		}
 	}
 	
 	protected void DrawDeathmatch()
 	{
-		DrawString(_consoleFont, "frags: " .. CPlayer.fragCount, (0, 0));
+		if (!CPlayer.mo || !(CPlayer.mo is "DeltaPlayer"))
+			return;
+		
+		double curX = _hBorder, curY = _vBorder;
+		let ply = DeltaPlayer(CPlayer.mo);
+		
+		if (teamplay)
+		{
+			for (int i = 0; i < players.Size(); i++)
+			{
+				if (!players[i].mo || players[i] == CPlayer)
+					continue;
+				if (!playerInGame[i])
+					continue;
+				if (!(players[i].mo is "DeltaPlayer"))
+					continue;
+				if (!CPlayer.mo.IsTeammate(players[i].mo))
+					continue;
+				
+				DrawMultiplayerHealth(DeltaPlayer(players[i].mo), (curX, curY));
+				curY += 24 * _universalScale.y;
+			}
+		}
+		
+		DrawTexture(_deathmatchPanelBack, (0, -_vBorder),
+			DI_SCREEN_CENTER_BOTTOM | DI_ITEM_HCENTER | DI_ITEM_BOTTOM,
+			scale: _universalScale*2);
+		
+		/// ------------
+		/// DRAWING TIME
+		/// ------------
+		
+		if (timelimit)
+		{
+			double timeTics = ceil(timelimit * 60 * TICRATE) - level.maptime;
+			int timeHours = timeTics / TICRATE / 3600;
+			timeTics -= timeHours * TICRATE * 3600;
+			int timeMinutes = timeTics / TICRATE / 60;
+			timeTics -= timeMinutes * TICRATE * 60;
+			int timeSeconds = ceil(timeTics / TICRATE);
+			
+			if (timeMinutes == 60)
+			{
+				timeMinutes = 0;
+				timeHours++;
+			}
+			
+			if (timeSeconds == 60)
+			{
+				timeSeconds = 0;
+				timeMinutes++;
+			}
+			
+			double fontHeight = _consoleFont.mFont.GetHeight();
+			String timeStr;
+			
+			if (timeHours)
+				timeStr = String.Format("%u", timeHours);
+			if (timeHours || timeMinutes)
+				timeStr = String.Format(timeHours ? "%s:%02u" : "%s%u", timeStr, timeMinutes);
+			if (!timeHours)
+				timeStr = String.Format("%s:%02u", timeStr, timeSeconds);
+			
+			DrawString(_consoleFont, timeStr,
+				(-75*_universalScale.x, -_vBorder - (14+fontHeight)*_universalScale.y),
+				DI_SCREEN_CENTER_BOTTOM | DI_TEXT_ALIGN_CENTER, scale: _universalScale);
+		}
+		else
+			DrawTexture(_infiniteText, (-72*_universalScale.x, -_vBorder - 14*_universalScale.y),
+				DI_SCREEN_CENTER_BOTTOM | DI_ITEM_CENTER_BOTTOM, scale: _universalScale*2);
+		
+		/// -------------
+		/// DRAWING FRAGS
+		/// -------------
+		let leaderFrags = -500;
+		let leaderIndex = 0;
+		Color barColor;
+		TextureID characterIcon;
+		double fontHeight = _drHudFont.mFont.GetHeight();
+		bool leaderIsUs = false;
+		
+		// Drawing leader bar (may be us)
+		if (teamplay)
+		{
+			for (int i = 0; i < teams.Size(); i++)
+			{
+				int curTeamFrags = GetTeamFrags(i);
+				
+				if (curTeamFrags <= leaderFrags)
+					continue;
+				
+				leaderFrags = curTeamFrags;
+				leaderIndex = i;
+				leaderIsUs = CPlayer.GetTeam() == i;
+				barColor = teams[i].GetPlayerColor();
+			}
+		}
+		else
+		{
+			for (int i = 0; i < players.Size(); i++)
+			{
+				if (!playerInGame[i])
+					continue;
+				if (!(players[i].mo is "DeltaPlayer"))
+					continue;
+				
+				let deltaPly = DeltaPlayer(players[i].mo);
+				int curPlyFrags = players[i].fragCount;
+				
+				if (curPlyFrags < leaderFrags)
+					continue;
+				if (curPlyFrags == leaderFrags && players[i] != CPlayer && leaderFrags == 0)
+					continue;
+				
+				leaderFrags = curPlyFrags;
+				leaderIndex = i;
+				leaderIsUs = CPlayer == players[i];
+				characterIcon = deltaPly.GetCharacterIconId();
+				barColor = players[i].GetColor();
+			}
+		}
+		
+		barColor |= 0xff000000;
+		Fill(barColor, -32*_universalScale.x, -_vBorder - 32*_universalScale.y,
+			min(1., (max(0., leaderFrags) / max(1., fraglimit))) * 132 * _universalScale.x, -16 * _universalScale.y,
+			DI_SCREEN_CENTER_BOTTOM);
+		DrawTexture(characterIcon, (-33*_universalScale.x, -_vBorder - 36.5*_universalScale.y),
+			DI_SCREEN_CENTER_BOTTOM | DI_ITEM_LEFT_BOTTOM,
+			box: (25*_universalScale.x, 20*_universalScale.y), scale: _universalScale);
+		DrawString(_drHudFont, "" .. leaderFrags,
+			(98*_universalScale.x, -_vBorder - (fontHeight+43.5)*_universalScale.y),
+			DI_SCREEN_CENTER_BOTTOM | DI_TEXT_ALIGN_RIGHT, scale: _universalScale*3);
+		
+		// Bottom bar (second place if we're leader, us otherwise)
+		let bottomFrags = -500, bottomIndex = 0;
+		barColor = 0x0;
+		characterIcon = null;
+		
+		if (leaderIsUs)
+		{
+			if (teamplay)
+			{
+				for (int i = 0; i < teams.Size(); i++)
+				{
+					if (!Team.IsValid(i))
+						continue;
+					
+					int curTeamFrags = GetTeamFrags(i);
+					
+					if (i == leaderIndex || curTeamFrags <= bottomFrags)
+						continue;
+					
+					bottomFrags = curTeamFrags;
+					bottomIndex = i;
+					barColor = teams[i].GetPlayerColor();
+				}
+			}
+			else
+			{
+				for (int i = 0; i < players.Size(); i++)
+				{
+					if (i == leaderIndex)
+						continue;
+					if (!playerInGame[i])
+						continue;
+					if (!(players[i].mo is "DeltaPlayer"))
+						continue;
+					
+					let deltaPly = DeltaPlayer(players[i].mo);
+					int curPlyFrags = players[i].fragCount;
+					
+					if (curPlyFrags < bottomFrags)
+						continue;
+					if (curPlyFrags == bottomFrags && (players[i] != CPlayer || bottomFrags != -500))
+						continue;
+					
+					bottomFrags = curPlyFrags;
+					bottomIndex = i;
+					characterIcon = deltaPly.GetCharacterIconId();
+					barColor = players[i].GetColor();
+				}
+			}
+		}
+		else
+		{
+			if (teamplay)
+			{
+				int teamIndex = CPlayer.GetTeam();
+				barColor = 0xff000000 | Teams[teamIndex].GetPlayerColor();
+				bottomFrags = GetTeamFrags(teamIndex);
+			}
+			else
+				bottomFrags = CPlayer.fragCount;
+		}
+		
+		Fill(barColor, -32*_universalScale.x, -_vBorder - 4*_universalScale.y,
+			min(1., (max(0., bottomFrags) / max(1., fraglimit))) * 132 * _universalScale.x, -16 * _universalScale.y,
+			DI_SCREEN_CENTER_BOTTOM);
+		
+		if (characterIcon)
+		{
+			DrawTexture(characterIcon, (-33*_universalScale.x,
+				-_vBorder - 4.5*_universalScale.y), DI_SCREEN_CENTER_BOTTOM
+				| DI_ITEM_LEFT_BOTTOM, box: (25*_universalScale.x,
+				20*_universalScale.y), scale: _universalScale);
+			DrawString(_drHudFont, "" ..  bottomFrags, (98*_universalScale.x,
+				-_vBorder - (fontHeight+9)*_universalScale.y),
+				DI_SCREEN_CENTER_BOTTOM | DI_TEXT_ALIGN_RIGHT,
+				scale: _universalScale*3);
+		}
+		
+		DrawTexture(_deathmatchCurrentPlayer, (108*_universalScale.x,
+			-_vBorder - (leaderIsUs ? 38 : 6)*_universalScale.y),
+			DI_SCREEN_CENTER_BOTTOM | DI_ITEM_LEFT_BOTTOM,
+			scale: _universalScale*2);
+	}
+	
+	protected void DrawMultiplayerHealth(DeltaPlayer ply, Vector2 pos)
+	{
+		double barWidth = _universalScale.x * 100,
+		barHeight = _universalScale.y * 8;
+		Color iconColor = ply.health > 0 ? 0xffffffff : 0x80ff4040;
+		let userStr = ply.player.GetUserName();
+		
+		// this only works because _consoleFont is monospace
+		int charWidth = _consoleFont.mFont.GetCharWidth("0") / 2;
+		int panelW, panelH;
+		[panelW, panelH] = TexMan.GetSize(_coopPanelBack);
+		uint allowedLength = 19;
+		
+		if (ply.health <= 0)
+			allowedLength -= 7;
+		
+		if (userStr.Length() > allowedLength)
+		{
+			userStr.Truncate(allowedLength);
+			userStr = userStr .. "-";
+		}
+		
+		if (ply.health <= 0)
+			userStr = userStr .. " (DEAD)";
+		
+		DrawTexture(_coopPanelBack, (pos.X, pos.Y), DI_SCREEN_LEFT_TOP | DI_ITEM_LEFT_TOP, scale: _universalScale);
+		DrawTexture(ply.GetCharacterIconID(), (pos.X, pos.Y) + _universalScale,
+			DI_SCREEN_LEFT_TOP | DI_ITEM_LEFT_TOP, box: (25*_universalScale.x, 20*_universalScale.y),
+			col: iconColor);
+		DrawString(_consoleFont, userStr, (pos.X + 26*_universalScale.x, pos.Y + 2*_universalScale.y),
+			scale: _universalScale/2);
+		double healthPerc = DeltaMath.Clamp(float(ply.Health) / ply.GetMaxHealth(), 0, 2);
+		Fill(ply.GetCharacterColor(), pos.X + (28.3*_universalScale.x), pos.Y + 13*_universalScale.y,
+			barWidth * min(1, healthPerc), barHeight, DI_SCREEN_LEFT_TOP);
+		Fill(ply.GetOverhealColor(), pos.X + (28.3*_universalScale.x), pos.Y + 13*_universalScale.y,
+			barWidth * max(0, healthPerc - 1), barHeight, DI_SCREEN_LEFT_TOP);
+	}
+	
+	protected int GetTeamFrags(int teamIndex)
+	{
+		let frags = 0;
+		
+		for (int i = 0; i < players.Size(); i++)
+		{
+			if (!playerInGame[i])
+				continue;
+			if (players[i].GetTeam() != teamIndex)
+				continue;
+			
+			frags += players[i].fragCount;
+		}
+		
+		return frags;
 	}
 	
 	protected float GetHealthPerc()
@@ -335,21 +570,19 @@ class DeltaHud : BaseStatusBar
 	
 	protected void DrawLeftPanel(bool infiniteAmmo, double ticFrac)
 	{
-		double xMultiplier = _universalScale.x;
-		double yMultiplier = _universalScale.y;
-		double panelXSpacing = 4 * xMultiplier;
-		double panelYSpacing = 4 * yMultiplier;
+		double panelXSpacing = 4 * _universalScale.x;
+		double panelYSpacing = 4 * _universalScale.y;
 		double curY = -_vBorder;
-		double barWidth = 144 * xMultiplier;
-		double barHeight = 16 * yMultiplier;
-		double labelXOffset = 50 * xMultiplier;
-		double barXOffset = 14 * xMultiplier + labelXOffset + panelXSpacing;
+		double barWidth = 144 * _universalScale.x;
+		double barHeight = 16 * _universalScale.y;
+		double labelXOffset = 50 * _universalScale.x;
+		double barXOffset = 14 * _universalScale.x + labelXOffset + panelXSpacing;
 		double panelY = curY;
 		
 		DrawTexture(_leftPanelBack, (_hBorder, panelY), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM, scale: _universalScale);
 		
-		double smallFontHeight = _drHudFont.mFont.GetGlyphHeight("0") * yMultiplier;
-		double halfDifference = (barHeight * yMultiplier - smallFontHeight) / 2;
+		double smallFontHeight = _drHudFont.mFont.GetGlyphHeight("0") * _universalScale.y;
+		double halfDifference = (barHeight * _universalScale.y - smallFontHeight) / 2;
 		double textYOffset = halfDifference + 0.5;
 		
 		DeltaPlayer ply = DeltaPlayer(CPlayer.mo);
@@ -363,22 +596,22 @@ class DeltaHud : BaseStatusBar
 		[temp, panelYSize] = TexMan.GetSize(_leftPanelBack);
 		[temp, faceYSize] = TexMan.GetSize(currentFace);
 		
-		DrawTexture(currentFace, (_hBorder + panelXSpacing*2, panelY - panelYSize*yMultiplier + 18*yMultiplier),
+		DrawTexture(currentFace, (_hBorder + panelXSpacing*2, panelY - panelYSize*_universalScale.y + 18*_universalScale.y),
 			DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_TOP, scale: _universalScale);
 		
-		curY -= 19*yMultiplier;
+		curY -= 19*_universalScale.y;
 		
 		if (!deathmatch)
 			DrawKeys(_hBorder + panelXSpacing + barXOffset, curY);
 		
 		/// ---- DRAWING TENSION POINTS ----
 		// draw TP timer and bar
-		curY -= 2*yMultiplier + panelYSpacing;
+		curY -= 2*_universalScale.y + panelYSpacing;
 		
 		double tpTimer = float(ply.tensionDrainTimer) / ply.DRAIN_TIMER_START;
-		Fill(0xffffffff, _hBorder + panelXSpacing + barXOffset, curY, tpTimer * barWidth, 3*yMultiplier, DI_SCREEN_LEFT_BOTTOM);
+		Fill(0xffffffff, _hBorder + panelXSpacing + barXOffset, curY, tpTimer * barWidth, 3*_universalScale.y, DI_SCREEN_LEFT_BOTTOM);
 		
-		curY -= 3*yMultiplier + barHeight;
+		curY -= 3*_universalScale.y + barHeight;
 		
 		double tp = infiniteAmmo ? ply.maxTensionPoints : ply.tensionPoints;
 		double maxTp = ply.maxTensionPoints;
@@ -388,7 +621,7 @@ class DeltaHud : BaseStatusBar
 			int timePassed = level.Time - ply.ticLastGrazed;
 			int alpha = 255 * (1 - (timePassed / 5.));
 			
-			DrawTexture(_tpHighlight, (_hBorder + panelXSpacing + labelXOffset - xMultiplier, curY - yMultiplier),
+			DrawTexture(_tpHighlight, (_hBorder + panelXSpacing + labelXOffset - _universalScale.x, curY - _universalScale.y),
 				DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_TOP, scale: _universalScale,
 				col: Color(alpha, 255, 255, 255));
 		}
@@ -400,24 +633,24 @@ class DeltaHud : BaseStatusBar
 			tp / maxTp * barWidth, barHeight, DI_SCREEN_LEFT_BOTTOM);
 		
 		if (tp >= 1 && tp <= maxTp - 1)
-			Fill(Color(255, 255, 255, 255), _hBorder + panelXSpacing + barXOffset + barWidth * (tp / maxTp) - xMultiplier, curY, xMultiplier, barHeight, DI_SCREEN_LEFT_BOTTOM);
+			Fill(Color(255, 255, 255, 255), _hBorder + panelXSpacing + barXOffset + barWidth * (tp / maxTp) - _universalScale.x, curY, _universalScale.x, barHeight, DI_SCREEN_LEFT_BOTTOM);
 		
 		// draw TP text
 		if (!infiniteAmmo)
 		{
 			if (tp < maxTp)
 				DrawString(_drHudFont, String.Format("%d", tp * 100 / maxTp),
-					(_hBorder + barWidth + barXOffset + xMultiplier, curY + textYOffset/2 + yMultiplier),
+					(_hBorder + barWidth + barXOffset + _universalScale.x, curY + textYOffset/2 + _universalScale.y),
 					DI_SCREEN_LEFT_BOTTOM | DI_TEXT_ALIGN_RIGHT,
 					scale: _universalScale * 2);
 			else
 				DrawTexture(_tpMaxText,
-					(_hBorder + barWidth + barXOffset, curY + textYOffset/2 + yMultiplier),
+					(_hBorder + barWidth + barXOffset, curY + textYOffset/2 + _universalScale.y),
 					DI_SCREEN_LEFT_BOTTOM | DI_ITEM_RIGHT_TOP, scale: _universalScale * 2);
 		}
 		else
 			DrawTexture(_infiniteText,
-				(_hBorder + barWidth + barXOffset + xMultiplier, curY + panelYSpacing + barHeight/2 + yMultiplier),
+				(_hBorder + barWidth + barXOffset + _universalScale.x, curY + panelYSpacing + barHeight/2 + _universalScale.y),
 				DI_SCREEN_LEFT_BOTTOM | DI_ITEM_RIGHT, scale: _universalScale * 1.25);
 		
 		// ================
@@ -433,34 +666,34 @@ class DeltaHud : BaseStatusBar
 		
 		string format = GetHealthPerc() <= 0.33 ? "\c[DeltaLowHealth]%s" : "%s";
 		string maxHp = String.Format(format, "" .. ply.GetMaxHealth());
-		int maxHpWidth = _drHudFont.mFont.StringWidth(maxHp) * xMultiplier;
-		int slashWidth = _drHudFont.mFont.GetCharWidth("/") * xMultiplier;
+		int maxHpWidth = _drHudFont.mFont.StringWidth(maxHp) * _universalScale.x;
+		int slashWidth = _drHudFont.mFont.GetCharWidth("/") * _universalScale.x;
 		DrawString(_drHudFont, String.Format(format, "" .. CPlayer.Health),
-			(_hBorder + barWidth + barXOffset - maxHpWidth - (2*slashWidth), curY + textYOffset/2 + yMultiplier),
+			(_hBorder + barWidth + barXOffset - maxHpWidth - (2*slashWidth), curY + textYOffset/2 + _universalScale.y),
 			DI_SCREEN_LEFT_BOTTOM | DI_TEXT_ALIGN_RIGHT, scale: _universalScale * 2);
 		DrawString(_drHudFont, String.Format(format, "/"),
-			(_hBorder + barWidth + barXOffset - maxHpWidth - slashWidth, curY + textYOffset/2 + yMultiplier),
+			(_hBorder + barWidth + barXOffset - maxHpWidth - slashWidth, curY + textYOffset/2 + _universalScale.y),
 			DI_SCREEN_LEFT_BOTTOM | DI_TEXT_ALIGN_RIGHT, scale: _universalScale);
 		DrawString(_drHudFont, maxHp,
-			(_hBorder + barWidth + barXOffset + xMultiplier, curY + textYOffset/2 + yMultiplier),
+			(_hBorder + barWidth + barXOffset + _universalScale.x, curY + textYOffset/2 + _universalScale.y),
 			DI_SCREEN_LEFT_BOTTOM | DI_TEXT_ALIGN_RIGHT, scale: _universalScale * 2);
 		DrawTexture(_hpText,
 			(_hBorder + labelXOffset + panelXSpacing, curY + panelYSpacing + barHeight/2),
-			DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT, scale: (xMultiplier, yMultiplier),
+			DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT, scale: (_universalScale.x, _universalScale.y),
 			col: GetHealthPerc() <= 0.33 ? 0xffffff00 : 0xffffffff);
 		
 		// =============================
 		//  DRAWING OFFHAND INFORMATION
 		// =============================
-		double offhandPanelHeight = 36 * yMultiplier;
+		double offhandPanelHeight = 36 * _universalScale.y;
 		bool canUse = ply.CanUseOffhand();
 		curY -= offhandPanelHeight + panelYSpacing*2;
-		Fill(0x80000000, _hBorder, curY, panelXSpacing*3 + 48*xMultiplier, offhandPanelHeight);
+		Fill(0x80000000, _hBorder, curY, panelXSpacing*3 + 48*_universalScale.x, offhandPanelHeight);
 		// control icons should all be 16px x 16px (or equivalent if scaled)
 		DisplayBinding("+offhand", (_hBorder + panelXSpacing, curY + offhandPanelHeight/2),
 			DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT | DI_ITEM_VCENTER, _universalScale);
 		// offhand icons should all be 32px x 32px (or equivalent if scaled)
-		DrawTexture(ply.GetOffhandIconID(), (_hBorder + panelXSpacing*2 + 16*xMultiplier, curY + 2*yMultiplier),
+		DrawTexture(ply.GetOffhandIconID(), (_hBorder + panelXSpacing*2 + 16*_universalScale.x, curY + 2*_universalScale.y),
 			DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_TOP, scale: _universalScale,
 			col: canUse ? (ply.GetIsUsingOffhand() ? Color(255, 255, 160, 64) : 0xffffffff) : 0x80606060);
 	}
@@ -472,9 +705,7 @@ class DeltaHud : BaseStatusBar
 		if (weap == null || weap.AmmoType1 == null)
 			return;
 		
-		double xMultiplier = _universalScale.x;
-		double yMultiplier = _universalScale.y;
-		double widgetWidth = (40 + 22) * xMultiplier, widgetHeight = 28 * yMultiplier;
+		double widgetWidth = (40 + 22) * _universalScale.x, widgetHeight = 28 * _universalScale.y;
 		int ammo1 = CPlayer.mo.FindInventory(CPlayer.ReadyWeapon.AmmoType1).Amount;
 		let ammoType1 = CPlayer.ReadyWeapon.AmmoType1;
 		int ammoIcon = DELTA_AMMOICON_NONE;
@@ -491,20 +722,20 @@ class DeltaHud : BaseStatusBar
 			ammoIcon = DELTA_AMMOICON_FUEL;
 		
 		Fill(Color(128, 0, 0, 0), -_hBorder - widgetWidth,
-			-_vBorder - widgetHeight + (4 * yMultiplier), widgetWidth,
+			-_vBorder - widgetHeight + (4 * _universalScale.y), widgetWidth,
 			widgetHeight, DI_SCREEN_RIGHT_BOTTOM);
 		
 		if (ammoIcon != DELTA_AMMOICON_NONE)
-			DrawTexture(ammoIcons[ammoIcon], (-_hBorder - widgetWidth + 12*xMultiplier, -_vBorder - widgetHeight/2 + 4*yMultiplier),
+			DrawTexture(ammoIcons[ammoIcon], (-_hBorder - widgetWidth + 12*_universalScale.x, -_vBorder - widgetHeight/2 + 4*_universalScale.y),
 				DI_ITEM_CENTER | DI_SCREEN_RIGHT_BOTTOM, box: _universalScale * 16, scale: _universalScale);
 		
 		if (!infiniteAmmo)
 			DrawString(_drHudFont, String.Format("%d", ammo1),
-				(-_hBorder - 4*xMultiplier, -_vBorder - 18*yMultiplier),
+				(-_hBorder - 4*_universalScale.x, -_vBorder - 18*_universalScale.y),
 				DI_SCREEN_RIGHT_BOTTOM | DI_TEXT_ALIGN_RIGHT, scale: 3 * _universalScale);
 		else
-			DrawTexture(_infiniteText, (-_hBorder - 4*xMultiplier, -_vBorder - (10 * yMultiplier)),
-				DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT | DI_ITEM_VCENTER, box: (28 * xMultiplier, 16 * yMultiplier), scale: _universalScale * 15/8);
+			DrawTexture(_infiniteText, (-_hBorder - 4*_universalScale.x, -_vBorder - (10 * _universalScale.y)),
+				DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT | DI_ITEM_VCENTER, box: (28 * _universalScale.x, 16 * _universalScale.y), scale: _universalScale * 15/8);
 	}
 	
 	protected void DrawKeys(double x, double y)
@@ -512,7 +743,6 @@ class DeltaHud : BaseStatusBar
 		int count = Key.GetKeyTypeCount();
 		double newX = x;
 		Key inv;
-		double xMultiplier = _universalScale.x;
 		
 		for (int i = 0; i <= count - 1; i++)
 		{
@@ -537,7 +767,7 @@ class DeltaHud : BaseStatusBar
 				{
 					DrawTexture(icon, (newX, y), DI_SCREEN_LEFT_BOTTOM
 						| DI_ITEM_LEFT_TOP, box: 16 * _universalScale, scale: _universalScale);
-					newX += 18*xMultiplier;
+					newX += 18*_universalScale.x;
 				}
 			}
 		}

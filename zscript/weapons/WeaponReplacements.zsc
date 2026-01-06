@@ -89,7 +89,9 @@ class TempChainsaw : DeltaTempReplacer replaces Chainsaw
 	override void AttachToOwner(Actor other)
 	{
 		let replacee = Spawn(_replacedClass);
-		other.A_Print("You picked up a cardboard cutout of a " .. replacee.GetTag().MakeLower() .. ". It's completely useless. Someone should really replace that...", 4);
+		other.A_Print("You picked up a cardboard cutout of a "
+			.. replacee.GetTag().MakeLower() .. ". It's completely,\n utterly "
+			.. "useless. Someone should really replace that...", 4);
 		replacee.Destroy();
 		Super.AttachToOwner(other);
 	}
@@ -115,7 +117,9 @@ class TempRocketLauncher : DeltaTempReplacer replaces RocketLauncher
 	override void AttachToOwner(Actor other)
 	{
 		let replacee = Spawn(_replacedClass);
-		other.A_Print("You picked up a " .. replacee.GetTag().MakeLower() .. ", but it doesn't seem to do anything yet. Someone should really get on fixing that...", 4);
+		other.A_Print("You picked up a " .. replacee.GetTag().MakeLower()
+			.. ", but it doesn't seem to do anything yet.\nYou get the feeling "
+			.. "some cat out there is working on fixing that...", 4);
 		replacee.Destroy();
 		Super.AttachToOwner(other);
 	}
@@ -140,7 +144,9 @@ class TempPlasmaRifle : DeltaTempReplacer replaces PlasmaRifle
 	
 	override void AttachToOwner(Actor other)
 	{
-		other.A_Print("You picked up some sort of weird device. You can't seem to figure out how it works. Someone should teach you how to use it at some point...", 4);
+		other.A_Print("You picked up some sort of strange device. You can't "
+			.. "seem to figure out\nhow it works. Someone should teach you how "
+			.. "to use it at some point...", 4);
 		Super.AttachToOwner(other);
 	}
 }
@@ -164,7 +170,9 @@ class TempBFG9000 : DeltaTempReplacer replaces BFG9000
 	
 	override void AttachToOwner(Actor other)
 	{
-		other.A_Print("You picked up some sort of strange, fucking HUGE device. It feels powerful, but doesn't seem to work. Perhaps one day, you can use it.", 4);
+		other.A_Print("You picked up some sort of strange, fucking HUGE "
+			.. "device. It feels powerful,\nbut doesn't seem to work. Perhaps "
+			.. "one day, you can use something like it.", 4);
 		Super.AttachToOwner(other);
 	}
 }

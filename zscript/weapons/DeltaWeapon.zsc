@@ -30,7 +30,7 @@ class DeltaWeapon : Weapon
 		Weapon.BobSpeed 2.5;
 		DeltaWeapon.RedCrosshairRange PLAYERMISSILERANGE;
 		DeltaWeapon.MaxLungeDistance -1;
-		DeltaWeapon.StopLungeDistance 10;
+		DeltaWeapon.StopLungeDistance 5;
 	}
 	
 	States
@@ -81,7 +81,12 @@ class DeltaWeapon : Weapon
 			return;
 		}
 		
-		_crosshairState = plyMo.IsFriend(l.HitActor) ? DELTA_XHR_FRIENDLY : DELTA_XHR_ENEMY;
+		if (plyMo.IsFriend(l.HitActor))
+			_crosshairState = DELTA_XHR_FRIENDLY;
+		else if (plyMo.IsHostile(l.HitActor))
+			_crosshairState = DELTA_XHR_ENEMY;
+		else
+			_crosshairState = DELTA_XHR_NEUTRAL;
 	}
 	
 	virtual bool TryUseTension(double amount)

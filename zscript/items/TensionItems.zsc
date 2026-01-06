@@ -4,7 +4,6 @@ class DeltaTensionPickup : Inventory
 	Default
 	{
 		Inventory.Amount 0;
-		Inventory.MaxAmount 250;
 		+INVENTORY.KEEPDEPLETED
 	}
 	
@@ -14,9 +13,7 @@ class DeltaTensionPickup : Inventory
 		
 		if (!delta)
 			return false;
-		if (delta.tensionPoints >= delta.maxTensionPoints && !bAlwaysPickup)
-			return false;
-		if (!Super.TryPickup(toucher))
+		if (delta.GetTension(delta.maxTensionPoints, false) != TP_FAIL && !bAlwaysPickup)
 			return false;
 		
 		delta.AddTension(Amount);

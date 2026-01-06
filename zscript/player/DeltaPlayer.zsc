@@ -50,13 +50,16 @@ class DeltaPlayer : PlayerPawn abstract
 	
 	protected LinearValueInterpolator heartbeat;
 	
+	protected float oldAngle;
+	
 	private float _targetRoll;
 	private bool _frozenDeath;						// using this for custom ice death that doesn't automatically shatter us lol
 	
 	private Vector2 _currentFlinch;					// used for weapon flinching when taking damage
 	private int _flinchTics;
 	
-	private int _turnTics;
+	private double _oldTurn;
+	private double _turn;
 	
 	private TextureID _offhandIconId;
 	private TextureID _characterIconId;				// used for health displays in co-op and team deathmatch
@@ -129,7 +132,7 @@ class DeltaPlayer : PlayerPawn abstract
 		
 		DeltaPlayer.FlinchMultiplier 10;
 		DeltaPlayer.StartFlinchTics 5;
-		DeltaPlayer.LungeSpeed 35;
+		DeltaPlayer.LungeSpeed 45;
 		
 		DeltaPlayer.OffhandIcon "";
 		DeltaPlayer.CharacterIcon "";
@@ -178,6 +181,8 @@ class DeltaPlayer : PlayerPawn abstract
 		beingHugged = false;
 		lunging = false;
 		isUsingOffhand = false;
+		_turn = 0;
+		_oldTurn = 0;
 		
 		_targetRoll = 0;
 	}
@@ -196,6 +201,9 @@ class DeltaPlayer : PlayerPawn abstract
 		beingHugged = false;
 		lunging = false;
 		isUsingOffhand = false;
+		oldAngle = angle;
+		_turn = 0;
+		_oldTurn = 0;
 		
 		_targetRoll = 0;
 		Vel = (0, 0, 0);
@@ -205,6 +213,7 @@ class DeltaPlayer : PlayerPawn abstract
 	{
 		Super.PlayerThink();
 		HandleViewAngles();
+		HandleTurning();
 		
 		if (IsPredicting())
 			return;
@@ -323,12 +332,17 @@ class DeltaPlayer : PlayerPawn abstract
 	{
 		bool ignoreIFrames = false;
 		
-		foreach (damageType : DAMAGE_TYPES_IGNORE_IFRAMES)
+		if (source && source.player)
+			ignoreIFrames = true;
+		else
 		{
-			if (mod == damageType)
+			foreach (damageType : DAMAGE_TYPES_IGNORE_IFRAMES)
 			{
-				ignoreIFrames = true;
-				break;
+				if (mod == damageType)
+				{
+					ignoreIFrames = true;
+					break;
+				}
 			}
 		}
 		
@@ -588,6 +602,21 @@ class DeltaPlayer : PlayerPawn abstract
 		return Super.CanCollideWith(other, passive);
 	}
 	
+	override bool PreTeleport(Vector3 destPos, double destAngle, int flags)
+	{
+		let result = Super.PreTeleport(destPos, destAngle, flags);
+		
+		if (result)
+		{
+			oldAngle = destAngle;
+			angle = destAngle;
+			_turn = 0;
+			_oldTurn = 0;
+		}
+		
+		return result;
+	}
+	
 	override void HasReceived(Inventory item)
 	{
 		if (item is "Health" && item.GetClass() != "Health" && !item.bQuiet)
@@ -609,9 +638,10 @@ class DeltaPlayer : PlayerPawn abstract
 		float shakinessFactor = DeltaMath.Lerp(maxShakiness, minShakiness, (health - 1) / (shakinessMaxHealth - 1.));
 		float x = sin(level.time/11.) * 2 - sin(level.time*23.*shakinessFactor) + 4*shakinessFactor,
 			y = max(0, (0.5+sin(level.time*2)/2) * 5 + sin(level.time*14.*shakinessFactor));
-		
 		Vector2 shakiness = (x, y * 0.5);
-		return originalBob * perc + bobFlinch + shakiness * shakinessFactor;
+		
+		return originalBob * perc + bobFlinch + shakiness * shakinessFactor
+			+ (DeltaMath.Lerp(_oldTurn, _turn, ticFrac), 0);
 	}
 	
 	override void CheatGive(string name, int amount)
@@ -737,8 +767,6 @@ class DeltaPlayer : PlayerPawn abstract
 		float dist = diff.Length() - radius - lungeTarget.radius;
 		Vel = diffUnit * min(lungeSpeed, dist);
 		
-		// basically, we wanna start our post-lunge attack a frame before we're
-		// actually DONE lunging
 		if (level.IsFreelookAllowed() && abs(pitch + asin(diffUnit.z)) > 15)
 			A_SetPitch(-asin(diffUnit.z), SPF_INTERPOLATE);
 		
@@ -748,6 +776,7 @@ class DeltaPlayer : PlayerPawn abstract
 			let targetPos = vel + pos;
 			StopLunge();
 			TryMove(targetPos.XY, 0);
+			player.vel = (0, 0);
 		}
 	}
 	
@@ -898,14 +927,6 @@ class DeltaPlayer : PlayerPawn abstract
 	
 	protected void HandleViewAngles()
 	{
-		if (player.cheats & CF_CHASECAM)
-		{
-			A_SetViewPitch(0, SPF_INTERPOLATE);
-			A_SetViewAngle(0, SPF_INTERPOLATE);
-			A_SetViewRoll(0, SPF_INTERPOLATE);
-			return;
-		}
-		
 		for (int i = 0; i < _recoils.Size(); i++)
 		{
 			if (_recoils[i].curTime <= 0)
@@ -914,10 +935,28 @@ class DeltaPlayer : PlayerPawn abstract
 			_recoils[i].curTime--;
 		}
 		
-		let recoil = GetRecoilAngles().PlusZ(GetViewRoll());
+		let recoil = GetRecoilAngles();
+		
+		if (!(player.cheats & CF_CHASECAM))
+			recoil.z += GetViewRoll();
+		
 		A_SetViewPitch(recoil.x, SPF_INTERPOLATE);
 		A_SetViewAngle(recoil.y, SPF_INTERPOLATE);
 		A_SetViewRoll(recoil.z, SPF_INTERPOLATE);
+	}
+	
+	protected void HandleTurning()
+	{
+		let diffAngle = DeltaAngle(oldAngle, angle);
+		_oldTurn = _turn;
+		
+		if (abs(_turn) > 0.5)
+			_turn /= 2;
+		else
+			_turn = 0;
+		
+		_turn = DeltaMath.Clamp(_turn + diffAngle*0.2, -5, 5);
+		oldAngle = angle;
 	}
 	
 	protected void HandleIFrames()

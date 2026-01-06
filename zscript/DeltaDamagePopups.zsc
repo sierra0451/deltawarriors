@@ -1,0 +1,184 @@
+class DeltaDamagePopup : Actor
+{
+	int startLifeTime, lifeTime, moveTime, fadeTime;
+	double startVelZ;
+	
+	Default
+	{
+		-SOLID;
+		+NOGRAVITY;
+		+NOBLOCKMAP;
+		+SQUAREPIXELS;
+		+BRIGHT;
+		+INVISIBLEINMIRRORS;
+		+FORCEXYBILLBOARD;
+		+MASTERNOSEE;
+	}
+	
+	States
+	{
+		Spawn:
+			DDAM L -1;
+			Stop;
+	}
+	
+	override void PostBeginPlay()
+	{
+		Super.PostBeginPlay();
+		lifeTime = TICRATE * 1.4;
+		startLifeTime = lifeTime;
+		moveTime = TICRATE * 0.4;
+		fadeTime = TICRATE * 0.5;
+		startVelZ = vel.z;
+	}
+	
+	override void Tick()
+	{
+		Super.Tick();
+		lifeTime--;
+		
+		if (startLifeTime - lifeTime < moveTime)
+		{
+			double reduceAmount = 2. * startVelZ / moveTime;
+			vel.z -= reduceAmount;
+		}
+		else
+			vel = (0, 0, 0);
+		
+		if (lifeTime < fadeTime)
+		{
+			vel.z = 1;
+			A_SetScale(1, 0.9 + (fadeTime-lifeTime)*2./TICRATE);
+			A_FadeOut(1. / fadeTime);
+		}
+	}
+}
+
+class DeltaDamageNumber : DeltaDamagePopup
+{
+	int place, value, totalDigits;
+	
+	override void PostBeginPlay()
+	{
+		Super.PostBeginPlay();
+		
+		TextureID texID;
+		texID = curState.GetSpriteTexture(0);
+		int width = TexMan.GetSize(texID);
+		
+		double xOffset = (width+1) * (-(totalDigits/2) + (place-1));
+		A_SpriteOffset(xOffset, 0);
+	}
+	
+	static void SpawnNumbers(Actor thing, int dmg, Actor source)
+	{
+		string damageStr = "" .. dmg;
+		
+		let totalDigits = damageStr.Length()-1,
+			numVel = (cfrandom(-1, 1), cfrandom(-1, 1), cfrandom(7, 9)),
+			numLifeTime = crandom(-3, 3);
+		let trans = source ? source.GetClassName() .. "_damage" : "";
+		let position = thing.pos
+			+ (cfrandom(-3, 3),cfrandom(-3, 3),0);
+		
+		let targetZ = thing.height/2. + thing.pos.z;
+		
+		if (thing.health <= 0)
+			targetZ = source ? (-thing.height/2. + source.height + thing.pos.z) : (thing.height/2. + thing.pos.z);
+		
+		position.z = targetZ + cfrandom(-3, 3);
+		
+		for (int i = 0; i <= totalDigits; i++)
+		{
+			let num = DeltaDamageNumber(Spawn("DeltaDamageNumber",
+				position));
+			
+// 			if (!i)
+// 				num.A_Log(trans);
+			
+			num.vel = numVel;
+			num.place = i;
+			num.totalDigits = totalDigits;
+			num.lifeTime = num.startLifeTime;
+			num.value = damageStr.ByteAt(i) - 48;
+			num.startLifeTime += crandom(-3, 3);
+			num.A_SetTranslation(trans);
+			num.master = thing;
+		}
+	}
+	
+	action state A_SetNumber()
+	{
+		switch (invoker.value)
+		{
+			case -3:
+				return ResolveState("Minus");
+			case 0:
+				return ResolveState("Digit0");
+			case 1:
+				return ResolveState("Digit1");
+			case 2:
+				return ResolveState("Digit2");
+			case 3:
+				return ResolveState("Digit3");
+			case 4:
+				return ResolveState("Digit4");
+			case 5:
+				return ResolveState("Digit5");
+			case 6:
+				return ResolveState("Digit6");
+			case 7:
+				return ResolveState("Digit7");
+			case 8:
+				return ResolveState("Digit8");
+			case 9:
+				return ResolveState("Digit9");
+			default:
+				return ResolveState(null);
+		}
+	}
+	
+	States
+	{
+		Spawn:
+			DDAM A 0;
+			DDAM # 1 A_SetNumber;
+			Wait;
+		Minus:
+			DDAM A -1;
+			Stop;
+		Plus:
+			DDAM B -1;
+			Stop;
+		Digit0:
+			DDAM C -1;
+			Stop;
+		Digit1:
+			DDAM D -1;
+			Stop;
+		Digit2:
+			DDAM E -1;
+			Stop;
+		Digit3:
+			DDAM F -1;
+			Stop;
+		Digit4:
+			DDAM G -1;
+			Stop;
+		Digit5:
+			DDAM H -1;
+			Stop;
+		Digit6:
+			DDAM I -1;
+			Stop;
+		Digit7:
+			DDAM J -1;
+			Stop;
+		Digit8:
+			DDAM K -1;
+			Stop;
+		Digit9:
+			DDAM L -1;
+			Stop;
+	}
+}

@@ -156,8 +156,6 @@ class KrisPlayer : DeltaPlayer
 		if (!_isSliding)
 			return Super.CanCollideWith(other, passive);
 		
-		//A_Log("Collided with mass of " .. other.mass);
-		
 		if (other.bIsMonster && other.mass <= 200 && (!other.player || !other.player.cheats & CF_PREDICTING))
 			return false;
 		
@@ -166,8 +164,13 @@ class KrisPlayer : DeltaPlayer
 	
 	override bool PreTeleport(Vector3 destPos, double destAngle, int flags)
 	{
-		_slideAngle += Angle - destAngle;
-		return Super.PreTeleport(destPos, destAngle, flags);
+		let oldAngle = angle;
+		let result = Super.PreTeleport(destPos, destAngle, flags);
+		
+		if (result)
+			_slideAngle += DeltaAngle(destAngle, oldAngle);
+		
+		return result;
 	}
 	
 	override void MakeFootsteps()

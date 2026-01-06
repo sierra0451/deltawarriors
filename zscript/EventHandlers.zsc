@@ -4,14 +4,62 @@ struct GrazeEvent play version("2.4")
 	Actor grazeSource;
 }
 
+struct DeltaDamageEvent
+{
+	Actor victim;
+	Actor source;
+	int amount;
+	double height; // used for if victim is killed, and thus immediately reduces height
+}
+
 class DeltaWarriorsEvents : EventHandler
 {
-	override void WorldThingDamaged(WorldEvent e)
+	DeltaDamageEvent[300] damageEvents;
+	
+	override void WorldLoaded(WorldEvent e)
 	{
 		EnableNetworking(true);
+	}
+	
+	override void WorldTick()
+	{
+		if (!damageEvents.Size())
+			return;
 		
+		for (int i = 0; i < damageEvents.Size(); i++)
+		{
+			if (!damageEvents[i].victim || damageEvents[i].amount <= 0)
+				continue;
+			
+			DeltaDamageNumber.SpawnNumbers(damageEvents[i].victim,
+				damageEvents[i].amount, damageEvents[i].source);
+			damageEvents[i].victim = null;
+			damageEvents[i].source = null;
+			damageEvents[i].amount = 0;
+		}
+	}
+	
+	override void WorldThingDamaged(WorldEvent e)
+	{
 		if (!e.thing || e.damage <= 0)
 			return;
+		
+		for (int i = 0; i < damageEvents.Size(); i++)
+		{
+			if (damageEvents[i].victim == e.thing && damageEvents[i].source == e.damageSource)
+			{
+				damageEvents[i].amount += e.damage;
+				break;
+			}
+			
+			if (!damageEvents[i].victim)
+			{
+				damageEvents[i].victim = e.thing;
+				damageEvents[i].source = e.damageSource;
+				damageEvents[i].amount = e.damage;
+				break;
+			}
+		}
 		
 		if (e.damageSource is "DeltaPlayer" && e.damageSource != e.thing)
 		{
@@ -41,8 +89,6 @@ class DeltaWarriorsEvents : EventHandler
 	
 	virtual void PlayerGrazed(GrazeEvent e)
 	{
-		EnableNetworking(true);
-		
 		if (e.thing != e.grazeSource)
 		{
 			EventHandler.SendInterfaceEvent(e.thing.PlayerNumber(), "DeltaPlayerGraze",

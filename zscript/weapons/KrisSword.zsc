@@ -13,12 +13,13 @@ class KrisSword : DeltaWeapon
 		Weapon.SlotNumber 1;
 		Weapon.SelectionOrder 1000;
 		
-		DeltaWeapon.RedCrosshairRange 150;
-		DeltaWeapon.MaxLungeDistance 160;
+		DeltaWeapon.RedCrosshairRange 200;
+		DeltaWeapon.MaxLungeDistance 200;
 		DeltaWeapon.Crosshair "DRSWDRET";
 		
 		+WEAPON.AXEBLOOD
 		+WEAPON.MELEEWEAPON
+		+WEAPON.NOALERT			// wanna handle this manually
 		+SQUAREPIXELS
 	}
 	
@@ -59,6 +60,8 @@ class KrisSword : DeltaWeapon
 			LineAttack(Angle + ang, distance, pitch, dmg, "Melee", "KrisSwordPuff", 0, t);
 			targets.Push(l.HitActor);
 		}
+		
+		A_AlertMonsters();
 		
 		if (targets.Size() > 0)
 		{
