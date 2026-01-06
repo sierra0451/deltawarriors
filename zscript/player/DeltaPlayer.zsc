@@ -596,8 +596,13 @@ class DeltaPlayer : PlayerPawn abstract
 			return false;
 		if (other.bMissile && damageTics)
 			return false;
-		if (other.player && (other.player.cheats & CF_PREDICTING))
-			return true;
+		if (other.player)
+		{
+			if (other.player.cheats & CF_PREDICTING))
+				return true;
+			if (IsFriend(other))
+				return false;
+		}
 		
 		return Super.CanCollideWith(other, passive);
 	}
