@@ -1,20 +1,41 @@
 // Text emphasis
-DeltaHighlight DeltaYellow
-{ #4F4F00 #FFFF40 0 256 }
-DeltaBlue
-{ #00004F #4040FF 0 256 }
-DeltaRed
-{ #4F0000 #FF4040 0 256 }
+DeltaHighlight DeltaYellow {
+#4F4F00 #FFFF40 0 256
+Console:
+	#4F4F00 #FFFF40 0 256
+}
+DeltaBlue {
+#00004F #4040FF 0 256
+Console:
+	#00004F #4040FF 0 256
+}
+DeltaRed {
+#4F0000 #FF4040 0 256
+Console:
+	#4F0000 #FF4040 0 256
+}
 
 // Characters
-DeltaKris
-{ #002149 #00a2e8 0 256 }
-DeltaSusie
-{ #2B143B #D66CFF 0 256 }
-DeltaRalsei
-{ #1D4600 #56d200 0 256 }
-DeltaNoelle
-{ #6E6B3F #FBF236 0 256 }
+DeltaKris {
+#002149 #00A2E8 0 256 
+Console:
+	#002149 #00A2E8 0 256
+}
+DeltaSusie {
+#2B143B #D66CFF 0 256 
+Console:
+	#2B143B #D66CFF 0 256
+}
+DeltaRalsei {
+#1D4600 #56D200 0 256 
+Console:
+	#1D4600 #56D200 0 256
+}
+DeltaNoelle {
+#6E6B3F #FBF236 0 256 
+Console:
+	#6E6B3F #FBF236 0 256
+}
 
 // Menu colors
 DeltaMenuTitle

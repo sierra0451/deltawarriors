@@ -25,10 +25,10 @@ class DeltaDamagePopup : Actor
 	override void PostBeginPlay()
 	{
 		Super.PostBeginPlay();
-		lifeTime = TICRATE * 1.4;
+		lifeTime = floor(TICRATE * 1.4);
 		startLifeTime = lifeTime;
-		moveTime = TICRATE * 0.4;
-		fadeTime = TICRATE * 0.5;
+		moveTime = floor(TICRATE * 0.4);
+		fadeTime = floor(TICRATE * 0.5);
 		startVelZ = vel.z;
 	}
 	
@@ -88,7 +88,7 @@ class DeltaDamageNumber : DeltaDamagePopup
 		
 		position.z = targetZ + cfrandom(-3, 3);
 		
-		for (int i = 0; i <= totalDigits; i++)
+		for (uint i = 0; i <= totalDigits; i++)
 		{
 			let num = DeltaDamageNumber(Spawn("DeltaDamageNumber",
 				position));

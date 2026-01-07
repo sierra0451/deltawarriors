@@ -44,17 +44,7 @@ class DeltaHud : BaseStatusBar
 	
 	private TextureID[DELTA_CONTROLICON_MAX] controlIcons;
 	
-	enum AMMO_ICON_TYPES
-	{
-		DELTA_AMMOICON_NONE = 0,
-		
-		DELTA_AMMOICON_BULLETS, DELTA_AMMOICON_SHELLS, DELTA_AMMOICON_ROCKETS,
-		DELTA_AMMOICON_PLASMA, DELTA_AMMOICON_FUEL,
-		
-		DELTA_AMMOICON_MAX
-	}
-	
-	private TextureID[DELTA_AMMOICON_MAX] ammoIcons;
+	Map<name, TextureID> ammoIcons;
 	
 	override void Init()
 	{
@@ -87,11 +77,11 @@ class DeltaHud : BaseStatusBar
 		controlIcons[DELTA_CONTROLICON_MOUSE7]	= TexMan.CheckForTexture("DRMSEBT7");
 		controlIcons[DELTA_CONTROLICON_MOUSE8]	= TexMan.CheckForTexture("DRMSEBT8");
 		
-		ammoIcons[DELTA_AMMOICON_BULLETS]	= TexMan.CheckForTexture("DRAMBULL");
-		ammoIcons[DELTA_AMMOICON_SHELLS]	= TexMan.CheckForTexture("DRAMSHEL");
-		ammoIcons[DELTA_AMMOICON_ROCKETS]	= TexMan.CheckForTexture("DRAMROCK");
-		ammoIcons[DELTA_AMMOICON_PLASMA]	= TexMan.CheckForTexture("DRAMPLAS");
-		ammoIcons[DELTA_AMMOICON_FUEL]		= TexMan.CheckForTexture("DRAMFUEL");
+		ammoIcons.Insert('Clip', 		TexMan.CheckForTexture("DRAMBULL"));
+		ammoIcons.Insert('Shell', 		TexMan.CheckForTexture("DRAMSHEL"));
+		ammoIcons.Insert('RocketAmmo', 	TexMan.CheckForTexture("DRAMROCK"));
+		ammoIcons.Insert('Cell', 		TexMan.CheckForTexture("DRAMPLAS"));
+		ammoIcons.Insert('ID24Fuel', 	TexMan.CheckForTexture("DRAMFUEL"));
 		
 		_tpInterp = DynamicValueInterpolator.Create(0, 0.25, 1, 30);
 	}
@@ -158,7 +148,7 @@ class DeltaHud : BaseStatusBar
 		
 		if (deathmatch)
 			DrawDeathmatch();
-		else if (netgame)
+		else if (multiplayer)
 			DrawCoop();
 		
 		if (CPlayer.Health > 0)
@@ -263,18 +253,28 @@ class DeltaHud : BaseStatusBar
 		if (!CPlayer.mo || !(CPlayer.mo is "DeltaPlayer"))
 			return;
 		
+		/// ---------------------------
+		/// DRAWING TEAMMATE HEALTHBARS
+		/// ---------------------------
 		double curX = _hBorder, curY = _vBorder;
 		let ply = DeltaPlayer(CPlayer.mo);
+		Array<int> teamsFound;
 		
 		if (teamplay)
 		{
 			for (int i = 0; i < players.Size(); i++)
 			{
-				if (!players[i].mo || players[i] == CPlayer)
+				if (!players[i].mo)
 					continue;
 				if (!playerInGame[i])
 					continue;
 				if (!(players[i].mo is "DeltaPlayer"))
+					continue;
+				
+				if (teamsFound.Find(players[i].GetTeam()) == teamsFound.Size())
+					teamsFound.Push(players[i].GetTeam());
+				
+				if (players[i] == CPlayer)
 					continue;
 				if (!CPlayer.mo.IsTeammate(players[i].mo))
 					continue;
@@ -291,7 +291,6 @@ class DeltaHud : BaseStatusBar
 		/// ------------
 		/// DRAWING TIME
 		/// ------------
-		
 		if (timelimit)
 		{
 			double timeTics = ceil(timelimit * 60 * TICRATE) - level.maptime;
@@ -339,13 +338,17 @@ class DeltaHud : BaseStatusBar
 		Color barColor;
 		TextureID characterIcon;
 		double fontHeight = _drHudFont.mFont.GetHeight();
+		string nameShown = "";
 		bool leaderIsUs = false;
 		
 		// Drawing leader bar (may be us)
 		if (teamplay)
 		{
-			for (int i = 0; i < teams.Size(); i++)
+			for (uint i = 0; i < uint(teams.Size()); i++)
 			{
+				if (teamsFound.Find(i) == teamsFound.Size())
+					continue;
+				
 				int curTeamFrags = GetTeamFrags(i);
 				
 				if (curTeamFrags <= leaderFrags)
@@ -354,6 +357,7 @@ class DeltaHud : BaseStatusBar
 				leaderFrags = curTeamFrags;
 				leaderIndex = i;
 				leaderIsUs = CPlayer.GetTeam() == i;
+				nameShown = teams[i].mName;
 				barColor = teams[i].GetPlayerColor();
 			}
 		}
@@ -376,15 +380,17 @@ class DeltaHud : BaseStatusBar
 				
 				leaderFrags = curPlyFrags;
 				leaderIndex = i;
-				leaderIsUs = CPlayer == players[i];
+				nameShown = players[i].GetUserName();
 				characterIcon = deltaPly.GetCharacterIconId();
-				barColor = players[i].GetColor();
+				barColor = deltaPly.GetCharacterColor();
+				leaderIsUs = CPlayer == players[i];
 			}
 		}
 		
 		barColor |= 0xff000000;
-		Fill(barColor, -32*_universalScale.x, -_vBorder - 32*_universalScale.y,
-			min(1., (max(0., leaderFrags) / max(1., fraglimit))) * 132 * _universalScale.x, -16 * _universalScale.y,
+		nameShown.Truncate(9);
+		Fill(barColor, -32*_universalScale.x, -_vBorder - 36*_universalScale.y,
+			min(1., (max(0., leaderFrags) / max(1., fraglimit))) * 132 * _universalScale.x, -20 * _universalScale.y,
 			DI_SCREEN_CENTER_BOTTOM);
 		DrawTexture(characterIcon, (-33*_universalScale.x, -_vBorder - 36.5*_universalScale.y),
 			DI_SCREEN_CENTER_BOTTOM | DI_ITEM_LEFT_BOTTOM,
@@ -392,6 +398,9 @@ class DeltaHud : BaseStatusBar
 		DrawString(_drHudFont, "" .. leaderFrags,
 			(98*_universalScale.x, -_vBorder - (fontHeight+43.5)*_universalScale.y),
 			DI_SCREEN_CENTER_BOTTOM | DI_TEXT_ALIGN_RIGHT, scale: _universalScale*3);
+		DrawString(_consoleFont, nameShown,
+			((teamplay ? -33 : -12)*_universalScale.x, -_vBorder - (fontHeight+45.5)*_universalScale.y),
+			DI_SCREEN_CENTER_BOTTOM | DI_TEXT_ALIGN_LEFT, scale: _universalScale);
 		
 		// Bottom bar (second place if we're leader, us otherwise)
 		let bottomFrags = -500, bottomIndex = 0;
@@ -404,7 +413,7 @@ class DeltaHud : BaseStatusBar
 			{
 				for (int i = 0; i < teams.Size(); i++)
 				{
-					if (!Team.IsValid(i))
+					if (teamsFound.Find(i) == teamsFound.Size())
 						continue;
 					
 					int curTeamFrags = GetTeamFrags(i);
@@ -414,6 +423,7 @@ class DeltaHud : BaseStatusBar
 					
 					bottomFrags = curTeamFrags;
 					bottomIndex = i;
+					nameShown = teams[i].mName;
 					barColor = teams[i].GetPlayerColor();
 				}
 			}
@@ -425,6 +435,8 @@ class DeltaHud : BaseStatusBar
 						continue;
 					if (!playerInGame[i])
 						continue;
+					if (players[i] == CPlayer)
+						continue;
 					if (!(players[i].mo is "DeltaPlayer"))
 						continue;
 					
@@ -433,13 +445,12 @@ class DeltaHud : BaseStatusBar
 					
 					if (curPlyFrags < bottomFrags)
 						continue;
-					if (curPlyFrags == bottomFrags && (players[i] != CPlayer || bottomFrags != -500))
-						continue;
 					
 					bottomFrags = curPlyFrags;
 					bottomIndex = i;
+					nameShown = players[i].GetUserName();
 					characterIcon = deltaPly.GetCharacterIconId();
-					barColor = players[i].GetColor();
+					barColor = deltaPly.GetCharacterColor();
 				}
 			}
 		}
@@ -448,33 +459,43 @@ class DeltaHud : BaseStatusBar
 			if (teamplay)
 			{
 				int teamIndex = CPlayer.GetTeam();
-				barColor = 0xff000000 | Teams[teamIndex].GetPlayerColor();
+				nameShown = teams[CPlayer.GetTeam()].mName;
+				barColor = teams[teamIndex].GetPlayerColor();
 				bottomFrags = GetTeamFrags(teamIndex);
 			}
 			else
+			{
 				bottomFrags = CPlayer.fragCount;
-		}
-		
-		Fill(barColor, -32*_universalScale.x, -_vBorder - 4*_universalScale.y,
-			min(1., (max(0., bottomFrags) / max(1., fraglimit))) * 132 * _universalScale.x, -16 * _universalScale.y,
-			DI_SCREEN_CENTER_BOTTOM);
-		
-		if (characterIcon)
-		{
-			DrawTexture(characterIcon, (-33*_universalScale.x,
-				-_vBorder - 4.5*_universalScale.y), DI_SCREEN_CENTER_BOTTOM
-				| DI_ITEM_LEFT_BOTTOM, box: (25*_universalScale.x,
-				20*_universalScale.y), scale: _universalScale);
-			DrawString(_drHudFont, "" ..  bottomFrags, (98*_universalScale.x,
-				-_vBorder - (fontHeight+9)*_universalScale.y),
-				DI_SCREEN_CENTER_BOTTOM | DI_TEXT_ALIGN_RIGHT,
-				scale: _universalScale*3);
+				characterIcon = ply.GetCharacterIconId();
+				barColor = ply.GetCharacterColor();
+				nameShown = CPlayer.GetUserName();
+			}
 		}
 		
 		DrawTexture(_deathmatchCurrentPlayer, (108*_universalScale.x,
 			-_vBorder - (leaderIsUs ? 38 : 6)*_universalScale.y),
 			DI_SCREEN_CENTER_BOTTOM | DI_ITEM_LEFT_BOTTOM,
 			scale: _universalScale*2);
+		
+		if (!characterIcon && (!teamplay || teamsFound.Size() == 1))
+			return;
+		
+		barColor |= 0xff000000;
+		nameShown.Truncate(9);
+		Fill(barColor, -32*_universalScale.x, -_vBorder - 4*_universalScale.y,
+			min(1., (max(0., bottomFrags) / max(1., fraglimit))) * 132 * _universalScale.x, -20 * _universalScale.y,
+			DI_SCREEN_CENTER_BOTTOM);
+		DrawTexture(characterIcon, (-33*_universalScale.x,
+			-_vBorder - 4.5*_universalScale.y), DI_SCREEN_CENTER_BOTTOM
+			| DI_ITEM_LEFT_BOTTOM, box: (25*_universalScale.x,
+			20*_universalScale.y), scale: _universalScale);
+		DrawString(_drHudFont, "" ..  bottomFrags, (98*_universalScale.x,
+			-_vBorder - (fontHeight+11.5)*_universalScale.y),
+			DI_SCREEN_CENTER_BOTTOM | DI_TEXT_ALIGN_RIGHT,
+			scale: _universalScale*3);
+		DrawString(_consoleFont, nameShown,
+			((teamplay ? -33 : -12)*_universalScale.x, -_vBorder - (fontHeight+13.5)*_universalScale.y),
+			DI_SCREEN_CENTER_BOTTOM | DI_TEXT_ALIGN_LEFT, scale: _universalScale);
 	}
 	
 	protected void DrawMultiplayerHealth(DeltaPlayer ply, Vector2 pos)
@@ -513,6 +534,8 @@ class DeltaHud : BaseStatusBar
 			barWidth * min(1, healthPerc), barHeight, DI_SCREEN_LEFT_TOP);
 		Fill(ply.GetOverhealColor(), pos.X + (28.3*_universalScale.x), pos.Y + 13*_universalScale.y,
 			barWidth * max(0, healthPerc - 1), barHeight, DI_SCREEN_LEFT_TOP);
+		DrawString(_drHudFont, "" .. max(0, ply.Health), (pos.X + 126*_universalScale.x, pos.Y + 14.5*_universalScale.y),
+			DI_SCREEN_LEFT_TOP | DI_TEXT_ALIGN_RIGHT, scale: _universalScale);
 	}
 	
 	protected int GetTeamFrags(int teamIndex)
@@ -707,26 +730,15 @@ class DeltaHud : BaseStatusBar
 		
 		double widgetWidth = (40 + 22) * _universalScale.x, widgetHeight = 28 * _universalScale.y;
 		int ammo1 = CPlayer.mo.FindInventory(CPlayer.ReadyWeapon.AmmoType1).Amount;
-		let ammoType1 = CPlayer.ReadyWeapon.AmmoType1;
-		int ammoIcon = DELTA_AMMOICON_NONE;
-		
-		if (ammoType1 == "Clip")
-			ammoIcon = DELTA_AMMOICON_BULLETS;
-		else if (ammoType1 == "Shell")
-			ammoIcon = DELTA_AMMOICON_SHELLS;
-		else if (ammoType1 == "RocketAmmo")
-			ammoIcon = DELTA_AMMOICON_ROCKETS;
-		else if (ammoType1 == "Cell")
-			ammoIcon = DELTA_AMMOICON_PLASMA;
-		else if (ammoType1 == "ID24Fuel")
-			ammoIcon = DELTA_AMMOICON_FUEL;
+		let ammoType1 = CPlayer.ReadyWeapon.AmmoType1.GetClassName();
+		let ammoIcon = ammoIcons.GetIfExists(ammoType1);
 		
 		Fill(Color(128, 0, 0, 0), -_hBorder - widgetWidth,
 			-_vBorder - widgetHeight + (4 * _universalScale.y), widgetWidth,
 			widgetHeight, DI_SCREEN_RIGHT_BOTTOM);
 		
-		if (ammoIcon != DELTA_AMMOICON_NONE)
-			DrawTexture(ammoIcons[ammoIcon], (-_hBorder - widgetWidth + 12*_universalScale.x, -_vBorder - widgetHeight/2 + 4*_universalScale.y),
+		if (ammoIcon)
+			DrawTexture(ammoIcon, (-_hBorder - widgetWidth + 12*_universalScale.x, -_vBorder - widgetHeight/2 + 4*_universalScale.y),
 				DI_ITEM_CENTER | DI_SCREEN_RIGHT_BOTTOM, box: _universalScale * 16, scale: _universalScale);
 		
 		if (!infiniteAmmo)

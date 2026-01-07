@@ -39,6 +39,7 @@ class DeltaPlayer : PlayerPawn abstract
 	protected int startFlinchTics;
 	protected int shakinessMaxHealth;				// lowest possible health where we'll still be at minimum hand shakiness
 	protected float minShakiness, maxShakiness;
+	protected int oldShakiness;				// used for interpolation
 	
 	protected bool lunging;
 	protected float lungeSpeed, lungeStopDistance;
@@ -49,6 +50,7 @@ class DeltaPlayer : PlayerPawn abstract
 	protected string characterIcon;
 	
 	protected LinearValueInterpolator heartbeat;
+	protected LinearValueInterpolator shakiness;
 	
 	protected float oldAngle;
 	
@@ -640,12 +642,15 @@ class DeltaPlayer : PlayerPawn abstract
 		
 		bobFlinch.y = abs(bobFlinch.y);
 		
-		float shakinessFactor = DeltaMath.Lerp(maxShakiness, minShakiness, (health - 1) / (shakinessMaxHealth - 1.));
-		float x = sin(level.time/11.) * 2 - sin(level.time*23.*shakinessFactor) + 4*shakinessFactor,
-			y = max(0, (0.5+sin(level.time*2)/2) * 5 + sin(level.time*14.*shakinessFactor));
-		Vector2 shakiness = (x, y * 0.5);
+		int t = level.time;
+		float
+			s = shakiness ? DeltaMath.Lerp(oldShakiness, shakiness.GetValue(), ticFrac)/100. : 0,
+			shakeDiff = s - minShakiness,
+			shakeX = sin(t/11.) * 2 - shakeDiff * sin(TICRATE*0.85*t),
+			shakeY = max(0, (0.5+0.5*sin(2*t)) * 5 + shakeDiff * sin(TICRATE/2.*t));
+		Vector2 shake = (shakeX, shakeY * 0.5);
 		
-		return originalBob * perc + bobFlinch + shakiness * shakinessFactor
+		return originalBob * perc + bobFlinch + shake * s
 			+ (DeltaMath.Lerp(_oldTurn, _turn, ticFrac), 0);
 	}
 	
@@ -871,13 +876,13 @@ class DeltaPlayer : PlayerPawn abstract
 		// make sure heartbeat only plays if we're above 40% of our max health AND we aren't dead
 		if (Health <= _maxHealth / 3. && Health > 0 && (delta_heartbeatSound == 1 || (delta_heartbeatSound == 2 && self is "KrisPlayer")))
 		{
-			int _targetVol = (175/3. - Health/float(GetMaxHealth()) * 100) * 2;
+			int _targetVol = round(250/3. - 200. * Health / GetMaxHealth());
 			
 			heartbeat.Update(_targetVol);
 		}
 		else if (Health > 0 && delta_heartbeatSound)
 			heartbeat.Update(0);
-		else
+		else if (heartbeat.GetValue() != 0)
 			heartbeat.Reset(0);
 		
 		if (!IsActorPlayingSound(7))
@@ -1016,6 +1021,20 @@ class DeltaPlayer : PlayerPawn abstract
 	{
 		if (_flinchTics > 0)
 			_flinchTics--;
+		
+		if (!shakiness)
+			shakiness = LinearValueInterpolator.Create(minShakiness * 100, 20);
+		
+		oldShakiness = shakiness.GetValue();
+		
+		float shakeMaxFactor = float(shakinessMaxHealth)/GetMaxHealth();
+		int targetShake = DeltaMath.Lerp(maxShakiness*100., minShakiness*100.,
+			(Health-1) / (shakeMaxFactor*(GetMaxHealth()-1)));
+		
+		if (Health > 0)
+			shakiness.Update(targetShake);
+		else if (shakiness.GetValue() != 0)
+			shakiness.Reset(0);
 	}
 	
 	protected void CheckGraze()

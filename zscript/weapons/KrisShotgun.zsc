@@ -5,7 +5,6 @@ class KrisShotgun : DeltaWeapon
 	Default
 	{
 		Tag "$TAG_DELTA_SHOTGUN";
-		Obituary "$OBIT_DELTA_KSHOTGUN";
 		Inventory.RestrictedTo "KrisPlayer";
 		Inventory.PickupMessage "$PICKUP_DELTA_KSHOTGUN";
 		
@@ -51,7 +50,7 @@ class KrisShotgun : DeltaWeapon
 	action void A_KrisShotgunFire()
 	{
 		// make first shot more accurate than others after it
-		A_FireBullets(5.5, 5.5, 8, 9, flags: FBF_USEAMMO | FBF_NORANDOM);
+		A_FireBullets(5.5, 5.5, 8, 9, "KrisShotgunPuff", flags: FBF_USEAMMO | FBF_NORANDOM);
 		A_AlertMonsters();
 		A_StartSound("delta/shotgun/fire", CHAN_WEAPON, CHANF_OVERLAP);
 // 		A_ZoomFactor(0.97, ZOOM_INSTANT | ZOOM_NOSCALETURNING);
@@ -158,6 +157,7 @@ class KrisShotgunPuff : BulletPuff
 {
 	Default
 	{
+		Obituary "$OBIT_DELTA_KSHOTGUN";
 	}
 }
 
@@ -165,6 +165,6 @@ class KrisShotgunAltPuff : KrisShotgunPuff
 {
 	Default
 	{
-		Obituary "$OBIT_DELTA_KSHOTGUN";
+		Obituary "$OBIT_DELTA_KSHOTGUNALT";
 	}
 }

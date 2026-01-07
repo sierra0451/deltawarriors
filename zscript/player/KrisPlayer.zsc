@@ -433,7 +433,9 @@ class KrisPlayer : DeltaPlayer
 		double parryPitch = AimLineAttack(Angle, PLAYERMISSILERANGE, t, 0., ALF_CHECK3D);
 		
 		double newSpeed = parried.bMissile ? 70 : 50;
-		Vector3 newVel = (cos(Angle), sin(Angle), -sin(parryPitch)) * newSpeed;
+		Vector2 vecToAng = AngleToVector(angle, 1);
+		Vector2 vecToPitch = AngleToVector(pitch, 1);
+		Vector3 newVel = (vecToAng.x, vecToAng.y, -vecToPitch.y) * newSpeed;
 		
 		if (parried.bMissile)
 		{
@@ -495,33 +497,6 @@ class KrisPlayer : DeltaPlayer
 				
 				if (!IsGrounded())
 					return ResolveState("Airborne");
-				
-				return ResolveState(null);
-			}
-			Loop;
-		Blush:
-			DKRS I 1
-			{
-				if (!IsGrounded())
-					return ResolveState("Airborne");
-				if (!invoker.beingHugged)
-					return ResolveState("Spawn");
-				
-				return ResolveState(null);
-			}
-			Loop;
-		BlushWalk:
-			DKRS IIIIJJJJIIIIKKKK 1
-			{
-				let speedLerp = 1 - (invoker.Vel.Length() / (GetDefaultSpeed(invoker.GetClass()) * TICRATE));
-				self.tics = max(1, round(1 + speedLerp * 0.75));
-				
-				if (!IsGrounded())
-					return ResolveState("Airborne");
-				if (!(player.buttons & (BT_MOVERIGHT | BT_MOVELEFT | BT_BACK | BT_FORWARD)))
-					return ResolveState("Spawn");
-				if (!invoker.beingHugged)
-					return ResolveState("See");
 				
 				return ResolveState(null);
 			}
