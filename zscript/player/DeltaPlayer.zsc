@@ -95,6 +95,8 @@ class DeltaPlayer : PlayerPawn abstract
 	
 	private RecoilEvent[10] _recoils;
 	
+	private Array<Name> _dynamicLights;
+	
 	// Damage types that ignore I-frames.
 	static const Name DAMAGE_TYPES_IGNORE_IFRAMES[] =
 	{
@@ -1240,6 +1242,9 @@ class DeltaPlayer : PlayerPawn abstract
 		_recoils[targetIndex].recoilType = recoilType;
 	}
 	
+	// exists purely to be overridden with any clean-up, or any events that
+	// should trigger, or anything else that needs to be done once this player
+	// class dies.
 	virtual void DeltaExtraDeathStuff() {}
 	
 	virtual bool StartOffhand()
@@ -1274,6 +1279,8 @@ class DeltaPlayer : PlayerPawn abstract
 		
 		A_StopSound();
 		A_StartSound("delta/hurt", CHAN_VOICE);
+		A_ClearDynamicLights();
+		
 		invoker.DeltaExtraDeathStuff(); // can't be an action cuz we need to be able to override it
 		
 		// if we have partial invisibility or anything like that, turn it off
@@ -1329,6 +1336,42 @@ class DeltaPlayer : PlayerPawn abstract
 	action void A_EndOffhand()
 	{
 		invoker.isUsingOffhand = false;
+	}
+	
+	action void A_AddDynamicLight(Name lightId, Name lightDef)
+	{
+		if (invoker._dynamicLights.Find(lightId) == invoker._dynamicLights.Size())
+			invoker._dynamicLights.Push(lightId);
+		
+		invoker.A_Log("added " .. lightId);
+		A_AttachLightDef(lightId, lightDef);
+	}
+	
+	action void A_RemoveDynamicLight(Name lightId)
+	{
+		int lightIndex = invoker._dynamicLights.Find(lightId);
+		if (lightIndex == invoker._dynamicLights.Size())
+			return;
+		
+		if (A_RemoveLight(lightId))
+		{
+			invoker.A_Log("removed " .. lightId);
+			invoker._dynamicLights.Delete(lightIndex);
+			return;
+		}
+		
+		invoker.A_Log("failed to remove " .. lightId);
+	}
+	
+	action void A_ClearDynamicLights()
+	{
+		if (!invoker._dynamicLights.Size())
+			return;
+		
+		for (int i = invoker._dynamicLights.Size() - 1; i >= 0; i--)
+		{
+			A_RemoveDynamicLight(invoker._dynamicLights[i]);
+		}
 	}
 	
 	clearscope virtual bool CanUseOffhand()

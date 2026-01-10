@@ -125,6 +125,8 @@ class DeltaHud : BaseStatusBar
 		if (!weaps)
 			return;
 		
+		ammos.Clear();
+		
 		for (int i = 1;; i++)
 		{
 			int weapCount = weaps.SlotSize(i);
@@ -194,6 +196,9 @@ class DeltaHud : BaseStatusBar
 			DrawLeftPanel(sv_infiniteAmmo || (CPlayer.mo.FindInventory('PowerInfiniteAmmo', true) != null), ticFrac);
 			DrawRightPanel(sv_infiniteAmmo || (CPlayer.mo.FindInventory('PowerInfiniteAmmo', true) != null));
 			DrawReticle();
+			
+			// note to self: getting remaining air time for being underwater is
+			// this formula: player.air_finished - level.mapTime
 		}
 		else
 		{
@@ -532,7 +537,7 @@ class DeltaHud : BaseStatusBar
 			DI_SCREEN_CENTER_BOTTOM | DI_TEXT_ALIGN_RIGHT,
 			scale: _universalScale*3);
 		DrawString(_consoleFont, nameShown,
-			((teamplay ? -33 : -12)*_universalScale.x, -_vBorder - (fontHeight+13.5)*_universalScale.y),
+			((teamplay ? -33 : -12)*_universalScale.x, -_vBorder - (fontHeight/2+13.5)*_universalScale.y),
 			DI_SCREEN_CENTER_BOTTOM | DI_TEXT_ALIGN_LEFT, scale: _universalScale/2);
 	}
 	
@@ -787,11 +792,6 @@ class DeltaHud : BaseStatusBar
 				alpha: curAlpha,
 				scale: _universalScale*3);
 		}
-	}
-	
-	protected void DrawAllAmmo(double x, double y, double w, double hPerAmmo)
-	{
-		
 	}
 	
 	protected void DrawKeys(double x, double y)

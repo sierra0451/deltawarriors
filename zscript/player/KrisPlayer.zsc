@@ -467,6 +467,12 @@ class KrisPlayer : DeltaPlayer
 		}
 	}
 	
+	override void DeltaExtraDeathStuff()
+	{
+		if (_isSliding)
+			EndSlide();
+	}
+	
 	override bool StartOffhand()
 	{
 		if (!GetTension(PARRY_TP_COST))
@@ -515,11 +521,7 @@ class KrisPlayer : DeltaPlayer
 		Pain:
 			Goto Spawn;
 		Death:
-			DKRS G 1
-			{
-				A_StartDeath();
-				invoker.EndSlide();
-			}
+			DKRS G 1 A_StartDeath;
 			DKRS G 1 A_CheckDeathLand;
 			Wait;
 		FinishDeath:

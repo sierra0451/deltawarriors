@@ -112,10 +112,7 @@ class DeltaWeapon : Weapon
 			return;
 		
 		ResetPSprite(psp);
-		
-		// [RH] Clear the flash state. Only needed for Strife.
-		player.SetPsprite(PSP_FLASH, null);
-		player.mo.BringUpWeapon ();
+		player.mo.BringUpWeapon();
 		return;
 	}
 	
@@ -214,6 +211,26 @@ class DeltaWeapon : Weapon
 	action void A_AddRecoil(int startTime, int leadInTime = 0, double p = 0, double y = 0, double r = 0)
 	{
 		DeltaPlayer(invoker.owner).AddRecoil(RECOIL_WEAPON, startTime, leadInTime, p, y, r);
+	}
+	
+	action void A_AddDynamicLight(Name lightId, Name lightDef)
+	{
+		let deltaPly = DeltaPlayer(invoker.owner);
+		
+		if (!deltaPly)
+			return;
+		
+		deltaPly.A_AddDynamicLight(lightId, lightDef);
+	}
+	
+	action void A_RemoveDynamicLight(Name lightId)
+	{
+		let deltaPly = DeltaPlayer(invoker.owner);
+		
+		if (!deltaPly)
+			return;
+		
+		deltaPly.A_RemoveDynamicLight(lightId);
 	}
 	
 	void MarkReadyToStopLunging()

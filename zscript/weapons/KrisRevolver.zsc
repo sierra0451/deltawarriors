@@ -32,7 +32,7 @@ class KrisRevolver : DeltaWeapon
 		A_AlertMonsters();
 		A_StartSound("delta/revolver/fire", CHAN_WEAPON, CHANF_OVERLAP);
 // 		A_ZoomFactor(0.97, ZOOM_INSTANT | ZOOM_NOSCALETURNING);
-		self.A_AttachLightDef("revolverMuzzle", "DeltaGenericMuzzle");
+		A_AddDynamicLight("revolverMuzzle", "DeltaGenericMuzzle");
 		invoker.cocked = false;
 	}
 	
@@ -67,7 +67,7 @@ class KrisRevolver : DeltaWeapon
 		Fire:
 			DKRV B 1 A_KrisRevolverFire;
 			#### # 1 A_AddRecoil(10, 1, p: -4);
-			#### C 1 A_RemoveLight("revolverMuzzle");
+			#### C 1 A_RemoveDynamicLight("revolverMuzzle");
 			#### D 2 A_ZoomFactor;
 			#### E 3;
 			#### FG 2;

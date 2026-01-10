@@ -55,7 +55,7 @@ class KrisShotgun : DeltaWeapon
 		A_StartSound("delta/shotgun/fire", CHAN_WEAPON, CHANF_OVERLAP);
 // 		A_ZoomFactor(0.97, ZOOM_INSTANT | ZOOM_NOSCALETURNING);
 		A_AddRecoil(10, 1, p: -3);
-		self.A_AttachLightDef("shotgunMuzzle", "DeltaGenericMuzzle");
+		A_AddDynamicLight("shotgunMuzzle", "DeltaGenericMuzzle");
 		invoker.pumped = false;
 	}
 	
@@ -70,7 +70,7 @@ class KrisShotgun : DeltaWeapon
 		A_StartSound("delta/shotgun/fire", CHAN_WEAPON, CHANF_OVERLAP);
 		A_ZoomFactor(0.97, ZOOM_INSTANT | ZOOM_NOSCALETURNING);
 		A_AddRecoil(20, 3, p: -7);
-		self.A_AttachLightDef("shotgunMuzzle", "DeltaGenericMuzzle");
+		A_AddDynamicLight("shotgunMuzzle", "DeltaGenericMuzzle");
 		invoker.pumped = false;
 		
 		if (player.crouchOffset ~== 0)
@@ -122,7 +122,7 @@ class KrisShotgun : DeltaWeapon
 			Stop;
 		Fire:
 			DKSG B 2 A_KrisShotgunFire;
-			#### C 1 A_RemoveLight("shotgunMuzzle");
+			#### C 1 A_RemoveDynamicLight("shotgunMuzzle");
 			#### # 1 A_ZoomFactor;
 			#### DEF 2; // fall-through is intentional
 		Pump:
@@ -143,7 +143,7 @@ class KrisShotgun : DeltaWeapon
 			Goto Ready;
 		AltFire:
 			DKSA A 2 A_KrisShotgunAltFire;
-			#### B 1 A_RemoveLight("shotgunMuzzle");
+			#### B 1 A_RemoveDynamicLight("shotgunMuzzle");
 			#### # 1 A_ZoomFactor;
 			#### CDEFGHIJKL 2;
 			Goto Pump;

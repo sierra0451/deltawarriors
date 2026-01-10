@@ -25,7 +25,7 @@ class KrisSmg : DeltaWeapon
 		A_AlertMonsters();
 		A_StartSound("delta/smg/fire", CHAN_WEAPON, CHANF_OVERLAP, pitch: cfrandom(0.93, 1.07));
 		A_ZoomFactor(0.99, ZOOM_INSTANT | ZOOM_NOSCALETURNING);
-		A_AttachLightDef("smgMuzzle", "DeltaGenericMuzzle");
+		A_AddDynamicLight("smgMuzzle", "DeltaGenericMuzzle");
 		A_AddRecoil(5, 1, p: -0.5);
 		
 		if (level.IsFreelookAllowed())
@@ -55,7 +55,7 @@ class KrisSmg : DeltaWeapon
 		Fire:
 			DKSM B 1 A_KrisSmgFire;
 			#### # 1 A_ZoomFactor(1, ZOOM_NOSCALETURNING);
-			#### C 2 A_RemoveLight("smgMuzzle");
+			#### C 2 A_RemoveDynamicLight("smgMuzzle");
 			#### D 1;
 			#### EFA 2 A_ReFire;
 			Goto Ready;
