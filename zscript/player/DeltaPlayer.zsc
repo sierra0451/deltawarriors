@@ -1,20 +1,41 @@
-enum TP_RESULT
+enum TpResult
 {
 	TP_FAIL = 0,
 	TP_USE = 1,
 	TP_INFINITE = 2
 }
 
-enum DELTA_PSP
+enum DeltaPsp
 {
 	PSP_LEGS = -10,
 	PSP_OFFHAND = -5
+}
+
+enum HeartbeatSetting
+{
+	HB_OFF = 0,
+	HB_ON = 1,
+	HB_KRIS_ONLY = 2
+}
+
+enum DeltaRecoilType
+{
+	RECOIL_WEAPON,
+	RECOIL_DAMAGE
+}
+
+enum DeltaCrosshairState
+{
+	DELTA_XHR_NEUTRAL,
+	DELTA_XHR_FRIENDLY,
+	DELTA_XHR_ENEMY
 }
 
 struct RecoilEvent
 {
 	Vector3 recoil;
 	int startTime, curTime, leadInTime;
+	DeltaRecoilType recoilType;
 }
 
 class DeltaPlayer : PlayerPawn abstract
@@ -27,7 +48,7 @@ class DeltaPlayer : PlayerPawn abstract
 	int hugReactionTime;
 	Actor lungeTarget;
 	
-	protected int airTimer; 						// when alive, used to coyote time. when dead, used to determine if we made a thud sound upon corpse landing
+	protected int airTimer; 						// when alive, used to handle coyote time. when dead, used to determine if we made a thud sound upon corpse landing
 	protected int jumpBuffer, airBobTics, hugTimer;
 	protected float customBobPerc;
 	protected int damageTics; 						// invulnerability frames, essentially
@@ -43,6 +64,7 @@ class DeltaPlayer : PlayerPawn abstract
 	
 	protected bool lunging;
 	protected float lungeSpeed, lungeStopDistance;
+	protected Vector3 preLungeVel;
 	protected Array<Actor> grazed;
 	
 	protected bool isUsingOffhand;
@@ -66,6 +88,8 @@ class DeltaPlayer : PlayerPawn abstract
 	private TextureID _offhandIconId;
 	private TextureID _characterIconId;				// used for health displays in co-op and team deathmatch
 	
+	private DeltaCrosshairState _crosshairState;
+	
 	private float _originalHeight;					// used for fixing compatibility issues with maps that use voodoo dolls
 													// and conveyor belts
 	
@@ -86,6 +110,7 @@ class DeltaPlayer : PlayerPawn abstract
 	const DAMAGE_IFRAMES = 10;
 	const DRAIN_TIMER_START = TICRATE * 12;			// tp lasts for 12 seconds before we start draining it
 	const RECOIL_TICS = 5;
+	const DEFAULT_RED_CROSSHAIR_RANGE = 500;
 	
 	property HugReactionTime: hugReactionTime;
 	property CharacterColor: characterColor;		// mostly used for hud elements
@@ -226,6 +251,8 @@ class DeltaPlayer : PlayerPawn abstract
 			return;
 		
 		HandleFlinch();
+		HandleHandedness();
+		HandleCrosshair();
 		HandleLunging();
 		HandleIFrames();
 		DrainTension();
@@ -434,10 +461,10 @@ class DeltaPlayer : PlayerPawn abstract
 				else if (!(deathPitchTP ~== 0))
 					deathPitchTP = 0;
 				
-				if (!(player.cheats & CF_CHASECAM))
-					Pitch = deathPitchFP;
-				else
+				if ((player.cheats & CF_CHASECAM) || r_deathcamera)
 					Pitch = deathPitchTP;
+				else
+					Pitch = deathPitchFP;
 			}
 		}
 		
@@ -611,15 +638,11 @@ class DeltaPlayer : PlayerPawn abstract
 	
 	override bool PreTeleport(Vector3 destPos, double destAngle, int flags)
 	{
+		let oldAng = angle;
 		let result = Super.PreTeleport(destPos, destAngle, flags);
 		
 		if (result)
-		{
-			oldAngle = destAngle;
-			angle = destAngle;
-			_turn = 0;
-			_oldTurn = 0;
-		}
+			oldAngle -= DeltaAngle(destAngle, oldAng);
 		
 		return result;
 	}
@@ -731,6 +754,7 @@ class DeltaPlayer : PlayerPawn abstract
 		if (!CanLunge())
 			return;
 		
+		preLungeVel = Vel;
 		lungeTarget = target;
 		lungeStopDistance = stopDistance;
 		
@@ -780,19 +804,26 @@ class DeltaPlayer : PlayerPawn abstract
 		if (level.IsFreelookAllowed() && abs(pitch + asin(diffUnit.z)) > 15)
 			A_SetPitch(-asin(diffUnit.z), SPF_INTERPOLATE);
 		
-		if (LungeBlocked() || dist <= lungeStopDistance + Vel.Length() || (diff.XY.Length() < lungeStopDistance
+		if (LungeBlocked())
+		{
+			StopLunge();
+			Vel = preLungeVel;
+			return;
+		}
+		
+		if (dist <= lungeStopDistance + Vel.Length() || (diff.XY.Length() < lungeStopDistance
 			&& abs(diff.z) - height <= lungeStopDistance + Vel.Length()))
 		{
 			let targetPos = vel + pos;
-			StopLunge();
+			StopLunge(true);
 			TryMove(targetPos.XY, 0);
 			player.vel = (0, 0);
 		}
 	}
 	
-	void StopLunge()
+	void StopLunge(bool resetVelocity = false)
 	{
-		Vel = (0, 0, 0);
+		Vel = resetVelocity ? (0, 0, 0) : preLungeVel;
 		lunging = bNoGravity = false;
 		bSolid = true;
 		
@@ -812,7 +843,7 @@ class DeltaPlayer : PlayerPawn abstract
 			ticLastGrazed = level.Time;
 	}
 	
-	clearscope int GetTension(double amount, bool playSound = true)
+	clearscope TpResult GetTension(double amount, bool playSound = true)
 	{
 		if (sv_infiniteAmmo || (FindInventory('PowerInfiniteAmmo', true) != null))
 			return TP_INFINITE;
@@ -867,20 +898,19 @@ class DeltaPlayer : PlayerPawn abstract
 	{
 		if (IsPredicting())
 			return;
-		
 		if (!heartbeat)
 			heartbeat = LinearValueInterpolator.Create(0, 10);
 		
 		float _maxHealth = GetMaxHealth();
 		
 		// make sure heartbeat only plays if we're above 40% of our max health AND we aren't dead
-		if (Health <= _maxHealth / 3. && Health > 0 && (delta_heartbeatSound == 1 || (delta_heartbeatSound == 2 && self is "KrisPlayer")))
+		if (Health <= _maxHealth / 3. && Health > 0 && (cl_delta_heartbeatSound == HB_ON
+			|| (cl_delta_heartbeatSound == HB_KRIS_ONLY && self is "KrisPlayer")))
 		{
 			int _targetVol = round(250/3. - 200. * Health / GetMaxHealth());
-			
 			heartbeat.Update(_targetVol);
 		}
-		else if (Health > 0 && delta_heartbeatSound)
+		else if (Health > 0 && cl_delta_heartbeatSound)
 			heartbeat.Update(0);
 		else if (heartbeat.GetValue() != 0)
 			heartbeat.Reset(0);
@@ -893,8 +923,8 @@ class DeltaPlayer : PlayerPawn abstract
 	
 	protected virtual float GetViewRoll()
 	{
-		let relVel = (Vel.x * cos(-Angle) - (Vel.y * sin(-Angle)), Vel.x * sin(-Angle) + Vel.y * cos(-Angle), Vel.z);
-		let rollTarget = min(10, max(-10, -relVel.y * 0.25));
+		let relVelY = (-Vel.x * sin(-Angle) - Vel.y * cos(-Angle)) / 4.;
+		let rollTarget = min(10, max(-10, relVelY)) * cl_delta_leanIntensity;
 		
 		let maxChange = 20. / TICRATE;
 		
@@ -928,6 +958,7 @@ class DeltaPlayer : PlayerPawn abstract
 			else
 				factor = cur / float(start - lead);
 			
+			factor *= _recoils[i].recoilType == RECOIL_WEAPON ? cl_delta_weaponRecoil : cl_delta_damageRecoil;
 			factor *= factor;
 			recoil += _recoils[i].recoil * factor;
 		}
@@ -1037,6 +1068,59 @@ class DeltaPlayer : PlayerPawn abstract
 			shakiness.Reset(0);
 	}
 	
+	protected void HandleHandedness()
+	{
+		if (IsVoodooDoll())
+			return;
+		
+		let weapPsp = player.FindPSprite(PSP_WEAPON),
+			offhandPsp = player.FindPSprite(PSP_OFFHAND),
+			legsPsp = player.FindPSprite(PSP_LEGS);
+		
+		if (weapPsp)
+			weapPsp.bFlip = weapPsp.bMirror = cl_delta_weaponHandedness;
+		if (offhandPsp)
+			offhandPsp.bFlip = offhandPsp.bMirror = cl_delta_weaponHandedness;
+		if (legsPsp)
+			legsPsp.bFlip = legsPsp.bMirror = cl_delta_weaponHandedness;
+	}
+	
+	protected void HandleCrosshair()
+	{
+		if (!cl_delta_crosshairTargetChange)
+		{
+			_crosshairState = DELTA_XHR_NEUTRAL;
+			return;
+		}
+		
+		if (IsVoodooDoll())
+			return;
+		
+		let curWeap = DeltaWeapon(player.ReadyWeapon);
+		
+		FTranslatedLineTarget t;
+		FLineTraceData l;
+		double ang = angle;
+		double distance = curWeap ? curWeap.GetRedCrosshairRange() : DEFAULT_RED_CROSSHAIR_RANGE;
+		double pitch = AimLineAttack(ang, distance, t, 0., ALF_CHECK3D);
+		
+		LineTrace(ang, distance, pitch, TRF_NOSKY,
+			height*0.5 - floorclip + AttackZOffset * player.crouchFactor, data: l);
+		
+		if (!l.HitActor)
+		{
+			_crosshairState = DELTA_XHR_NEUTRAL;
+			return;
+		}
+		
+		if (IsFriend(l.HitActor))
+			_crosshairState = DELTA_XHR_FRIENDLY;
+		else if (IsHostile(l.HitActor))
+			_crosshairState = DELTA_XHR_ENEMY;
+		else
+			_crosshairState = DELTA_XHR_NEUTRAL;
+	}
+	
 	protected void CheckGraze()
 	{
 		if (damageTics != 0)
@@ -1122,12 +1206,12 @@ class DeltaPlayer : PlayerPawn abstract
 		if (abs(cos(ang)) <= 0.1)
 			pMult = 0;
 		
-		AddRecoil(7 + damageAddTics, 2, p: -cos(ang) * flinchMultiplier * damageMultiplier,
+		AddRecoil(RECOIL_DAMAGE, 7 + damageAddTics, 2, p: -cos(ang) * flinchMultiplier * damageMultiplier,
 			y: isExplosion ? yrMult * flinchMultiplier * damageMultiplier : 0,
 			r: isExplosion ? 0 : yrMult * flinchMultiplier * damageMultiplier);
 	}
 	
-	void AddRecoil(int startTime, int leadInTime = 0, double p = 0, double y = 0, double r = 0)
+	void AddRecoil(DeltaRecoilType recoilType, int startTime, int leadInTime = 0, double p = 0, double y = 0, double r = 0)
 	{
 		int targetIndex = -1;
 		int shortestTime = -1;
@@ -1153,6 +1237,7 @@ class DeltaPlayer : PlayerPawn abstract
 		_recoils[targetIndex].startTime = _recoils[targetIndex].curTime = startTime;
 		_recoils[targetIndex].leadInTime = leadInTime;
 		_recoils[targetIndex].recoil = (p, y, r);
+		_recoils[targetIndex].recoilType = recoilType;
 	}
 	
 	virtual void DeltaExtraDeathStuff() {}
@@ -1318,6 +1403,11 @@ class DeltaPlayer : PlayerPawn abstract
 	clearscope TextureID GetCharacterIconID()
 	{
 		return _characterIconId;
+	}
+	
+	clearscope DeltaCrosshairState GetCrosshairState()
+	{
+		return _crosshairState;
 	}
 	
 	clearscope bool IsVoodooDoll()

@@ -66,6 +66,7 @@ class DeltaTensionMax : DeltaTensionPickup replaces BlueArmor
 		Tag "$TAG_DELTA_TPLARGE";
 		Inventory.Amount 250;
 		Inventory.PickupMessage "$PICKUP_DELTA_TPLARGE";
+		+INVENTORY.BIGPOWERUP;
 	}
 	
 	States

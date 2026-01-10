@@ -24,16 +24,19 @@ class DeltaHud : BaseStatusBar
 		_coopPanelBack, _deathmatchPanelBack, _deathmatchCurrentPlayer;
 	private double _oldTp;
 	DynamicValueInterpolator _tpInterp;
+	
 	private DamageIndicatorInfo[10] damageIndicators;
 	private GrazeIndicatorInfo[10] grazeIndicators;
+	private Array<class<Ammo> > ammos;
 	
 	const DAMAGE_INDICATOR_TIME = floor(TICRATE * 2);
 	const DAMAGE_INDICATOR_FADE_TIME = floor(TICRATE * 0.75);
 	const GRAZE_INDICATOR_TIME = floor(TICRATE * 0.25);
+	const WEAPON_SLOTS_WRAPAROUND = 9;
 	
 	enum CONTROL_ICON_IDS
 	{
-		DELTA_CONTROLICON_TEXT = 0, // use text for this one!
+		DELTA_CONTROLICON_TEXT = 0xff, // use text for this key and keys below it!
 		
 		DELTA_CONTROLICON_MOUSE1, DELTA_CONTROLICON_MOUSE2, DELTA_CONTROLICON_MOUSE3,
 		DELTA_CONTROLICON_MOUSE4, DELTA_CONTROLICON_MOUSE5, DELTA_CONTROLICON_MOUSE6,
@@ -42,8 +45,7 @@ class DeltaHud : BaseStatusBar
 		DELTA_CONTROLICON_MAX
 	}
 	
-	private TextureID[DELTA_CONTROLICON_MAX] controlIcons;
-	
+	Map<int, TextureID> controlIcons;
 	Map<name, TextureID> ammoIcons;
 	
 	override void Init()
@@ -68,14 +70,14 @@ class DeltaHud : BaseStatusBar
 		_deathmatchPanelBack 		= TexMan.CheckForTexture("DTHMBACK");
 		_deathmatchCurrentPlayer 	= TexMan.CheckForTexture("DTHMCPLY");
 		
-		controlIcons[DELTA_CONTROLICON_MOUSE1]	= TexMan.CheckForTexture("DRMSELCL");
-		controlIcons[DELTA_CONTROLICON_MOUSE2]	= TexMan.CheckForTexture("DRMSERCL");
-		controlIcons[DELTA_CONTROLICON_MOUSE3]	= TexMan.CheckForTexture("DRMSEMCL");
-		controlIcons[DELTA_CONTROLICON_MOUSE4]	= TexMan.CheckForTexture("DRMSEBT4");
-		controlIcons[DELTA_CONTROLICON_MOUSE5]	= TexMan.CheckForTexture("DRMSEBT5");
-		controlIcons[DELTA_CONTROLICON_MOUSE6]	= TexMan.CheckForTexture("DRMSEBT6");
-		controlIcons[DELTA_CONTROLICON_MOUSE7]	= TexMan.CheckForTexture("DRMSEBT7");
-		controlIcons[DELTA_CONTROLICON_MOUSE8]	= TexMan.CheckForTexture("DRMSEBT8");
+		controlIcons.Insert(DELTA_CONTROLICON_MOUSE1, TexMan.CheckForTexture("DRMSELCL"));
+		controlIcons.Insert(DELTA_CONTROLICON_MOUSE2, TexMan.CheckForTexture("DRMSERCL"));
+		controlIcons.Insert(DELTA_CONTROLICON_MOUSE3, TexMan.CheckForTexture("DRMSEMCL"));
+		controlIcons.Insert(DELTA_CONTROLICON_MOUSE4, TexMan.CheckForTexture("DRMSEBT4"));
+		controlIcons.Insert(DELTA_CONTROLICON_MOUSE5, TexMan.CheckForTexture("DRMSEBT5"));
+		controlIcons.Insert(DELTA_CONTROLICON_MOUSE6, TexMan.CheckForTexture("DRMSEBT6"));
+		controlIcons.Insert(DELTA_CONTROLICON_MOUSE7, TexMan.CheckForTexture("DRMSEBT7"));
+		controlIcons.Insert(DELTA_CONTROLICON_MOUSE8, TexMan.CheckForTexture("DRMSEBT8"));
 		
 		ammoIcons.Insert('Clip', 		TexMan.CheckForTexture("DRAMBULL"));
 		ammoIcons.Insert('Shell', 		TexMan.CheckForTexture("DRAMSHEL"));
@@ -116,16 +118,52 @@ class DeltaHud : BaseStatusBar
 		
 		_oldAngle = _currAngle;
 		_currAngle = ply.Angle;
-		
 		_oldPos = _currPos;
 		_currPos = ply.Pos;
+		
+		let weaps = CPlayer.weapons;
+		if (!weaps)
+			return;
+		
+		for (int i = 1;; i++)
+		{
+			int weapCount = weaps.SlotSize(i);
+			
+			if (i > WEAPON_SLOTS_WRAPAROUND)
+			{
+				i = -1;
+				continue;
+			}
+			if (i == 0)
+				break;
+			
+			if (!weapCount)
+				continue;
+			
+			for (int j = 0; j < weapCount; j++)
+			{
+				if (!CPlayer.mo.CountInv(weaps.GetWeapon(i, j)))
+					continue;
+				
+				Weapon inv = Weapon(CPlayer.mo.FindInventory(weaps.GetWeapon(i, j)));
+				
+				if (!inv)
+					continue;
+				if (!inv.AmmoType1)
+					continue;
+				if (ammos.Find(inv.AmmoType1) != ammos.Size())
+					continue;
+				
+				ammos.Push(inv.AmmoType1);
+			}
+		}
 	}
 	
 	override void Draw(int state, double ticFrac)
 	{
 		Super.Draw(state, ticFrac);
 		
-		if (state == HUD_None || !delta_showHud)
+		if (state == HUD_None || !cl_delta_showHud)
 			return;
 		
 		_universalScale = GetHudScale();
@@ -134,7 +172,7 @@ class DeltaHud : BaseStatusBar
 		_hBorder = 30 * _universalScale.x;
 		_vBorder = 30 * _universalScale.y;
 		
-		if (CPlayer.Health <= 40 && delta_lowHealthVignette && !automapActive)
+		if (CPlayer.Health <= 40 && cl_delta_lowHealthVignette && !automapActive)
 		{
 			double alpha = 1 - CPlayer.Health / 40.;
 			Screen.DrawTexture(_vignette, false, 0, 0, DTA_Fullscreen, true,
@@ -388,7 +426,7 @@ class DeltaHud : BaseStatusBar
 		}
 		
 		barColor |= 0xff000000;
-		nameShown.Truncate(9);
+		nameShown.Truncate(16);
 		Fill(barColor, -32*_universalScale.x, -_vBorder - 36*_universalScale.y,
 			min(1., (max(0., leaderFrags) / max(1., fraglimit))) * 132 * _universalScale.x, -20 * _universalScale.y,
 			DI_SCREEN_CENTER_BOTTOM);
@@ -399,8 +437,8 @@ class DeltaHud : BaseStatusBar
 			(98*_universalScale.x, -_vBorder - (fontHeight+43.5)*_universalScale.y),
 			DI_SCREEN_CENTER_BOTTOM | DI_TEXT_ALIGN_RIGHT, scale: _universalScale*3);
 		DrawString(_consoleFont, nameShown,
-			((teamplay ? -33 : -12)*_universalScale.x, -_vBorder - (fontHeight+45.5)*_universalScale.y),
-			DI_SCREEN_CENTER_BOTTOM | DI_TEXT_ALIGN_LEFT, scale: _universalScale);
+			((teamplay ? -33 : -12)*_universalScale.x, -_vBorder - (fontHeight/2+45.5)*_universalScale.y),
+			DI_SCREEN_CENTER_BOTTOM | DI_TEXT_ALIGN_LEFT, scale: _universalScale/2);
 		
 		// Bottom bar (second place if we're leader, us otherwise)
 		let bottomFrags = -500, bottomIndex = 0;
@@ -481,7 +519,7 @@ class DeltaHud : BaseStatusBar
 			return;
 		
 		barColor |= 0xff000000;
-		nameShown.Truncate(9);
+		nameShown.Truncate(16);
 		Fill(barColor, -32*_universalScale.x, -_vBorder - 4*_universalScale.y,
 			min(1., (max(0., bottomFrags) / max(1., fraglimit))) * 132 * _universalScale.x, -20 * _universalScale.y,
 			DI_SCREEN_CENTER_BOTTOM);
@@ -495,7 +533,7 @@ class DeltaHud : BaseStatusBar
 			scale: _universalScale*3);
 		DrawString(_consoleFont, nameShown,
 			((teamplay ? -33 : -12)*_universalScale.x, -_vBorder - (fontHeight+13.5)*_universalScale.y),
-			DI_SCREEN_CENTER_BOTTOM | DI_TEXT_ALIGN_LEFT, scale: _universalScale);
+			DI_SCREEN_CENTER_BOTTOM | DI_TEXT_ALIGN_LEFT, scale: _universalScale/2);
 	}
 	
 	protected void DrawMultiplayerHealth(DeltaPlayer ply, Vector2 pos)
@@ -565,11 +603,10 @@ class DeltaHud : BaseStatusBar
 		int k = Bindings.GetKeysForCommand(cmd);
 		
 		// not a mouse button!
-		if (k < 0x100 || k > 0x108)
+		if (k <= DELTA_CONTROLICON_TEXT || k >= DELTA_CONTROLICON_MAX)
 			return null;
 		
-		k -= 0xff;
-		return controlIcons[k];
+		return controlIcons.GetIfExists(k);
 	}
 	
 	protected void DisplayBinding(string cmd, Vector2 pos, int flags, Vector2 scale)
@@ -723,31 +760,38 @@ class DeltaHud : BaseStatusBar
 	
 	protected void DrawRightPanel(bool infiniteAmmo)
 	{
-		let weap = CPlayer.ReadyWeapon;
-		
-		if (weap == null || weap.AmmoType1 == null)
+		if (!ammos.Size())
 			return;
 		
-		double widgetWidth = (40 + 22) * _universalScale.x, widgetHeight = 28 * _universalScale.y;
-		int ammo1 = CPlayer.mo.FindInventory(CPlayer.ReadyWeapon.AmmoType1).Amount;
-		let ammoType1 = CPlayer.ReadyWeapon.AmmoType1.GetClassName();
-		let ammoIcon = ammoIcons.GetIfExists(ammoType1);
+		double widgetWidth = 70 * _universalScale.x,
+			hPerAmmo = 22 * _universalScale.y,
+			h = ammos.Size() * hPerAmmo + (5*_universalScale.y);
+		Fill(Color(128, 0, 0, 0), -_hBorder - widgetWidth, -_vBorder - h,
+			widgetWidth, h, DI_SCREEN_RIGHT_BOTTOM);
 		
-		Fill(Color(128, 0, 0, 0), -_hBorder - widgetWidth,
-			-_vBorder - widgetHeight + (4 * _universalScale.y), widgetWidth,
-			widgetHeight, DI_SCREEN_RIGHT_BOTTOM);
+		for (int i = 0; i < ammos.Size(); i++)
+		{
+			let am = ammos[ammos.Size() - 1 - i];
+			let amCount = CPlayer.mo.CountInv(am);
+			let ammoIcon = ammoIcons.GetIfExists(am.GetClassName());
+			double curAlpha = (CPlayer.ReadyWeapon ? (am == CPlayer.ReadyWeapon.AmmoType1) : false) ? 1 : 0.2;
+			
+			DrawTexture(ammoIcon, (-_hBorder - widgetWidth + 5*_universalScale.x,
+				-_vBorder - 5*_universalScale.y - hPerAmmo*i),
+				DI_ITEM_LEFT_BOTTOM | DI_SCREEN_RIGHT_BOTTOM,
+				alpha: curAlpha,
+				box: _universalScale * 16, scale: _universalScale);
+			DrawString(_drHudFont, "" .. amCount,
+				(-_hBorder - (5*_universalScale.x), -_vBorder - (i+1)*(hPerAmmo) + 1*_universalScale.y),
+				DI_SCREEN_RIGHT_BOTTOM | DI_TEXT_ALIGN_RIGHT,
+				alpha: curAlpha,
+				scale: _universalScale*3);
+		}
+	}
+	
+	protected void DrawAllAmmo(double x, double y, double w, double hPerAmmo)
+	{
 		
-		if (ammoIcon)
-			DrawTexture(ammoIcon, (-_hBorder - widgetWidth + 12*_universalScale.x, -_vBorder - widgetHeight/2 + 4*_universalScale.y),
-				DI_ITEM_CENTER | DI_SCREEN_RIGHT_BOTTOM, box: _universalScale * 16, scale: _universalScale);
-		
-		if (!infiniteAmmo)
-			DrawString(_drHudFont, String.Format("%d", ammo1),
-				(-_hBorder - 4*_universalScale.x, -_vBorder - 18*_universalScale.y),
-				DI_SCREEN_RIGHT_BOTTOM | DI_TEXT_ALIGN_RIGHT, scale: 3 * _universalScale);
-		else
-			DrawTexture(_infiniteText, (-_hBorder - 4*_universalScale.x, -_vBorder - (10 * _universalScale.y)),
-				DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT | DI_ITEM_VCENTER, box: (28 * _universalScale.x, 16 * _universalScale.y), scale: _universalScale * 15/8);
 	}
 	
 	protected void DrawKeys(double x, double y)
@@ -787,28 +831,25 @@ class DeltaHud : BaseStatusBar
 	
 	protected void DrawReticle()
 	{
-		if (CPlayer.cheats & CF_CHASECAM || automapActive || !(CPlayer.mo is "DeltaPlayer"))
+		if (CPlayer.cheats & CF_CHASECAM || automapActive
+			|| !(CPlayer.mo is "DeltaPlayer") || !cl_delta_showCrosshair)
 			return;
 		
 		DeltaPlayer ply = DeltaPlayer(CPlayer.mo);
 		if (ply.GetIsUsingOffhand())
 			return;
 		
-		if (!CPlayer.ReadyWeapon)
-			DrawTexture(_defaultCrosshair, (0, 0), DI_SCREEN_CENTER | DI_ITEM_CENTER, scale: _universalScale * 0.5);
-		else
-		{
-			let weap = DeltaWeapon(CPlayer.ReadyWeapon);
-			
-			if (weap)
-			{
-				let crosshair = weap.GetCrosshair(),
-					xhairState = weap.GetCrosshairState();
-				Color xhairColor = xhairState == DELTA_XHR_NEUTRAL ? 0xffffffff :
-					(xhairState == DELTA_XHR_FRIENDLY ? 0xff00ff00 : 0xffff0000);
-				DrawTexture(crosshair, (0, 0), DI_SCREEN_CENTER | DI_ITEM_CENTER, scale: _universalScale * 0.5, col: xhairColor);
-			}
-		}
+		let crosshair = _defaultCrosshair,
+			weap = DeltaWeapon(CPlayer.ReadyWeapon),
+			xhairState = ply.GetCrosshairState();
+		
+		if (weap)
+			crosshair = weap.GetCrosshair();
+		
+		Color xhairColor = xhairState == DELTA_XHR_NEUTRAL ? cl_delta_crosshairColor :
+			(xhairState == DELTA_XHR_FRIENDLY ? cl_delta_crosshairFriendlyColor : cl_delta_crosshairEnemyColor);
+		xhairColor |= 0xff000000;
+		DrawTexture(crosshair, (0, 0), DI_SCREEN_CENTER | DI_ITEM_CENTER, scale: _universalScale * 0.5, col: xhairColor);
 		
 		if (!ply.CanUseOffhand())
 			return;

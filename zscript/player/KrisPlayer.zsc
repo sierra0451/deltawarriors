@@ -126,6 +126,8 @@ class KrisPlayer : DeltaPlayer
 					}
 				}
 			}
+			else if (_isSliding)
+				EndSlide();
 		}
 		else
 		{
@@ -164,11 +166,11 @@ class KrisPlayer : DeltaPlayer
 	
 	override bool PreTeleport(Vector3 destPos, double destAngle, int flags)
 	{
-		let oldAngle = angle;
+		let oldAng = angle;
 		let result = Super.PreTeleport(destPos, destAngle, flags);
 		
-		if (result)
-			_slideAngle += DeltaAngle(destAngle, oldAngle);
+		if (result && _isSliding)
+			_slideAngle += DeltaAngle(destAngle, oldAng);
 		
 		return result;
 	}

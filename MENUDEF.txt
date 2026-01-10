@@ -15,8 +15,8 @@ ListMenu "MainMenu"
 	TextItem "$MENU_LOAD", "l", "LoadGameMenu"
 	TextItem "$MENU_SAVE", "s", "SaveGameMenu"
 	TextItem "$MENU_OPTIONS", "c", "DeltaOptions"
-	TextItem "$MENU_ABOUT", "r", "ReadThisMenu"
-	TextItem "$MENU_QUIT", "q", "QuitMenu"
+	TextItem "$MENU_ABOUT", "p", "ReadThisMenu"
+	TextItem "$MENU_QUIT", "e", "QuitMenu"
 
 	StaticTextCentered 150, 220, "Please do not distribute!", "Black"
 }
@@ -49,6 +49,12 @@ OptionValue "ShowHide"
 	1, "Show"
 }
 
+OptionValue "RightLeft"
+{
+	0, "Right"
+	1, "Left"
+}
+
 OptionValue "Heartbeat"
 {
 	0, "Off"
@@ -77,6 +83,7 @@ OptionMenu "DeltaOptions"
 	SubMenu "$MENU_CTRLHEADER", "DeltaControls"
 	SubMenu "$MENU_AUDIO_HEADER", "SoundOptions"
 	SubMenu "$MENU_HUD_HEADER", "DeltaHudOptions"
+	SubMenu "$MENU_CAMERA_HEADER", "DeltaCameraOptions"
 	
 	StaticText ""
 	SubMenu "$MENU_UZDOOM_OPTIONS", "OptionsMenu"
@@ -124,9 +131,29 @@ OptionMenu "DeltaHudOptions"
 	StaticText "$MENU_HUD_CONFIG", "DeltaMenuHeader"
 	StaticText ""
 	
-	Option "$MENU_HIDEHUD", "delta_showHud", "ShowHide"
-	Option "$MENU_LOWHEALTHVIG", "delta_lowHealthVignette", "ShowHide"
+	Option "$MENU_HIDEHUD", "cl_delta_showHud", "ShowHide"
+	Option "$MENU_LOWHEALTHVIG", "cl_delta_lowHealthVignette", "ShowHide"
+	Option "$MENU_HEARTBEAT", "cl_delta_heartbeatSound", "Heartbeat"
+	Option "$MENU_WEAPHANDEDNESS", "cl_delta_weaponHandedness", "RightLeft"
 	
 	StaticText ""
-	Option "$MENU_HEARTBEAT", "delta_heartbeatSound", "Heartbeat"
+	StaticText "$MENU_XHAIROPTIONS", "DeltaMenuHeader"
+	Option "$MENU_SHOWXHAIR", "cl_delta_showCrosshair", "ShowHide"
+	ColorPicker "$MENU_XHAIRCOLOR", "cl_delta_crosshairColor", "cl_delta_showCrosshair", 0
+	Option "$MENU_XHAIRTARGETCHANGE", "cl_delta_crosshairTargetChange", "YesNo", "cl_delta_showCrosshair", 0, 0
+	ColorPicker "$MENU_XHAIRENEMY", "cl_delta_crosshairEnemyColor", "cl_delta_showCrosshair", 0
+	ColorPicker "$MENU_XHAIRFRIEND", "cl_delta_crosshairFriendlyColor", "cl_delta_showCrosshair", 0
+}
+
+OptionMenu "DeltaCameraOptions"
+{
+	Title "$MENU_CAMERA_HEADER"
+	
+	StaticText "$MENU_CAMERA_CONFIG", "DeltaMenuHeader"
+	StaticText ""
+	
+	Slider "$MENU_LEANINT", "cl_delta_leanIntensity", 0, 1, 0.1, 2
+	StaticText ""
+	Slider "$MENU_WEAPRECOIL", "cl_delta_weaponRecoil", 0, 1, 0.1, 2
+	Slider "$MENU_DMGRECOIL", "cl_delta_damageRecoil", 0, 1, 0.1, 2
 }

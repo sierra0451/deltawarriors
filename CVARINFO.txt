@@ -1,4 +1,17 @@
 // HUD options
-nosave bool delta_showHud = true;
-nosave int delta_heartbeatSound = 1;
-nosave bool delta_lowHealthVignette = true;
+nosave bool 	cl_delta_showHud				= true;
+nosave bool 	cl_delta_lowHealthVignette		= true;
+nosave int 		cl_delta_heartbeatSound			= 1;			// enum: 0 = off, 1 = on, 2 = Kris only
+nosave bool		cl_delta_showCrosshair			= true;
+nosave color	cl_delta_crosshairColor			= "ff ff ff";
+nosave bool		cl_delta_crosshairTargetChange	= true;
+nosave color	cl_delta_crosshairEnemyColor	= "ff 00 00";
+nosave color	cl_delta_crosshairFriendlyColor = "00 ff 00";
+
+// Weapon options
+nosave int		cl_delta_weaponHandedness		= 0;			// enum: 0 = right, 1 = left
+
+// Camera options
+nosave float 	cl_delta_leanIntensity 			= 1.0;
+nosave float 	cl_delta_weaponRecoil 			= 1.0;
+nosave float 	cl_delta_damageRecoil 			= 1.0;

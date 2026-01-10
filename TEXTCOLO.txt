@@ -39,11 +39,11 @@ Console:
 
 // Menu colors
 DeltaMenuTitle
-{ #004040 #00FFFF 0 256 }
+{ #003040 #00C0FF 0 256 }
 DeltaMenuHeader
-{ #004040 #00FFFF 0 256 }
+{ #003040 #00C0FF 0 256 }
 DeltaMenuDesc
-{ #204040 #80FFFF 0 256 }
+{ #102040 #80C0FF 0 256 }
 DeltaMenuActive
 { #404010 #FFFF40 0 256 }
 DeltaMenuInactive

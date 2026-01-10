@@ -119,7 +119,7 @@ class KrisSword : DeltaWeapon
 			Loop;
 		SwingL:
 			DKSW L 1 A_KrisSwordSwing;
-			DKSW L 1 A_AddRecoil(5, 1, p: 2, y: 5); //A_QuakeEx(0, 5, 2, 5, 0, 1, "dsempty", QF_RELATIVE | QF_WAVE | QF_SCALEDOWN, 0, 1, -1, rollWave: 5);
+			DKSW L 1 A_AddRecoil(5, 1, p: 2, y: cl_delta_weaponHandedness ? -5 : 5);
 			DKSW M 1;
 			DKSW N 4;
 			DSKW O 2;
@@ -130,7 +130,7 @@ class KrisSword : DeltaWeapon
 			Loop;
 		SwingR:
 			DKSW C 1 A_KrisSwordSwing;
-			DKSW C 1 A_AddRecoil(5, 1, p: 2, y: -5);
+			DKSW C 1 A_AddRecoil(5, 1, p: 2, y: cl_delta_weaponHandedness ? 5 : -5);
 			DKSW D 1;
 			DKSW E 6;
 			DKSW FFGGHHIIJJAAA 1 A_ReFire;

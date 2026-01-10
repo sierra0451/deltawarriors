@@ -1,13 +1,14 @@
 class DeltaDamagePopup : Actor
 {
-	int startLifeTime, lifeTime, moveTime, fadeTime;
-	double startVelZ;
+	int timer;
+	int scaleUpTime, popUpTime, bounceTime, holdTime, fadeTime;
+	double startVelZ, bounceVelZ;
 	
 	Default
 	{
 		-SOLID;
 		+NOGRAVITY;
-		+NOBLOCKMAP;
+		+NOINTERACTION;
 		+SQUAREPIXELS;
 		+BRIGHT;
 		+INVISIBLEINMIRRORS;
@@ -25,9 +26,10 @@ class DeltaDamagePopup : Actor
 	override void PostBeginPlay()
 	{
 		Super.PostBeginPlay();
-		lifeTime = floor(TICRATE * 1.4);
-		startLifeTime = lifeTime;
-		moveTime = floor(TICRATE * 0.4);
+		scaleUpTime = 3;
+		popUpTime = 13;
+		bounceTime = 8;
+		holdTime = TICRATE;
 		fadeTime = floor(TICRATE * 0.5);
 		startVelZ = vel.z;
 	}
@@ -35,22 +37,51 @@ class DeltaDamagePopup : Actor
 	override void Tick()
 	{
 		Super.Tick();
-		lifeTime--;
+		timer++;
+		int tempTime = timer; // using this to make code easier to debug and read
 		
-		if (startLifeTime - lifeTime < moveTime)
+		if (tempTime < popUpTime)
 		{
-			double reduceAmount = 2. * startVelZ / moveTime;
+			if (tempTime <= scaleUpTime)
+				A_SetScale(4 - 3*((float(tempTime)/scaleUpTime)**2), (float(tempTime) / scaleUpTime)**2);
+			
+			double reduceAmount = 2. * startVelZ / popUpTime;
 			vel.z -= reduceAmount;
+			return;
 		}
-		else
+		
+		if (tempTime == popUpTime)
 			vel = (0, 0, 0);
 		
-		if (lifeTime < fadeTime)
+		tempTime -= popUpTime;
+		
+		if (!tempTime)
 		{
-			vel.z = 1;
-			A_SetScale(1, 0.9 + (fadeTime-lifeTime)*2./TICRATE);
-			A_FadeOut(1. / fadeTime);
+			bounceVelZ = startVelZ / 4;
+			vel.z = bounceVelZ;
+			return;
 		}
+		else if (tempTime < bounceTime)
+		{
+			double reduceAmount = 2 * bounceVelZ / bounceTime;
+			vel.z -= reduceAmount;
+			return;
+		}
+		else if (tempTime == bounceTime)
+		{
+			vel.z = 0;
+		}
+		
+		tempTime -= bounceTime;
+		
+		if (tempTime <= holdTime)
+			return;
+		
+		tempTime -= holdTime;
+		
+		vel.z = 1;
+		A_SetScale(1, 0.9 + (tempTime)*2./TICRATE);
+		A_FadeOut(1. / fadeTime);
 	}
 }
 
@@ -74,12 +105,17 @@ class DeltaDamageNumber : DeltaDamagePopup
 	{
 		string damageStr = "" .. dmg;
 		
+		let posDiff = source ? level.Vec3Diff(thing.pos, source.pos) : (0, 0, 0);
+		posDiff.z = 0;
+		posDiff = posDiff.Unit();
 		let totalDigits = damageStr.Length()-1,
-			numVel = (cfrandom(-1, 1), cfrandom(-1, 1), cfrandom(7, 9)),
+			numVel = (posDiff.x * thing.radius/20., posDiff.y * thing.radius/20.,
+				cfrandom(5,7)),
 			numLifeTime = crandom(-3, 3);
 		let trans = source ? source.GetClassName() .. "_damage" : "";
 		let position = thing.pos
-			+ (cfrandom(-3, 3),cfrandom(-3, 3),0);
+			+ (cfrandom(-3, 3),cfrandom(-3, 3),0)
+			+ (posDiff * (thing.radius+5));
 		
 		let targetZ = thing.height/2. + thing.pos.z;
 		
@@ -99,9 +135,7 @@ class DeltaDamageNumber : DeltaDamagePopup
 			num.vel = numVel;
 			num.place = i;
 			num.totalDigits = totalDigits;
-			num.lifeTime = num.startLifeTime;
 			num.value = damageStr.ByteAt(i) - 48;
-			num.startLifeTime += crandom(-3, 3);
 			num.A_SetTranslation(trans);
 			num.master = thing;
 		}

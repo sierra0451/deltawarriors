@@ -1,10 +1,3 @@
-enum DeltaCrosshairState
-{
-	DELTA_XHR_NEUTRAL,
-	DELTA_XHR_FRIENDLY,
-	DELTA_XHR_ENEMY
-}
-
 class DeltaWeapon : Weapon
 {
 	protected float _redCrosshairRange;	// maximum distance an enemy can be at from player and still have red crosshairs when aimed at
@@ -16,7 +9,6 @@ class DeltaWeapon : Weapon
 	private bool _lungeReadyToStop;
 	private TextureID _altFireIconId;
 	private TextureID _crosshairId;
-	private DeltaCrosshairState _crosshairState;
 	
 	property RedCrosshairRange: _redCrosshairRange;
 	property MaxLungeDistance: _maxLungeDistance;
@@ -28,7 +20,7 @@ class DeltaWeapon : Weapon
 	{
 		Weapon.BobStyle "Smooth";
 		Weapon.BobSpeed 2.5;
-		DeltaWeapon.RedCrosshairRange PLAYERMISSILERANGE;
+		DeltaWeapon.RedCrosshairRange PLAYERMISSILERANGE/2;
 		DeltaWeapon.MaxLungeDistance -1;
 		DeltaWeapon.StopLungeDistance 5;
 	}
@@ -47,46 +39,6 @@ class DeltaWeapon : Weapon
 		Super.BeginPlay();
 		_altFireIconId = TexMan.CheckForTexture(_altFireIcon);
 		_crosshairId = TexMan.CheckForTexture(_crosshair);
-	}
-	
-	override void DoEffect()
-	{
-		Super.DoEffect();
-		HandleCrosshair();
-	}
-	
-	protected void HandleCrosshair()
-	{
-		let ply = owner.player;
-		if (!ply)
-			return;
-		
-		let plyMo = owner.player.mo;
-		
-		if (!plyMo)
-			return;
-		
-		FTranslatedLineTarget t;
-		FLineTraceData l;
-		double ang = plyMo.Angle;
-		double distance = _redCrosshairRange;
-		double pitch = plyMo.AimLineAttack(ang, distance, t, 0., ALF_CHECK3D);
-		
-		plyMo.LineTrace(ang, distance, pitch, TRF_NOSKY,
-			plyMo.height*0.5 - plyMo.floorclip + plyMo.AttackZOffset*ply.crouchFactor, data: l);
-		
-		if (!l.HitActor)
-		{
-			_crosshairState = DELTA_XHR_NEUTRAL;
-			return;
-		}
-		
-		if (plyMo.IsFriend(l.HitActor))
-			_crosshairState = DELTA_XHR_FRIENDLY;
-		else if (plyMo.IsHostile(l.HitActor))
-			_crosshairState = DELTA_XHR_ENEMY;
-		else
-			_crosshairState = DELTA_XHR_NEUTRAL;
 	}
 	
 	virtual bool TryUseTension(double amount)
@@ -261,7 +213,7 @@ class DeltaWeapon : Weapon
 	
 	action void A_AddRecoil(int startTime, int leadInTime = 0, double p = 0, double y = 0, double r = 0)
 	{
-		DeltaPlayer(invoker.owner).AddRecoil(startTime, leadInTime, p, y, r);
+		DeltaPlayer(invoker.owner).AddRecoil(RECOIL_WEAPON, startTime, leadInTime, p, y, r);
 	}
 	
 	void MarkReadyToStopLunging()
@@ -274,6 +226,11 @@ class DeltaWeapon : Weapon
  		_lungeReadyToStop = false;
 	}
 	
+	clearscope float GetRedCrosshairRange()
+	{
+		return _redCrosshairRange;
+	}
+	
 	ui TextureID GetAltFireIcon()
 	{
 		return _altFireIconId;
@@ -282,10 +239,5 @@ class DeltaWeapon : Weapon
 	ui TextureID GetCrosshair()
 	{
 		return _crosshairId;
-	}
-	
-	clearscope DeltaCrosshairState GetCrosshairState()
-	{
-		return _crosshairState;
 	}
 }
