@@ -11,11 +11,11 @@ Currently, Kris is the only one playable, but Susie, Ralsei, and Noelle are plan
 
 ### Steps
 1. Download and extract UZDoom
-    a. Go to the [download link](https://zdoom.org/downloads), scroll down to UZDoom v4.14.3, and click to download the version appropriate for your operating system (if you don't know what this means, go with Windows).
-    b. Extract the .zip file wherever you'd like.
+    1. Go to the [download link](https://zdoom.org/downloads), scroll down to UZDoom v4.14.3, and click to download the version appropriate for your operating system (if you don't know what this means, go with Windows).
+    2. Extract the .zip file wherever you'd like.
 2. Download DeltaWarriors
-    a. Go to [DeltaWarriors' GitHub page](https://github.com/sierra0451/deltawarriors). Click on the green "Code" button and click "Download ZIP" to start downloading the mod.
-    b. Drag and drop the .zip file onto your uzdoom.exe or load it into your ZDoom launcher of choice, and have fun!
+    1. Go to [DeltaWarriors' GitHub page](https://github.com/sierra0451/deltawarriors). Click on the green "Code" button and click "Download ZIP" to start downloading the mod.
+    2. Drag and drop the .zip file onto your uzdoom.exe or load it into your ZDoom launcher of choice, and have fun!
 
 ## Basic How-to-Play (an in-mod tutorial is coming at some point, trust </3)
 ### Tension Points
