@@ -1343,7 +1343,6 @@ class DeltaPlayer : PlayerPawn abstract
 		if (invoker._dynamicLights.Find(lightId) == invoker._dynamicLights.Size())
 			invoker._dynamicLights.Push(lightId);
 		
-		invoker.A_Log("added " .. lightId);
 		A_AttachLightDef(lightId, lightDef);
 	}
 	
@@ -1355,12 +1354,9 @@ class DeltaPlayer : PlayerPawn abstract
 		
 		if (A_RemoveLight(lightId))
 		{
-			invoker.A_Log("removed " .. lightId);
 			invoker._dynamicLights.Delete(lightIndex);
 			return;
 		}
-		
-		invoker.A_Log("failed to remove " .. lightId);
 	}
 	
 	action void A_ClearDynamicLights()
