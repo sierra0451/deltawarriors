@@ -7,18 +7,16 @@ GameInfo
 	TitlePage = "DELTATT1"
 	TitleMusic = "music/mus_deltaMenu.ogg"
 	CreditPage = ""
-	SwapMenu = true
 	QuitMessages =	"$QUIT_DELTA_1", "$QUIT_DELTA_2", "$QUIT_DELTA_3",
 					"$QUIT_DELTA_4", "$QUIT_DELTA_5", "$QUIT_DELTA_6",
 					"$QUIT_DELTA_7", "$QUIT_DELTA_8"
-	
 	NoRandomPlayerClass = false
-	PlayerClasses = "KrisPlayer", "SusiePlayer"/*, "RalseiPlayer", "NoellePlayer" */
+	PlayerClasses = "KrisPlayer"/*, "SusiePlayer", "RalseiPlayer", "NoellePlayer" */
 	MenuFontColor_Title = "DeltaMenuTitle"
 	MenuFontColor_Label = "DeltaOptMenuLabel"
 	MenuFontColor_Value = "DeltaOptMenuValue"
 	MenuFontColor_Action = "DeltaOptMenuInactive"
 	MenuFontColor_Header = "DeltaMenuHeader"
-	MenuFontColor_Highlight = "DeltaOptMenuInactive"
+	MenuFontColor_Highlight = "DeltaOptMenuHighlight"
 	MenuFontColor_Selection = "DeltaOptMenuActive"
 }

@@ -851,11 +851,11 @@ class DeltaHud : BaseStatusBar
 		xhairColor |= 0xff000000;
 		DrawTexture(crosshair, (0, 0), DI_SCREEN_CENTER | DI_ITEM_CENTER, scale: _universalScale * 0.5, col: xhairColor);
 		
-		if (!ply.CanUseOffhand())
+		if (!ply.CanUseOffhand() || !cl_delta_showOffhandIndicator)
 			return;
 		
 		DrawTexture(_offhandCrosshair, (0, 0), DI_SCREEN_CENTER | DI_ITEM_CENTER,
-			scale: _universalScale * 0.5, col: Color(255, 255, 160, 64));
+			scale: _universalScale * 0.5, col: 0xff000000 | cl_delta_offhandIndicatorColor);
 	}
 	
 	protected void DrawDeathStuff()

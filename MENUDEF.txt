@@ -1,7 +1,7 @@
 DefaultListMenu
 {
 	Position 110, 64
-	Font "DRCONFONT", "DeltaMenuInactive", "DeltaMenuActive"
+	Font "DRCONFONT", "DeltaMenuText", "DeltaMenuHighlight"
 	Selector "DRSELECT", -14, 4
 	Size Clean
 }
@@ -143,6 +143,10 @@ OptionMenu "DeltaHudOptions"
 	Option "$MENU_XHAIRTARGETCHANGE", "cl_delta_crosshairTargetChange", "YesNo", "cl_delta_showCrosshair", 0, 0
 	ColorPicker "$MENU_XHAIRENEMY", "cl_delta_crosshairEnemyColor", "cl_delta_showCrosshair", 0
 	ColorPicker "$MENU_XHAIRFRIEND", "cl_delta_crosshairFriendlyColor", "cl_delta_showCrosshair", 0
+    
+    StaticText ""
+    Option "$MENU_SHOWOFFHAND", "cl_delta_showOffhandIndicator", "ShowHide", "cl_delta_showCrosshair", 0, 0
+    ColorPicker "$MENU_OFFHANDCOLOR", "cl_delta_offhandIndicatorColor", "cl_delta_showCrosshair", 0
 }
 
 OptionMenu "DeltaCameraOptions"

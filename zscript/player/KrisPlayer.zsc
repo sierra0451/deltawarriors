@@ -351,7 +351,7 @@ class KrisPlayer : DeltaPlayer
 	protected void KrisShieldParry()
 	{
 		A_StartSound("delta/kris/shield_swing", CHAN_AUTO);
-		AddRecoil(10, 1, p: -1, y: 5);
+		AddRecoil(RECOIL_WEAPON, 10, 1, p: -1, y: 5);
 		
 		double distance = 120;
 		Array<Actor> targets;

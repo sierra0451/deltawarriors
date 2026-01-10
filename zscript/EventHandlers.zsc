@@ -61,7 +61,8 @@ class DeltaWarriorsEvents : EventHandler
 			}
 		}
 		
-		if (e.damageSource is "DeltaPlayer" && e.damageSource != e.thing)
+		if (e.damageSource is "DeltaPlayer" && e.damageSource != e.thing
+            && !e.damageSource.IsFriend(e.thing)) // last one is to make sure friendly fire isn't rewarded
 		{
 			DeltaPlayer ply = DeltaPlayer(e.damageSource);
 			

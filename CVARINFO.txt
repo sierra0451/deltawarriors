@@ -7,6 +7,8 @@ nosave color	cl_delta_crosshairColor			= "ff ff ff";
 nosave bool		cl_delta_crosshairTargetChange	= true;
 nosave color	cl_delta_crosshairEnemyColor	= "ff 00 00";
 nosave color	cl_delta_crosshairFriendlyColor = "00 ff 00";
+nosave bool     cl_delta_showOffhandIndicator   = true;
+nosave color	cl_delta_offhandIndicatorColor	= "ff a0 40";
 
 // Weapon options
 nosave int		cl_delta_weaponHandedness		= 0;			// enum: 0 = right, 1 = left

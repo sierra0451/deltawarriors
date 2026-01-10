@@ -44,10 +44,10 @@ DeltaMenuHeader
 { #003040 #00C0FF 0 256 }
 DeltaMenuDesc
 { #102040 #80C0FF 0 256 }
-DeltaMenuActive
-{ #404010 #FFFF40 0 256 }
-DeltaMenuInactive
+DeltaMenuText
 { #404040 #FFFFFF 0 256 }
+DeltaMenuHighlight DeltaOptMenuHighlight
+{ #404010 #FFFF40 0 256 }
 DeltaOptMenuValue
 { #086040 #20C0FF 0 256 }
 DeltaOptMenuActive

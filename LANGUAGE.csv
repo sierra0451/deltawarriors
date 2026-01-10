@@ -1,26 +1,26 @@
 identifier,default,remarks
 DELTAWARRIORS_VERSION,Development Build,Version display
 ,,Doom endings
-E1TEXT,,
-E2TEXT,,
-E3TEXT,,
-E4TEXT,,
-E5TEXT,,Intended replacement for Sigil I's ending text.
-E6TEXT,,Intended replacement for Sigil II's ending text.
-C1TEXT,,MAP06 -> MAP07
-C2TEXT,,MAP11 -> MAP12
-C3TEXT,,MAP20 -> MAP21
-C4TEXT,,Doom II ending
-C5TEXT,,Wolf secret
-C6TEXT,,Wolf super secret
+,,E1TEXT
+,,E2TEXT
+,,E3TEXT
+,,E4TEXT
+,,E5TEXT: Intended replacement for Sigil I's ending text.
+,,E6TEXT: Intended replacement for Sigil II's ending text.
+,,C1TEXT: MAP06 -> MAP07
+,,C2TEXT: MAP11 -> MAP12
+,,C3TEXT: MAP20 -> MAP21
+,,C4TEXT: Doom II ending
+,,C5TEXT: Wolfenstein secret
+,,C6TEXT: Wolfenstein super secret
 QUIT_DELTA_1,Thanks for playing!,
 QUIT_DELTA_2,Are you sure you want to quit playing Undertale 2?,
 QUIT_DELTA_3,You're still here-? Don't you have anything better to do?,
 QUIT_DELTA_4,"\c[DeltaSusie]Hey, who said you could quit this game!? You know what that means, dumbass.\c-",
 QUIT_DELTA_5,"\c[DeltaRalsei]Oh? Uh- yeah! Take a break anytime you want, OK?\c-",
 QUIT_DELTA_6,[Insert funny Deltarune reference here],"thanks for the idea arsalan lmao (if you're poking around and you see this, check out sonic lock and load! it's a big reason i got into doom modding in the first place lol)"
-QUIT_DELTA_7,"Fine, leave. I'm sure your desktop is SO much better.","wanted to make a joke about windows initially, but you may not necessarily be running this on windows (i know i'll eventually probably be running this on linux again)"
-QUIT_DELTA_8,THEN THE WORLD WAS COVERED IN DARKNESS.,
+QUIT_DELTA_7,"Fine, leave. I'm sure your desktop is SO much better.","wanted to make a joke about windows initially, but you may not necessarily be running this on windows (i know i'll probably be running this on linux eventually)"
+QUIT_DELTA_8,THEN THE WORLD WAS COVERED IN DARKNESS.,"Direct reference to Deltarune's game over sequence if you choose ""Give up"""
 ,,Menu labels
 MENU_NEWGAME,New File,
 MENU_LOAD,Load File,
@@ -71,7 +71,10 @@ MENU_CAMERA_HEADER,Camera Options,
 MENU_CAMERA_CONFIG,Configure camera settings.,
 MENU_WEAPRECOIL,Weapon Recoil Intensity,
 MENU_DMGRECOIL,Damage Recoil Intensity,
-MENU_LEANINT,Strafe Leaning Intensity,New Game menus
+MENU_LEANINT,Strafe Leaning Intensity,
+MENU_SHOWOFFHAND,Show offhand indicator?,
+MENU_OFFHANDCOLOR,Offhand Indicator Color,
+,,New Game menus
 MNU_EPISODE,Select an Episode.,
 MNU_CHOOSESKILL,Select a Skill Level.,
 MENU_CLASS_HEADER,Select a Vessel.,
