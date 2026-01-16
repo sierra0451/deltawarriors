@@ -48,19 +48,21 @@ class DeltaPlayer : PlayerPawn abstract
 	int hugReactionTime;
 	Actor lungeTarget;
 	
-	protected int airTimer; 						// when alive, used to handle coyote time. when dead, used to determine if we made a thud sound upon corpse landing
+	protected int airTimer; 								// when alive, used to handle coyote time. when dead, used to determine if
+															// we made a thud sound upon corpse landing
 	protected int jumpBuffer, airBobTics, hugTimer;
 	protected float customBobPerc;
-	protected int damageTics; 						// invulnerability frames, essentially
-	protected int deathTimer; 						// used for first person death animation and for "Press E to respawn" prompt
+	protected int damageTics; 								// invulnerability frames, essentially
+	protected int deathTimer; 								// used for first person death animation and for "Press E to respawn" prompt
 	protected Color characterColor, overhealColor;
 	protected double deathPitchFP, deathPitchTP;
 	
-	protected float flinchMultiplier;				// wanna be able to make certain characters flinch more or flinch less at incoming damage
+	protected float flinchMultiplier;						// wanna be able to make certain characters flinch more or flinch less at incoming damage
 	protected int startFlinchTics;
-	protected int shakinessMaxHealth;				// lowest possible health where we'll still be at minimum hand shakiness
+	protected int shakinessMaxHealth;						// lowest possible health where we'll still be at minimum hand shakiness
 	protected float minShakiness, maxShakiness;
-	protected int oldShakiness;				// used for interpolation
+	protected int oldShakiness;								// used for interpolation
+	protected string _backAtYouObituary, _parryObituary;
 	
 	protected bool lunging;
 	protected float lungeSpeed, lungeStopDistance;
@@ -77,21 +79,21 @@ class DeltaPlayer : PlayerPawn abstract
 	protected float oldAngle;
 	
 	private float _targetRoll;
-	private bool _frozenDeath;						// using this for custom ice death that doesn't automatically shatter us lol
+	private bool _frozenDeath;								// using this for custom ice death that doesn't automatically shatter us lol
 	
-	private Vector2 _currentFlinch;					// used for weapon flinching when taking damage
+	private Vector2 _currentFlinch;							// used for weapon flinching when taking damage
 	private int _flinchTics;
 	
 	private double _oldTurn;
 	private double _turn;
 	
 	private TextureID _offhandIconId;
-	private TextureID _characterIconId;				// used for health displays in co-op and team deathmatch
+	private TextureID _characterIconId;						// used for health displays in co-op and team deathmatch
 	
 	private DeltaCrosshairState _crosshairState;
 	
-	private float _originalHeight;					// used for fixing compatibility issues with maps that use voodoo dolls
-													// and conveyor belts
+	private float _originalHeight;							// used for fixing compatibility issues with maps that use voodoo dolls
+															// and conveyor belts
 	
 	private RecoilEvent[10] _recoils;
 	
@@ -125,6 +127,8 @@ class DeltaPlayer : PlayerPawn abstract
 	property ShakinessMaxHealth: shakinessMaxHealth;
 	property MinShakiness: minShakiness;
 	property MaxShakiness: maxShakiness;
+	property BackAtYouObituary: _backAtYouObituary;	// used specifically if we kill by parrying a projectile back into its original owner
+	property ParryObituary: _parryObituary;			// used if we kill by parrying otherwise
 	
 	Default
 	{
@@ -401,6 +405,10 @@ class DeltaPlayer : PlayerPawn abstract
 			{
 				float ang = DeltaAngle(self.angle, AngleTo(inflictor)) + cfrandom(-15, 15);
 				DamageFlinch(ang, finalDamage, flags);
+			}
+			else if (!source)
+			{
+				DamageFlinch(0, finalDamage, flags);
 			}
 		}
 		
@@ -749,6 +757,25 @@ class DeltaPlayer : PlayerPawn abstract
 			if (onmobj != NULL || !isliquid)
 				A_StartSound("*land", CHAN_AUTO);
 		}
+	}
+	
+	override string GetObituary(Actor victim, Actor inflictor, Name mod,
+		bool playerAttack)
+	{
+		if (!inflictor || !inflictor.CountInv("DeltaParried"))
+			return Super.GetObituary(victim, inflictor, mod, playerAttack);
+		
+		let parry = DeltaParried(inflictor.FindInventory("DeltaParried", true));
+		
+		// TO-DO: make parry obituary different if projectile was knocked back
+		// into its original thrower or if it was from someone else
+		if (!parry.oldTarget || parry.oldTarget == parry.target)
+			return Super.GetObituary(victim, inflictor, mod, playerAttack);
+		
+		if (parry.oldTarget == victim)
+			return _backAtYouObituary;
+		
+		return _parryObituary;
 	}
 	
 	void StartLunge(Actor target, float stopDistance)
@@ -1145,6 +1172,8 @@ class DeltaPlayer : PlayerPawn abstract
 			
 			if (!mis.bSkullfly && mis.target == self) // "target" with projectiles is used to figure out who threw it
 				continue;
+			if (!mis.CanCollideWith(self, false))
+				continue;
 			
 			int misDmg = mis.GetMissileDamage(0, 1);
 			
@@ -1479,8 +1508,15 @@ class DeltaParryDamage : Inventory
 		if (passive || !inflictor || !inflictor.CountInv("DeltaParried"))
 			return;
 		
-		newDamage = random[parryDamage](15, 20) * max(5, inflictor.GetMissileDamage(0, 1));
+		newDamage = random[parryDamage](15, 20) * max(5, inflictor.GetMissileDamage(0, 1))
+            * max(1, G_SkillPropertyFloat(SKILLP_MonsterHealth));
 	}
 }
 
-class DeltaParried : Inventory {}
+class DeltaParried : Inventory
+{
+	// allows us to save who initially fired the projectile for differentiating
+	// between killing a player with their own projectile and killing them with
+	// someone else's
+	Actor oldTarget;
+}

@@ -104,15 +104,21 @@ class DeltaDamageNumber : DeltaDamagePopup
 	static void SpawnNumbers(Actor thing, int dmg, Actor source)
 	{
 		string damageStr = "" .. dmg;
+		string debugStr = "thing " .. thing.GetTag() .. " took " .. dmg
+			.. " damage from " .. (source ? source.GetTag() : "null source");
 		
-		let posDiff = source ? level.Vec3Diff(thing.pos, source.pos) : (0, 0, 0);
+		let posDiff = source ? level.Vec3Diff(thing.pos, source.pos)
+			: DeltaMath.GetActorForward(thing, false);
 		posDiff.z = 0;
 		posDiff = posDiff.Unit();
 		let totalDigits = damageStr.Length()-1,
 			numVel = (posDiff.x * thing.radius/20., posDiff.y * thing.radius/20.,
 				cfrandom(5,7)),
 			numLifeTime = crandom(-3, 3);
-		let trans = source ? source.GetClassName() .. "_damage" : "";
+		Name trans = '';
+		
+		if (source)
+			trans = source.GetClassName() .. '_damage';
 		let position = thing.pos
 			+ (cfrandom(-3, 3),cfrandom(-3, 3),0)
 			+ (posDiff * (thing.radius+5));
@@ -128,9 +134,6 @@ class DeltaDamageNumber : DeltaDamagePopup
 		{
 			let num = DeltaDamageNumber(Spawn("DeltaDamageNumber",
 				position));
-			
-// 			if (!i)
-// 				num.A_Log(trans);
 			
 			num.vel = numVel;
 			num.place = i;

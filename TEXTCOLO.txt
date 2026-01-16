@@ -55,6 +55,18 @@ DeltaOptMenuActive
 DeltaOptMenuInactive DeltaOptMenuLabel
 { #404040 #FFFFFF 0 256 }
 
+// Skill levels
+DeltaVeryEasy
+{ #006080 #00C0FF 0 256 }
+DeltaEasy
+{ #008000 #00FF00 0 256 }
+DeltaNormal
+{ #808000 #FFFF00 0 256 }
+DeltaHard
+{ #800000 #FF0000 0 256 }
+DeltaVeryHard
+{ #200000 #800000 0 256 }
+
 // Misc
 DeltaLowHealth
 { #FFFF00 #FFFF00 0 256 }

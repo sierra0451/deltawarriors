@@ -33,8 +33,10 @@ class KrisSword : DeltaWeapon
 	{
 		invoker.swingCombo++;
 		invoker.ResetReadyToStopLunging();
+		invoker._easeTics = EASE_TICS_SET_ATTACK;
 		
-		A_StartSound("delta/sword/swing", CHAN_WEAPON, CHANF_OVERLAP, pitch: cfrandom(0.95, 1.05));
+		A_StartSound("delta/sword/swing", CHAN_WEAPON, CHANF_OVERLAP,
+			pitch: cfrandom(0.95, 1.05));
 		
 		int dmg;
 		int TRACER_COUNT = 16;
@@ -47,8 +49,11 @@ class KrisSword : DeltaWeapon
 			FTranslatedLineTarget t;
 			FLineTraceData l;
 			
+			double newAng = Angle + ang;
 			double pitch = AimLineAttack(ang, distance, t, 0., ALF_CHECK3D);
-			LineTrace(Angle + ang, distance, pitch, TRF_NOSKY, player.mo.height*0.5 - player.mo.floorclip + player.mo.AttackZOffset*player.crouchFactor, data: l);
+			double zOffset = player.mo.height*0.5 - player.mo.floorclip
+				+ player.mo.AttackZOffset * player.crouchFactor;
+			LineTrace(newAng, distance, pitch, TRF_NOSKY, zOffset, data: l);
 			
 			if (!l.HitActor)
 				continue;
@@ -57,7 +62,8 @@ class KrisSword : DeltaWeapon
 			if (l.HitActor is "ExplosiveBarrel")
 				continue;
 			
-			LineAttack(Angle + ang, distance, pitch, dmg, "Melee", "KrisSwordPuff", 0, t);
+			LineAttack(newAng, distance, pitch, dmg, "Melee", "KrisSwordPuff",
+				0, t);
 			targets.Push(l.HitActor);
 		}
 		
@@ -76,12 +82,14 @@ class KrisSword : DeltaWeapon
 	{
 		Ready:
 			DKSW A 1 A_DeltaWeaponReady;
-			Loop;
+			Wait;
 		Deselect:
-			DKWH A 2;
-			#### B 2 A_StartSound("delta/sword/holster", CHAN_WEAPON, CHANF_OVERLAP);
+			DKWH A 2 A_JumpIf(invoker._atEase, "Swap");
+			#### B 2 A_StartSound("delta/sword/holster", CHAN_WEAPON,
+				CHANF_OVERLAP);
 			#### CD 2;
 			TNT1 A 4;
+        Swap:
 			#### # 0 A_SwapWeapon;
 			Stop;
 		Select:
@@ -95,23 +103,31 @@ class KrisSword : DeltaWeapon
 			{
 				if (!invoker.pulledOutFirstTime)
 				{
-					A_StartSound("delta/sword/deploy_hit", CHAN_WEAPON, CHANF_OVERLAP);
+					A_StartSound("delta/sword/deploy_hit", CHAN_WEAPON,
+						CHANF_OVERLAP);
 					invoker.pulledOutFirstTime = true;
 				}
 			}
 			DKWD CD 2;
 			DKWD E 2 A_DeltaWeaponReady(WRF_NOBOB);
 			DKWD FG 3 A_DeltaWeaponReady(WRF_NOBOB);
-			DKWD H 3 A_StartSound("delta/sword/catch", CHAN_WEAPON, CHANF_OVERLAP);
+			DKWD H 3 A_StartSound("delta/sword/catch", CHAN_WEAPON,
+				CHANF_OVERLAP);
 			DKSW A 1 A_FinishRaiseWeapon;
 			Stop;
+        AtEase:
+            DKWH A 2;
+			#### B 2 A_StartSound("delta/sword/holster", CHAN_WEAPON,
+				CHANF_OVERLAP);
+			#### CD 2;
+		AtEaseLoop:
+			TNT1 A 1 A_DeltaWeaponReady(0, true);
+            Loop;
 		Fire:
 			TNT1 A 0
 			{
-				if ((invoker.swingCombo + 1) % 2 == 0)
-					return ResolveState("LungeL");
-				
-				return ResolveState("LungeR");
+				return ((invoker.swingCombo + 1) % 2) ? ResolveState("LungeR")
+					: ResolveState("LungeL");
 			}
 			Goto SwingR;
 		LungeL:
@@ -119,7 +135,8 @@ class KrisSword : DeltaWeapon
 			Loop;
 		SwingL:
 			DKSW L 1 A_KrisSwordSwing;
-			DKSW L 1 A_AddRecoil(5, 1, p: 2, y: cl_delta_weaponHandedness ? -5 : 5);
+			DKSW L 1 A_AddRecoil(5, 1, p: 2,
+				y: cl_delta_weaponHandedness ? -5 : 5);
 			DKSW M 1;
 			DKSW N 4;
 			DSKW O 2;
@@ -130,7 +147,8 @@ class KrisSword : DeltaWeapon
 			Loop;
 		SwingR:
 			DKSW C 1 A_KrisSwordSwing;
-			DKSW C 1 A_AddRecoil(5, 1, p: 2, y: cl_delta_weaponHandedness ? 5 : -5);
+			DKSW C 1 A_AddRecoil(5, 1, p: 2,
+				y: cl_delta_weaponHandedness ? 5 : -5);
 			DKSW D 1;
 			DKSW E 6;
 			DKSW FFGGHHIIJJAAA 1 A_ReFire;
@@ -143,7 +161,6 @@ class KrisSwordPuff : BulletPuff
 	Default
 	{
 		ProjectileKickBack 5;
-		
-		+NOEXTREMEDEATH
+		+NOEXTREMEDEATH;
 	}
 }

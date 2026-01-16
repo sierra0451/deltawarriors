@@ -5,10 +5,14 @@ class DeltaWeapon : Weapon
 	protected float _stopLungeDistance;	// distance user must be at during lunge before they stop and attack
 	protected string _altFireIcon;		// used for displaying alt fire key and cost (keep as null if you don't want anything there)
 	protected string _crosshair;
+    protected bool _atEase;
+	protected int _easeTics;
 	
 	private bool _lungeReadyToStop;
 	private TextureID _altFireIconId;
 	private TextureID _crosshairId;
+	
+	const EASE_TICS_SET_ATTACK = -25;
 	
 	property RedCrosshairRange: _redCrosshairRange;
 	property MaxLungeDistance: _maxLungeDistance;
@@ -85,16 +89,32 @@ class DeltaWeapon : Weapon
 		psp.SetState(player.ReadyWeapon.GetReadyState());
 	}
 	
-	action state A_DeltaWeaponReady(int flags = 0)
+	action state A_DeltaWeaponReady(int flags = 0, bool atEase = false)
 	{
-		if (!(flags & WRF_NOFIRE) && (player.cmd.buttons & BT_USER1))
+        if (!(flags & WRF_NOFIRE) && (player.cmd.buttons & BT_USER1))
 		{
+			invoker._atEase = false;
+			invoker._easeTics = invoker.EASE_TICS_SET_ATTACK;
 			if (DeltaPlayer(invoker.owner).StartOffhand())
 				return ResolveState("OffhandStart");
 		}
-		
+        
 		A_WeaponReady(flags);
-		return ResolveState(null);
+		
+        if (flags & WRF_NOBOB || atEase)
+			return ResolveState(null);
+		
+		let iter = ThinkerIterator.Create("DeltaWeaponsAtEase");
+        if (iter.Next())
+		{
+			invoker._atEase = true;
+			invoker._easeTics++;
+			
+			if (invoker._easeTics > 0)
+				return ResolveState("AtEase");
+		}
+        
+        return ResolveState(null);
 	}
 	
 	action void A_SwapWeapon()
@@ -201,6 +221,9 @@ class DeltaWeapon : Weapon
 		if (deltaOwner.GetIsUsingOffhand())
 			return ResolveState(null);
 		
+		if (invoker._atEase)
+			return ResolveState("AtEaseLoop");
+		
 		if (deltaOwner.player.PendingWeapon == WP_NOCHANGE)
 			return ResolveState(dest);
 		
@@ -258,3 +281,7 @@ class DeltaWeapon : Weapon
 		return _crosshairId;
 	}
 }
+
+// Dummy object meant to make DeltaWarriors players put their weapons to the side
+// (i.e. they wouldn't have their weapons drawn in, say, Castle Town)
+class DeltaWeaponsAtEase : Actor {}

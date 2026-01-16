@@ -156,6 +156,9 @@ OptionMenu "DeltaCameraOptions"
 	StaticText "$MENU_CAMERA_CONFIG", "DeltaMenuHeader"
 	StaticText ""
 	
+    Slider "$MENU_MOVEBOB", "movebob", 0, 1, 0.1, 2
+    Slider "$MENU_STILLBOB", "stillbob", 0, 1, 0.1, 2
+    StaticText ""
 	Slider "$MENU_LEANINT", "cl_delta_leanIntensity", 0, 1, 0.1, 2
 	StaticText ""
 	Slider "$MENU_WEAPRECOIL", "cl_delta_weaponRecoil", 0, 1, 0.1, 2

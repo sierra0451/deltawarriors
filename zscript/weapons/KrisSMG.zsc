@@ -20,16 +20,22 @@ class KrisSmg : DeltaWeapon
 	protected action void A_KrisSmgFire()
 	{
 		let spread = min(6, (player.refire/4.) + 0.5);
-		// -1 for bullets fires one hitscan and applies spread immediately, regardless of player.refire
-		A_FireBullets(spread, spread, -1, random[smgDmg](15, 20), "KrisSmgPuff", FBF_USEAMMO | FBF_NORANDOM);
+		// -1 for bullets fires one hitscan and applies spread immediately,
+		// regardless of player.refire
+		A_FireBullets(spread, spread, -1, random[smgDmg](15, 20), "KrisSmgPuff",
+			FBF_USEAMMO | FBF_NORANDOM);
 		A_AlertMonsters();
-		A_StartSound("delta/smg/fire", CHAN_WEAPON, CHANF_OVERLAP, pitch: cfrandom(0.93, 1.07));
+		A_StartSound("delta/smg/fire", CHAN_WEAPON, CHANF_OVERLAP,
+			pitch: cfrandom(0.93, 1.07));
 		A_ZoomFactor(0.99, ZOOM_INSTANT | ZOOM_NOSCALETURNING);
 		A_AddDynamicLight("smgMuzzle", "DeltaGenericMuzzle");
 		A_AddRecoil(5, 1, p: -0.5);
 		
 		if (level.IsFreelookAllowed())
-			invoker.owner.pitch = max(-CVar.GetCVar("maxviewpitch", player).GetFloat(), invoker.owner.pitch - 1.25);
+		{
+			invoker.owner.pitch = max(player.MinPitch,
+				invoker.owner.pitch - 1.25);
+		}
 	}
 	
 	States
@@ -38,17 +44,20 @@ class KrisSmg : DeltaWeapon
 			DKSM A 1 A_DeltaWeaponReady;
 			Loop;
 		Deselect:
-			DKSM O 2 A_StartSound("delta/smg/holster", CHAN_WEAPON, CHANF_OVERLAP);
+			DKSM O 2 A_StartSound("delta/smg/holster", CHAN_WEAPON,
+				CHANF_OVERLAP);
 			#### PQR 2;
 			TNT1 A 4;
 			#### # 1 A_SwapWeapon;
 			Stop;
 		Select:
 			TNT1 A 1 A_StartRaiseWeapon;
-			DKSM G 2 A_StartSound("delta/smg/deploy1", CHAN_WEAPON, CHANF_OVERLAP);
+			DKSM G 2 A_StartSound("delta/smg/deploy1", CHAN_WEAPON,
+				CHANF_OVERLAP);
 			#### HIJ 2;
 			#### K 1 A_DeltaWeaponReady(WRF_NOBOB);
-			#### # 1 A_StartSound("delta/smg/deploy2", CHAN_WEAPON, CHANF_OVERLAP, pitch: 1.2);
+			#### # 1 A_StartSound("delta/smg/deploy2", CHAN_WEAPON,
+				CHANF_OVERLAP, pitch: 1.2);
 			#### LMN 2 A_DeltaWeaponReady(WRF_NOBOB);
 			#### A 2 A_FinishRaiseWeapon;
 			Stop;
@@ -71,5 +80,35 @@ class KrisSmgPuff : BulletPuff
 	{
 		ProjectileKickBack 1;
 		+NOEXTREMEDEATH
+	}
+}
+
+class KrisSmgGrenade : DeltaGrenade
+{
+	Default
+	{
+		Obituary "$OBIT_DELTA_KSMGALT";
+		DeltaGrenade.GrenadeType GRENADE_STICKY;
+		DeltaGrenade.FuseTime 1;
+	}
+	
+	override void Explode()
+	{
+		Super.Explode();
+		RadiusAttack(target, 125, 75, 'None',
+			RADF_CIRCULARTHRUST | RADF_HURTSOURCE, 0.25);
+	}
+	
+	States
+	{
+		Spawn:
+			BAL1 AB 4;
+			Loop;
+		XDeath:
+			Goto Spawn;
+		Explode:
+			BAL1 C 3 A_GrenadeExplode; // stop being affected by gravity, we're exploding now
+			BAL1 DE 3;
+			Stop;
 	}
 }

@@ -20,3 +20,73 @@ GameInfo
 	MenuFontColor_Highlight = "DeltaOptMenuHighlight"
 	MenuFontColor_Selection = "DeltaOptMenuActive"
 }
+
+DoomEdNums
+{
+    255 = "DeltaWeaponsAtEase"
+}
+
+ClearSkills
+
+// i don't like calling it baby mode lol
+Skill DeltaVeryEasy
+{
+    AmmoFactor = 2
+    HealthFactor = 2
+    DamageFactor = 0.5
+    MonsterHealth = 0.9
+    Aggressiveness = 0.5
+    SpawnFilter = Baby
+	
+    SlowMonsters
+    EasyBossBrain
+    
+    ACSReturn = 0
+    TextColor = "DeltaVeryEasy"
+    Name = "$DELTA_SKILL_VERYEASY"
+}
+
+Skill DeltaEasy
+{
+    DamageFactor = 0.75
+    SpawnFilter = Easy
+	
+    EasyBossBrain
+    
+    ACSReturn = 1
+    TextColor = "DeltaEasy"
+    Name = "$DELTA_SKILL_EASY"
+}
+
+Skill DeltaNormal
+{
+    SpawnFilter = Normal
+    
+    ACSReturn = 2
+    Name = "$DELTA_SKILL_NORMAL"
+}
+
+Skill DeltaHard
+{
+    DamageFactor = 1.1
+    SpawnFilter = Hard
+    
+    ACSReturn = 3
+    TextColor = "DeltaHard"
+    Name = "$DELTA_SKILL_HARD"
+}
+
+// not calling it nightmare cuz we won't have instant reactions or respawning
+Skill DeltaVeryHard
+{
+    AmmoFactor = 2
+    DamageFactor = 1.25
+    
+    SpawnFilter = Nightmare
+    FastMonsters
+    MustConfirm = "$DELTA_SKILLDESC_VERYHARD"
+    
+    ACSReturn = 4
+    TextColor = "DeltaVeryHard"
+    Name = "$DELTA_SKILL_VERYHARD"
+}

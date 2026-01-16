@@ -13,13 +13,13 @@ DELTAWARRIORS_VERSION,Development Build,Version display
 ,,C4TEXT: Doom II ending
 ,,C5TEXT: Wolfenstein secret
 ,,C6TEXT: Wolfenstein super secret
-QUIT_DELTA_1,Thanks for playing!,
+QUIT_DELTA_1,Thanks for playing DeltaWarriors!,
 QUIT_DELTA_2,Are you sure you want to quit playing Undertale 2?,
 QUIT_DELTA_3,You're still here-? Don't you have anything better to do?,
 QUIT_DELTA_4,"\c[DeltaSusie]Hey, who said you could quit this game!? You know what that means, dumbass.\c-",
 QUIT_DELTA_5,"\c[DeltaRalsei]Oh? Uh- yeah! Take a break anytime you want, OK?\c-",
-QUIT_DELTA_6,[Insert funny Deltarune reference here],"thanks for the idea arsalan lmao (if you're poking around and you see this, check out sonic lock and load! it's a big reason i got into doom modding in the first place lol)"
-QUIT_DELTA_7,"Fine, leave. I'm sure your desktop is SO much better.","wanted to make a joke about windows initially, but you may not necessarily be running this on windows (i know i'll probably be running this on linux eventually)"
+QUIT_DELTA_6,[Insert funny Deltarune reference here],"Thanks for the idea, Arsalan lmao- (if you're poking around and you see this, check out Sonic: Lock and Load! It's a big reason i got into Doom modding in the first place hehe)"
+QUIT_DELTA_7,"Fine, leave. I'm sure your desktop is SO much better.","Wanted to make a joke about windows initially, but you may not necessarily be running this on Windows. (I know I'll probably be running this on Linux eventually)"
 QUIT_DELTA_8,THEN THE WORLD WAS COVERED IN DARKNESS.,"Direct reference to Deltarune's game over sequence if you choose ""Give up"""
 ,,Menu labels
 MENU_NEWGAME,New File,
@@ -78,11 +78,22 @@ MENU_OFFHANDCOLOR,Offhand Indicator Color,
 MNU_EPISODE,Select an Episode.,
 MNU_CHOOSESKILL,Select a Skill Level.,
 MENU_CLASS_HEADER,Select a Vessel.,
-DELTA_CHAR_KRIS,\c[DeltaKris]Kris\c-,
-DELTA_CHAR_SUSIE,\c[DeltaSusie]Susie\c-,
-DELTA_CHAR_RALSEI,\c[DeltaRalsei]Ralsei\c-,
-DELTA_CHAR_NOELLE,\c[DeltaNoelle]Noelle\c-,
+DELTA_CHAR_KRIS,Kris,
+DELTA_CHAR_SUSIE,Susie,
+DELTA_CHAR_RALSEI,Ralsei,
+DELTA_CHAR_NOELLE,Noelle,
 PLYRMNU_PLAYERCLASS,Vessel,
+,,Skill levels
+DELTA_SKILL_VERYEASY,Casual,
+DELTA_SKILL_EASY,Novice,
+DELTA_SKILL_NORMAL,Hero,
+DELTA_SKILL_HARD,Expert,
+DELTA_SKILL_VERYHARD,Master,
+DELTA_SKILLDESC_VERYEASY,"Enemies are few, timid, and weak. Resources can be found abound; death is very unlikely.\n\nRecommended for players looking for a more casual experience.",
+DELTA_SKILLDESC_EASY,"Enemies deal less damage and are found in fewer numbers. Think fast, and you'll make it out okay.\n\nRecommended for players newer to first person shooters.",
+DELTA_SKILLDESC_NORMAL,"Enemies are aggressive, and their attacks hurt. Keep your wits about you and be on guard; your survival may not be guaranteed.\n\nRecommended for players with a few first person shooters under their belt.",
+DELTA_SKILLDESC_HARD,"Enemies hit harder and come in larger numbers, and resources may prove scarce at times. Act with caution--you may be strong, but cockiness will result in a swift death.\n\nRecommended for players who are starting to get to grips with DeltaWarriors' gameplay.",
+DELTA_SKILLDESC_VERYHARD,"Enemies hit significantly harder, and are much faster and more aggressive. Well-rounded knowledge of your arsenal, abilities, and their synergies is essential to survival.\n\nRecommended for DeltaWarriors veterans looking for a fresh challenge.",
 ,,Game notifications
 SECRETMESSAGE,A \c[DeltaHighlight]secret\c- has been uncovered.,
 LOADNET,You cannot load while in a session with other vessels.\n\nPress any key.,
@@ -90,7 +101,7 @@ QLOADNET,You cannot quickload while in a session with other vessels.\n\nPress an
 QSAVESPOT,You have not selected a quicksave slot yet.\n\nPress any key.,
 NEWGAME,You cannot erase the world and restart\nwhile in a session with other vessels.\n\nPress any key.,
 NETEND,You cannot end a session with other vessels.\n\nPress any key.,
-DOSY,(Press Y to quit.),
+DOSY,(Press Y to end survey program.),
 TXT_NO_TEAM_CHANGE,You may not change teams.,
 TXT_JOINED_TEAM,%s is now on the %t team.,
 TXT_LONER,%s is now on no team at all.,
@@ -109,16 +120,16 @@ TXT_SGINFOERR,"We could not read the save data in your ""%s"" file.",
 TXT_SAVEPENDING,You still have a pending save.,
 TXT_NOTSAVEABLE,You cannot save at this time.,
 TXT_NOTINLEVEL,You cannot save from outside of a vessel.,
-TXT_SPPLAYERDEAD,Your vessel has met an end. You cannot save at this time.,
+TXT_SPPLAYERDEAD,Your vessel has met an end; you cannot save at this time.,
 TXT_SAVEFAILED,File failed to save.,
 TXT_QUITENDOOM,Press any key or click anywhere to exit. Thanks for playing DeltaWarriors!,
 TXT_DELTA_RESPAWNMSG1,IT APPEARS YOU HAVE REACHED,Meant to be a reference to Chapter 1's death screen. This text is displayed for a little bit before we show respawnMsg2
 TXT_DELTA_RESPAWNMSG2,AN END.,This and respawnMsg1 are meant to be two parts of one sentence with a time delay between showing each
 TXT_DELTA_RESPAWNREMIND,PRESS %s TO TRY AGAIN.,%s is where the player's use key will be put.
-TXT_DELTA_RESPAWNREMINDDM,PRESS %s TO RETURN.,
+TXT_DELTA_RESPAWNREMINDDM,PRESS %s TO RETURN.,This one is used if we'll simply respawn instead of reloading the level (e.g. if sv_singleplayerrespawn is true or if in deathmatch)
 ,,
 ,,Gameplay menu options
-GMPLYMNU_PISTOLSTART,Reset inventory at beginning of map,
+GMPLYMNU_PISTOLSTART,Reset inventory when entering a new level,
 ,,Obituaries
 OBIT_DELTA_SWORD,%o was cut down by %k's sword.,
 OBIT_DELTA_REVOLVER,%o couldn't take %k's gunslinging.,
@@ -126,7 +137,8 @@ OBIT_DELTA_KSHOTGUN,%o was peppered by %k's shotgun.,
 OBIT_DELTA_KSHOTGUNALT,%k's shotgun blast was too much for %o.,
 OBIT_DELTA_KSMG,%o succumbed to %k's flurry of bullets.,
 OBIT_DELTA_KSMGALT,%o should've stepped out of %k's way.,
-OBIT_DELTA_KPARRY,%k gave %o a taste of %p own medicine.,
+OBIT_DELTA_KPARRY,%k knocked a stray projectile right into %o.,
+OBIT_DELTA_KPARRYBACK,%k gave %o a taste of %p own medicine.,
 OBIT_DELTA_AXE,%o was cleaved in half by %k's axe.,
 OB_SUICIDE,%o killed %hself.,
 OB_EXIT,%o tried to escape.,
@@ -144,14 +156,14 @@ PICKUP_DELTA_SWORD,(You retrieved \c[DeltaHighlight]your sword\c-.),
 PICKUP_DELTA_REVOLVER,(You found a \c[DeltaHighlight]revolver\c-.),
 PICKUP_DELTA_KSHOTGUN,(You found a \c[DeltaHighlight]shotgun\c-.),
 PICKUP_DELTA_KSMG,(You found an \c[DeltaHighlight]SMG\c-.),
-PICKUP_DELTA_AXE,"\c[DeltaSusie](Oh sweet, my axe!)\c-","wanting to make it seem like characters are giving their own thoughts on items they pick up (obvs except Kris, whose messages are in second person)"
+PICKUP_DELTA_AXE,"\c[DeltaSusie](Oh sweet, my axe!)\c-","Wanting to make it seem like characters are giving their own thoughts on items they pick up (except Kris, whose messages are in second person like in Deltarune)"
 PICKUP_DELTA_TPSMALL,(You found a \c[DeltaHighlight]Tension Bit\c-.),
 PICKUP_DELTA_TPMED,(You found a \c[DeltaHighlight]Tension Gem\c-.),
 PICKUP_DELTA_TPLARGE,(You found a \c[DeltaHighlight]Tension Max\c-.),
 GOTHTHBONUS,(You found a \c[DeltaHighlight]health bonus\c-.),
 GOTSTIM,(You found a \c[DeltaHighlight]stimpack\c-.),
-GOTMEDINEED,(You found a \c[DeltaHighlight]medikit\c-. You felt a wave of relief wash over you.),Only if HP < 25
 GOTMEDIKIT,(You found a \c[DeltaHighlight]medikit\c-.),
+GOTMEDINEED,(You found a \c[DeltaHighlight]medikit\c-. You felt a wave of relief wash over you.),Only if HP < 25
 GOTBLUECARD,(You found the \c[DeltaBlue]Blue Keycard\c-.),
 GOTYELWCARD,(You found the \c[DeltaYellow]Yellow Keycard\c-.),
 GOTREDCARD,(You found the \c[DeltaRed]Red Keycard\c-.),
@@ -161,7 +173,7 @@ GOTREDSKUL,(You found the \c[DeltaRed]Red Skull Key\c-.),
 GOTINVUL,(You found an \c[DeltaHighlight]invulnerability sphere\c-.),
 GOTBERSERK,(You found a \c[DeltaHighlight]berserk pack\c-.),
 GOTINVIS,(You found a \c[DeltaHighlight]partial invisibility sphere\c-.),
-GOTSUIT,(You equipped a \c[DeltaHighlight]hazard suit\c-.),
+GOTSUIT,(You equipped a \c[DeltaHighlight]radiation suit\c-.),
 GOTMAP,(You found a \c[DeltaHighlight]computer area map\c-. Your automap has been completed.),
 GOTVISOR,(You equipped a pair of \c[DeltaHighlight]light amplification goggles\c-.),
 GOTSUPER ,(You found a \c[DeltaHighlight]soulsphere\c-.),
@@ -174,7 +186,7 @@ GOTROCKET,(You took a \c[DeltaHighlight]rocket\c-.),
 GOTROCKBOX,(You emptied a \c[DeltaHighlight]box of rockets\c- into your inventory.),
 GOTCELL,(You took an \c[DeltaHighlight]energy cell\c-.),
 GOTCELLBOX,(You took an \c[DeltaHighlight]energy cell pack\c-.),
-GOTBACKPACK,(You took a \c[DeltaHighlight]backpack\c- and sling it over your shoulder.),
+GOTBACKPACK,"(You took a \c[DeltaHighlight]backpack\c-, slinging it over your shoulder.)",
 ID24_GOTFUELCAN,(You took a \c[DeltaHighlight]fuel can\c-.),
 ID24_GOTFUELTANK,(You took a \c[DeltaHighlight]fuel tank\c-.),
 ,,Failed activate messages
@@ -204,18 +216,16 @@ PD_BLUESO,(It seems this object needs a \c[DeltaBlue]Blue Skull Key\c- to activa
 PD_REDSO,(It seems this object needs a \c[DeltaRed]Red Skull Key\c- to activate...),
 PD_YELLOWSO,(It seems this object needs a \c[DeltaYellow]Yellow Skull Key\c- to activate...),
 ,,Automap
-AM_MONSTERS,Enemies:,"Not using the word ""monsters"" because Susie and Noelle (and maybe Ralsei? we're not 100% sure yet) are monsters themselves, yet they are players, not enemies."
+AM_MONSTERS,Enemies:,"Not using the word ""monsters"" because Susie and Noelle are monsters themselves."
 ,,Inventory tags
-TAG_DELTA_AXE,Axe,
+TAG_DELTA_AXE,Axe,Susie's axe
 TAG_DELTA_REVOLVER,Revolver,
 TAG_DELTA_SHOTGUN,Shotgun,
 TAG_DELTA_SMG,SMG,
-TAG_DELTA_SWORD,Sword,Specifically Kris's sword
+TAG_DELTA_SWORD,Sword,Kris's sword
 TAG_DELTA_TPLARGE,Tension Max,
 TAG_DELTA_TPMED,Tension Gem,
 TAG_DELTA_TPSMALL,Tension Bit,
 ,,Misc. text
-TXT_BADDIE_KILLED,1 enemy killed,
-TXT_BADDIES_KILLED,%d enemies killed,
-TXT_MONSTER_KILLED,1 demon killed,See remarks on AM_MONSTERS
-TXT_MONSTERS_KILLED,%d demons killed,See remarks on AM_MONSTERS
+TXT_MONSTER_KILLED,1 enemy killed,See remarks on AM_MONSTERS
+TXT_MONSTERS_KILLED,%d enemies killed,See remarks on AM_MONSTERS

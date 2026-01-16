@@ -10,8 +10,8 @@ class KrisPlayer : DeltaPlayer
 	private float _savedSlideSpeed;
 	private int _savedSlideSpeedTimer;
 	private int _slideTics;				// used for smooth transitions into sliding effects
+    
 	const MAX_SLIDE_TICS = 5;
-	
 	const PARRY_TP_COST = floor(0.4 * 250);
 	
 	Default
@@ -72,8 +72,10 @@ class KrisPlayer : DeltaPlayer
 	{
 		Super.PlayerThink();
 		
-		if (!IsPredicting())
-			HandleSlide();
+		if (IsPredicting())
+			return;
+		
+		HandleSlide();
 	}
 	
 	override void CheckJump()
@@ -362,8 +364,14 @@ class KrisPlayer : DeltaPlayer
 		
 		while (mis = Actor(it.Next()))
 		{
+			if (!mis.CanCollideWith(self, false))
+				continue;
 			if (!mis.GetMissileDamage(0, 1) && !mis.bIsMonster)
 				continue;
+			if (mis is "DeltaParriable")
+			{
+				
+			}
 			if (mis.bRipper) // rippers can't be parried
 				continue;
 			if (!mis.bIsMonster && mis.target && IsFriend(mis.target)) // friendly projectiles shouldn't be parried
@@ -444,6 +452,11 @@ class KrisPlayer : DeltaPlayer
 			int dam = parried.GetMissileDamage(0, 12);
 			parried.SetOrigin(pos + (0, 0, viewHeight), false);
 			
+			let inv = DeltaParried(parried.GiveInventoryType("DeltaParried"));
+			inv.oldTarget = parried.target;	// mostly for checking if we
+											// knocked a player's own
+											// projectile back at them for
+											// obituaries
 			parried.target = self;
 			parried.tracer = null;
 			
@@ -452,18 +465,21 @@ class KrisPlayer : DeltaPlayer
 			parried.Pitch = parryPitch;
 			parried.bForceRadiusDmg = true;
 			parried.bForcePain = true;
-			parried.GiveInventory("DeltaParried", 1);
 		}
 		else if (parried.bSkullfly)
 		{
 			parried.Vel = newVel;
-			parried.DamageMobj(self, self, random[parryDmg](60, 90), 'Parry');
+			parried.DamageMobj(self, self, random[parryDmg](60, 90)
+                * max(1, G_SkillPropertyFloat(SKILLP_MonsterHealth)), 'Parry');
 		}
 		else if (parried.bIsMonster)
 		{
 			let forcePainFlag = !parried.bForcePain;
 			
-			LineAttack(angle, Distance3D(parried), parryPitch, random[parryDmg](60, 90), 'Parry', "KrisParryPuff");
+			LineAttack(angle, Distance3D(parried), parryPitch,
+                random[parryDmg](60, 90) *
+                max(1, G_SkillPropertyFloat(SKILLP_MonsterHealth)), 'Parry',
+                "KrisParryPuff");
 		}
 	}
 	

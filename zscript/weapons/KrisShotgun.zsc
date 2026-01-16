@@ -27,18 +27,24 @@ class KrisShotgun : DeltaWeapon
 		pumped = true;
 	}
 	
-	// pulling this code from gzalice (a previous project of mine, i.e. still MY code) lmao
-	override bool CheckAmmo(int fireMode, bool autoSwitch, bool requireAmmo, int ammoCount)
+	// pulling this code from gzalice (a previous project of mine, i.e. still MY
+	// code) lmao
+	override bool CheckAmmo(int fireMode, bool autoSwitch, bool requireAmmo,
+		int ammoCount)
 	{
-		if (sv_infiniteAmmo || (owner.FindInventory('PowerInfiniteAmmo', true) != null))
+		if (sv_infiniteAmmo
+			|| owner.FindInventory('PowerInfiniteAmmo', true) != null)
 			return true;
-		if ((fireMode == PrimaryFire || fireMode == EitherFire) && Ammo1.Amount > 0)
+		if ((fireMode == PrimaryFire || fireMode == EitherFire)
+			&& Ammo1.Amount > 0)
 			return true;
 		if (fireMode == AltFire && Ammo1.Amount >= AmmoUse2)
 			return true;
 		
-		// only switch if either fire won't work; otherwise if we're dry firing our alt fire, just fail the alt fire
-		if (autoSwitch && (fireMode == PrimaryFire || fireMode == EitherFire || (fireMode == AltFire && Ammo1.Amount <= 0)))
+		// only switch if either fire won't work; otherwise if we're dry firing
+		// our alt fire, just fail the alt fire
+		if (autoSwitch && (fireMode == PrimaryFire || fireMode == EitherFire
+			|| (fireMode == AltFire && Ammo1.Amount <= 0)))
 			PlayerPawn(owner).PickNewWeapon(null);
 		
 		if (fireMode == AltFire && Ammo1.Amount > 0 && pumped)
@@ -49,11 +55,10 @@ class KrisShotgun : DeltaWeapon
 	
 	action void A_KrisShotgunFire()
 	{
-		// make first shot more accurate than others after it
-		A_FireBullets(5.5, 5.5, 8, 9, "KrisShotgunPuff", flags: FBF_USEAMMO | FBF_NORANDOM);
+		A_FireBullets(5.5, 5.5, 8, 9, "KrisShotgunPuff",
+			flags: FBF_USEAMMO | FBF_NORANDOM);
 		A_AlertMonsters();
 		A_StartSound("delta/shotgun/fire", CHAN_WEAPON, CHANF_OVERLAP);
-// 		A_ZoomFactor(0.97, ZOOM_INSTANT | ZOOM_NOSCALETURNING);
 		A_AddRecoil(10, 1, p: -3);
 		A_AddDynamicLight("shotgunMuzzle", "DeltaGenericMuzzle");
 		invoker.pumped = false;
@@ -77,7 +82,8 @@ class KrisShotgun : DeltaWeapon
 		{
 			Vector2 forward = AngleToVector(player.mo.angle);
 			Vector2 up = AngleToVector(player.mo.pitch);
-			player.mo.vel -= (forward.x * up.x, forward.y * up.x, -up.y) * (player.onGround ? 5 : 10);
+			player.mo.vel -= (forward.x * up.x, forward.y * up.x, -up.y)
+				* (player.onGround ? 5 : 10);
 		}
 		
 		return ResolveState(null);
@@ -95,7 +101,8 @@ class KrisShotgun : DeltaWeapon
 			}
 			Loop;
 		Deselect:
-			DKSH A 2 A_StartSound("delta/shotgun/holster", CHAN_WEAPON, CHANF_OVERLAP);
+			DKSH A 2 A_StartSound("delta/shotgun/holster", CHAN_WEAPON,
+				CHANF_OVERLAP);
 			#### BCDE 2;
 			TNT1 A 4;
 			#### # 0 A_SwapWeapon;
@@ -104,10 +111,12 @@ class KrisShotgun : DeltaWeapon
 			TNT1 A 2
 			{
 				A_StartRaiseWeapon();
-				A_StartSound("delta/shotgun/deploy1", CHAN_WEAPON, CHANF_OVERLAP);
+				A_StartSound("delta/shotgun/deploy1", CHAN_WEAPON,
+					CHANF_OVERLAP);
 			}
 			DKSD ABCD 2;
-			#### E 1 A_StartSound("delta/shotgun/deploy2", CHAN_WEAPON, CHANF_OVERLAP);
+			#### E 1 A_StartSound("delta/shotgun/deploy2", CHAN_WEAPON,
+				CHANF_OVERLAP);
 			#### E 1
 			{
 				if (invoker.pumped)
@@ -129,12 +138,14 @@ class KrisShotgun : DeltaWeapon
 			DKSG G 1 A_DeltaWeaponReady(WRF_NOFIRE | WRF_NOBOB);
 			#### # 1 A_CheckReload;
 			#### HI 2;
-			#### J 2 A_StartSound("delta/shotgun/pumpIn", CHAN_WEAPON, CHANF_OVERLAP);
+			#### J 2 A_StartSound("delta/shotgun/pumpIn", CHAN_WEAPON,
+				CHANF_OVERLAP);
 			#### K 2;
 			#### L 2;
 			#### M 2
 			{
-				A_StartSound("delta/shotgun/pumpOut", CHAN_WEAPON, CHANF_OVERLAP);
+				A_StartSound("delta/shotgun/pumpOut", CHAN_WEAPON,
+					CHANF_OVERLAP);
 				invoker.pumped = true;
 			}
 			#### N 2;
