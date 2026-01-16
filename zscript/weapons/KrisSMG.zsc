@@ -82,33 +82,3 @@ class KrisSmgPuff : BulletPuff
 		+NOEXTREMEDEATH
 	}
 }
-
-class KrisSmgGrenade : DeltaGrenade
-{
-	Default
-	{
-		Obituary "$OBIT_DELTA_KSMGALT";
-		DeltaGrenade.GrenadeType GRENADE_STICKY;
-		DeltaGrenade.FuseTime 1;
-	}
-	
-	override void Explode()
-	{
-		Super.Explode();
-		RadiusAttack(target, 125, 75, 'None',
-			RADF_CIRCULARTHRUST | RADF_HURTSOURCE, 0.25);
-	}
-	
-	States
-	{
-		Spawn:
-			BAL1 AB 4;
-			Loop;
-		XDeath:
-			Goto Spawn;
-		Explode:
-			BAL1 C 3 A_GrenadeExplode; // stop being affected by gravity, we're exploding now
-			BAL1 DE 3;
-			Stop;
-	}
-}
