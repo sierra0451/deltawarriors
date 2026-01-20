@@ -784,10 +784,8 @@ class DeltaPlayer : PlayerPawn abstract
 		
 		A_SetAngle(VectorAngle(diff.x, diff.y), SPF_INTERPOLATE);
 		
-		/*
 		if (level.IsFreelookAllowed() && abs(pitch + asin(diffUnit.z)) > 15)
 			A_SetPitch(-asin(diffUnit.z), SPF_INTERPOLATE);
-		*/
 		
 		float dist = diff.Length() - radius - lungeTarget.radius;
 		Vel = diffUnit * min(lungeSpeed, dist);
@@ -811,7 +809,7 @@ class DeltaPlayer : PlayerPawn abstract
 			diff = level.Vec3Diff(pos, lungeTarget.pos);
 			diffUnit = diff.Unit();
 			pitchFactor = (diffUnit.z / 2);
-			A_Log("diff: " .. diff .. ", du: " .. diffUnit .. ", pf: " .. pitchFactor .. ", asin: " .. asin(diffUnit.z));
+			//A_Log("diff: " .. diff .. ", du: " .. diffUnit .. ", pf: " .. pitchFactor .. ", asin: " .. asin(diffUnit.z));
 			diff = level.Vec3Diff(pos, lungeTarget.pos.PlusZ(lungeTarget.height * pitchFactor));
 			diffUnit = diff.Unit();
 			A_SetAngle(VectorAngle(diff.x, diff.y), SPF_INTERPOLATE);
