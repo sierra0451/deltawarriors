@@ -1,4 +1,4 @@
-class DeltaDamagePopup : Actor
+class DeltaPopup : Actor
 {
 	int timer;
 	int scaleUpTime, popUpTime, bounceTime, holdTime, fadeTime;
@@ -37,6 +37,9 @@ class DeltaDamagePopup : Actor
 	override void Tick()
 	{
 		Super.Tick();
+		if (IsFrozen())
+			return;
+		
 		timer++;
 		int tempTime = timer; // using this to make code easier to debug and read
 		
@@ -85,7 +88,7 @@ class DeltaDamagePopup : Actor
 	}
 }
 
-class DeltaDamageNumber : DeltaDamagePopup
+class DeltaDamageNumber : DeltaPopup
 {
 	int place, value, totalDigits;
 	
@@ -108,7 +111,7 @@ class DeltaDamageNumber : DeltaDamagePopup
 			.. " damage from " .. (source ? source.GetTag() : "null source");
 		
 		let posDiff = source ? level.Vec3Diff(thing.pos, source.pos)
-			: DeltaMath.GetActorForward(thing, false);
+			: DeltaUtil.GetActorForward(thing, false);
 		posDiff.z = 0;
 		posDiff = posDiff.Unit();
 		let totalDigits = damageStr.Length()-1,

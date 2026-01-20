@@ -1,10 +1,5 @@
 class PistolReplacer : Inventory replaces Pistol
 {
-	Default
-	{
-		
-	}
-	
 	States
 	{
 		Spawn:
@@ -89,9 +84,8 @@ class TempChainsaw : DeltaTempReplacer replaces Chainsaw
 	override void AttachToOwner(Actor other)
 	{
 		let replacee = Spawn(_replacedClass);
-		other.A_Print("You picked up a cardboard cutout of a "
-			.. replacee.GetTag().MakeLower() .. ". It's completely,\n utterly "
-			.. "useless. Someone should really replace that...", 4);
+		string str = StringTable.Localize("$PICKUP_DELTA_CHAINSAW");
+		other.A_Print(String.Format(str, replacee.GetTag().MakeLower()), 4);
 		replacee.Destroy();
 		Super.AttachToOwner(other);
 	}

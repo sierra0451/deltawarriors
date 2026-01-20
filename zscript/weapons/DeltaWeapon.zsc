@@ -1,32 +1,41 @@
 class DeltaWeapon : Weapon
 {
-	protected float _redCrosshairRange;	// maximum distance an enemy can be at from player and still have red crosshairs when aimed at
-	protected float _maxLungeDistance;	// maximum distance the lunge check will detect targets from
-	protected float _stopLungeDistance;	// distance user must be at during lunge before they stop and attack
-	protected string _altFireIcon;		// used for displaying alt fire key and cost (keep as null if you don't want anything there)
+	protected double _redCrosshairRange;	// maximum distance an enemy can be at from player and still have red crosshairs when aimed at
+	protected double _maxLungeDistance;		// maximum distance the lunge check will detect targets from
+	protected double _stopLungeDistance;	// distance user must be at during lunge before they stop and attack
+	protected string _altFireIcon;			// used for displaying alt fire key and cost (keep as null if you don't want anything there)
 	protected string _crosshair;
     protected bool _atEase;
 	protected int _easeTics;
 	
+	protected double _tensionUse, _tensionUse2;
+	
 	private bool _lungeReadyToStop;
-	private TextureID _altFireIconId;
-	private TextureID _crosshairId;
+	private TextureID _altFireIconId, _crosshairId;
+	protected sound _dryFireSound;
 	
 	const EASE_TICS_SET_ATTACK = -25;
+	const TP_FAIL_SOUND = "delta/tp_fail";
 	
 	property RedCrosshairRange: _redCrosshairRange;
 	property MaxLungeDistance: _maxLungeDistance;
 	property StopLungeDistance: _stopLungeDistance;
+	property TensionUse: _tensionUse;
+	property TensionUse2: _tensionUse2;
 	property AltFireIcon: _altFireIcon;
 	property Crosshair: _crosshair;
+	property DryFireSound: _dryFireSound;
 	
 	Default
 	{
 		Weapon.BobStyle "Smooth";
 		Weapon.BobSpeed 2.5;
-		DeltaWeapon.RedCrosshairRange PLAYERMISSILERANGE/2;
+		DeltaWeapon.RedCrosshairRange PLAYERMISSILERANGE / 2.;
 		DeltaWeapon.MaxLungeDistance -1;
 		DeltaWeapon.StopLungeDistance 5;
+		DeltaWeapon.TensionUse 0;
+		DeltaWeapon.TensionUse2 0;
+		DeltaWeapon.DryFireSound "delta/dry_fire";
 	}
 	
 	States
@@ -45,12 +54,108 @@ class DeltaWeapon : Weapon
 		_crosshairId = TexMan.CheckForTexture(_crosshair);
 	}
 	
-	virtual bool TryUseTension(double amount)
+	override bool CheckAmmo(int fireMode, bool autoSwitch, bool requireAmmo,
+		int ammoCount)
+	{
+		if (sv_infiniteammo || (Owner.FindInventory('PowerInfiniteAmmo', true) != null))
+			return true;
+		
+		if (!(owner is "DeltaPlayer"))
+		{
+			if (autoSwitch)
+				PlayerPawn(Owner).PickNewWeapon(null);
+			
+			return false;
+		}
+		
+		let hasAltFire = FindState('AltFire') != null;
+		
+		if (fireMode == EitherFire)
+		{
+			bool gotBoth = CheckAmmo(PrimaryFire, false)
+				|| (hasAltFire && CheckAmmo(AltFire, false));
+			
+			if (!gotBoth && autoSwitch)
+				PlayerPawn(Owner).PickNewWeapon (null);
+			
+			return gotBoth;
+		}
+		
+		let altFire = (fireMode == AltFire);
+		let optional = (altFire? bAlt_Ammo_Optional : bAmmo_Optional);
+		let useBoth = (altFire? bAlt_Uses_Both : bPrimary_Uses_Both);
+
+		if (!requireAmmo && optional)
+			return true;
+		
+		int lAmmoUse1,
+			lAmmoUse2 = AmmoUse2,
+			count1 = ((Ammo1 != null) ? Ammo1.Amount : 0),
+			count2 = ((Ammo2 != null) ? Ammo2.Amount : 0);
+		double lTensionUse1,
+			lTensionUse2 = _tensionUse2,
+			tensionCount = DeltaPlayer(owner).tensionPoints;
+
+		if (bDehAmmo && Ammo1 == null)
+			lAmmoUse1 = lTensionUse1 = 0;
+		else if (ammoCount >= 0)
+			lAmmoUse1 = lAmmoUse2 = ammoCount;
+		else
+		{
+			lAmmoUse1 = AmmoUse1;
+			lTensionUse1 = _tensionUse;
+		}
+
+		int enough = (count1 >= lAmmoUse1 && tensionCount >= lTensionUse1)
+			| ((hasAltFire && count2 >= lAmmoUse2 && tensionCount >= lTensionUse2) << 1),
+		enoughMask = useBoth ? 3 : (1 << altFire);
+		int failEffect = 0; // 0 = none, 1 = dry fire, 2 = tp fail sound
+		
+		if (altFire ? (count2 < lAmmoUse2) : (count1 < lAmmoUse1))
+			failEffect = 1;
+		else if (tensionCount < (altFire ? lTensionUse2 : lTensionUse1))
+			failEffect = 2;
+		
+		if ((altFire && !hasAltFire) ||
+			((enough & enoughMask) != enoughMask) && !(enough && bAmmo_CheckBoth))
+		{
+			// out of ammo, pick a weapon to change to
+			if (autoSwitch && enough != (1 << !altFire))
+				PlayerPawn(Owner).PickNewWeapon (null);
+			
+			if (autoSwitch && (owner.player.weaponState & (altFire ? WF_WEAPONREADYALT : WF_WEAPONREADY)))
+			{
+				sound snd = _dryFireSound;
+				if (failEffect == 2)
+					snd = TP_FAIL_SOUND;
+				
+				owner.A_StartSound(snd, CHAN_AUTO, CHANF_LOCAL | CHANF_NOSTOP);
+			}
+			return false;
+		}
+		
+		return true;
+	}
+	
+	override bool DepleteAmmo(bool altFire, bool checkEnough, int ammoUse, bool forceAmmoUse)
+	{
+		if (!Super.DepleteAmmo(altFire, checkEnough, ammoUse, forceAmmoUse))
+			return false;
+		if (!checkEnough || TakeTension(altFire))
+			return true;
+		
+		return false;
+	}
+	
+	virtual bool TakeTension(bool altFire)
 	{
 		let deltaOwner = DeltaPlayer(owner);
+		double amount = altFire ? _tensionUse2 : _tensionUse;
 		
 		if (amount < 0 || !deltaOwner)
 			return false;
+		if (amount == 0)
+			return true;
 		
 		return deltaOwner.TryTakeTension(amount);
 	}
@@ -166,7 +271,7 @@ class DeltaWeapon : Weapon
 				double targetAngle = VectorAngle(diff.x, diff.y);
 				double targetPitch = asin(diffNorm.z);
 				double distance = diff.Length();
-				let forward = DeltaMath.GetActorForward(deltaOwner, false);
+				let forward = DeltaUtil.GetActorForward(deltaOwner, false);
 				
 				if ((diff.x, diff.y).Unit() dot (forward.x, forward.y) < 0.75)
 					continue;

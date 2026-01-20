@@ -17,8 +17,6 @@ ListMenu "MainMenu"
 	TextItem "$MENU_OPTIONS", "c", "DeltaOptions"
 	TextItem "$MENU_ABOUT", "p", "ReadThisMenu"
 	TextItem "$MENU_QUIT", "e", "QuitMenu"
-
-	StaticTextCentered 150, 220, "Please do not distribute!", "Black"
 }
 
 ListMenu "PlayerClassMenu"
@@ -97,6 +95,8 @@ OptionMenu "DeltaControls"
 	StaticText "$MENU_CTRLCONFIG", "DeltaMenuHeader"
 	StaticText ""
 	
+    SubMenu "$MENU_MOUSEOPTIONS", "DeltaMouse"
+    StaticText ""
 	StaticText "$MENU_MOVEMENT", "DeltaMenuHeader"
 	Control "$MENU_MOVEFRWD", "+forward"
 	Control "$MENU_MOVEBACK", "+back"
@@ -124,6 +124,8 @@ OptionMenu "DeltaControls"
 	SubMenu "$MENU_UZDOOM_CONTROLS", "CustomizeControls"
 }
 
+OptionMenu "DeltaMouse"
+{
 OptionMenu "DeltaHudOptions"
 {
 	Title "$MENU_HUD_HEADER"

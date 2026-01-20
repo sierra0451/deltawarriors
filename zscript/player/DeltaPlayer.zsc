@@ -1,36 +1,3 @@
-enum TpResult
-{
-	TP_FAIL = 0,
-	TP_USE = 1,
-	TP_INFINITE = 2
-}
-
-enum DeltaPsp
-{
-	PSP_LEGS = -10,
-	PSP_OFFHAND = -5
-}
-
-enum HeartbeatSetting
-{
-	HB_OFF = 0,
-	HB_ON = 1,
-	HB_KRIS_ONLY = 2
-}
-
-enum DeltaRecoilType
-{
-	RECOIL_WEAPON,
-	RECOIL_DAMAGE
-}
-
-enum DeltaCrosshairState
-{
-	DELTA_XHR_NEUTRAL,
-	DELTA_XHR_FRIENDLY,
-	DELTA_XHR_ENEMY
-}
-
 struct RecoilEvent
 {
 	Vector3 recoil;
@@ -239,7 +206,6 @@ class DeltaPlayer : PlayerPawn abstract
 		_oldTurn = 0;
 		
 		_targetRoll = 0;
-		Vel = (0, 0, 0);
 	}
 	
 	override void PlayerThink()
@@ -401,15 +367,8 @@ class DeltaPlayer : PlayerPawn abstract
 			if (mod == 'Falling')
 				A_StartSound("delta/fall_damage", CHAN_AUTO);
 			
-			if (source && source != self)
-			{
-				float ang = DeltaAngle(self.angle, AngleTo(inflictor)) + cfrandom(-15, 15);
-				DamageFlinch(ang, finalDamage, flags);
-			}
-			else if (!source)
-			{
-				DamageFlinch(0, finalDamage, flags);
-			}
+			float ang = source ? DeltaAngle(self.angle, AngleTo(inflictor)) + cfrandom(-15, 15) : 0;
+			DamageFlinch(ang, finalDamage, flags);
 		}
 		
 		if (player)
@@ -677,14 +636,14 @@ class DeltaPlayer : PlayerPawn abstract
 		
 		int t = level.time;
 		float
-			s = shakiness ? DeltaMath.Lerp(oldShakiness, shakiness.GetValue(), ticFrac)/100. : 0,
+			s = shakiness ? DeltaUtil.Lerp(oldShakiness, shakiness.GetValue(), ticFrac)/100. : 0,
 			shakeDiff = s - minShakiness,
 			shakeX = sin(t/11.) * 2 - shakeDiff * sin(TICRATE*0.85*t),
 			shakeY = max(0, (0.5+0.5*sin(2*t)) * 5 + shakeDiff * sin(TICRATE/2.*t));
 		Vector2 shake = (shakeX, shakeY * 0.5);
 		
 		return originalBob * perc + bobFlinch + shake * s
-			+ (DeltaMath.Lerp(_oldTurn, _turn, ticFrac), 0);
+			+ (DeltaUtil.Lerp(_oldTurn, _turn, ticFrac), 0);
 	}
 	
 	override void CheatGive(string name, int amount)
@@ -820,32 +779,46 @@ class DeltaPlayer : PlayerPawn abstract
 		
 		Vector3 diff = level.Vec3Diff(pos, lungeTarget.pos);
 		Vector3 diffUnit = diff.Unit();
-		
 		float pitchFactor = 1 - ((diffUnit.z / 2) + 0.5);
-		
 		diff = level.Vec3Diff(pos, lungeTarget.pos.PlusZ(lungeTarget.height * pitchFactor));
 		
 		A_SetAngle(VectorAngle(diff.x, diff.y), SPF_INTERPOLATE);
 		
-		float dist = diff.Length() - radius - lungeTarget.radius;
-		Vel = diffUnit * min(lungeSpeed, dist);
-		
+		/*
 		if (level.IsFreelookAllowed() && abs(pitch + asin(diffUnit.z)) > 15)
 			A_SetPitch(-asin(diffUnit.z), SPF_INTERPOLATE);
+		*/
+		
+		float dist = diff.Length() - radius - lungeTarget.radius;
+		Vel = diffUnit * min(lungeSpeed, dist);
 		
 		if (LungeBlocked())
 		{
 			StopLunge();
-			Vel = preLungeVel;
 			return;
 		}
 		
-		if (dist <= lungeStopDistance + Vel.Length() || (diff.XY.Length() < lungeStopDistance
-			&& abs(diff.z) - height <= lungeStopDistance + Vel.Length()))
+		if (dist <= lungeStopDistance + Vel.Length() ||
+			(diff.XY.Length() < lungeStopDistance &&
+			abs(diff.z) - height <= lungeStopDistance + abs(Vel.Z)))
 		{
-			let targetPos = vel + pos;
+			let desiredPos = level.Vec2Diff(pos.xy, lungeTarget.pos.xy);
+			desiredPos *= (desiredPos.Length() - lungeStopDistance) / desiredPos.Length();
+			//let targetPos = vel + pos;
 			StopLunge(true);
-			TryMove(targetPos.XY, 0);
+			TryMove(pos.XY + desiredPos, 0);
+			
+			diff = level.Vec3Diff(pos, lungeTarget.pos);
+			diffUnit = diff.Unit();
+			pitchFactor = (diffUnit.z / 2);
+			A_Log("diff: " .. diff .. ", du: " .. diffUnit .. ", pf: " .. pitchFactor .. ", asin: " .. asin(diffUnit.z));
+			diff = level.Vec3Diff(pos, lungeTarget.pos.PlusZ(lungeTarget.height * pitchFactor));
+			diffUnit = diff.Unit();
+			A_SetAngle(VectorAngle(diff.x, diff.y), SPF_INTERPOLATE);
+			
+			if (level.IsFreelookAllowed() && abs(pitch + asin(diffUnit.z)) > 15)
+				A_SetPitch(-asin(diffUnit.z), SPF_INTERPOLATE);
+			
 			player.vel = (0, 0);
 		}
 	}
@@ -930,24 +903,33 @@ class DeltaPlayer : PlayerPawn abstract
 		if (!heartbeat)
 			heartbeat = LinearValueInterpolator.Create(0, 10);
 		
-		float _maxHealth = GetMaxHealth();
+		double
+			_maxHealth = GetMaxHealth(),
+			maxForHeartbeat = _maxHealth * 0.4,
+			minForHeartbeat = _maxHealth * 0.2,
+			heartbeatPerc = DeltaUtil.Clamp(
+				(maxForHeartbeat - Health) / (maxForHeartbeat - minForHeartbeat - 1), 0, 1);
+		bool heartbeatCvar = (cl_delta_heartbeatSound == HB_ON
+			|| (cl_delta_heartbeatSound == HB_KRIS_ONLY && self is "KrisPlayer"));
 		
-		// make sure heartbeat only plays if we're above 40% of our max health AND we aren't dead
-		if (Health <= _maxHealth / 3. && Health > 0 && (cl_delta_heartbeatSound == HB_ON
-			|| (cl_delta_heartbeatSound == HB_KRIS_ONLY && self is "KrisPlayer")))
+		// make sure heartbeat only plays if we're below a third of our max
+		// health AND we aren't dead
+		if (Health <= maxForHeartbeat && Health > 0 && heartbeatCvar)
 		{
-			int _targetVol = round(250/3. - 200. * Health / GetMaxHealth());
-			heartbeat.Update(_targetVol);
+			double _targetVol = 100*heartbeatPerc;
+			heartbeat.Update(round(_targetVol));
 		}
-		else if (Health > 0 && cl_delta_heartbeatSound)
+		else if (Health > 0 && heartbeatCvar)
 			heartbeat.Update(0);
 		else if (heartbeat.GetValue() != 0)
 			heartbeat.Reset(0);
 		
+		double vol = heartbeat.GetValue() / 100.;
+		
 		if (!IsActorPlayingSound(7))
-			A_StartSound("delta/heartbeat", 7, CHANF_LOOPING, heartbeat.GetValue() / 100., 120);
+			A_StartSound("delta/heartbeat", 7, CHANF_LOOPING, vol, 120);
 		else
-			A_SoundVolume(7, heartbeat.GetValue() / 100.);
+			A_SoundVolume(7, vol);
 	}
 	
 	protected virtual float GetViewRoll()
@@ -1025,7 +1007,7 @@ class DeltaPlayer : PlayerPawn abstract
 		else
 			_turn = 0;
 		
-		_turn = DeltaMath.Clamp(_turn + diffAngle*0.2, -5, 5);
+		_turn = DeltaUtil.Clamp(_turn + diffAngle*0.2, -5, 5);
 		oldAngle = angle;
 	}
 	
@@ -1088,7 +1070,7 @@ class DeltaPlayer : PlayerPawn abstract
 		oldShakiness = shakiness.GetValue();
 		
 		float shakeMaxFactor = float(shakinessMaxHealth)/GetMaxHealth();
-		int targetShake = DeltaMath.Lerp(maxShakiness*100., minShakiness*100.,
+		int targetShake = DeltaUtil.Lerp(maxShakiness*100., minShakiness*100.,
 			(Health-1) / (shakeMaxFactor*(GetMaxHealth()-1)));
 		
 		if (Health > 0)
@@ -1227,7 +1209,7 @@ class DeltaPlayer : PlayerPawn abstract
 		bool isExplosion = (dmgFlags & DMG_EXPLOSION);
 		
 		_flinchTics = startFlinchTics + damageAddTics/2;
-		_currentFlinch = (sin(ang), cos(ang)) * flinchMultiplier;
+		_currentFlinch = (sin(ang), cos(ang)) * flinchMultiplier * damageMultiplier/0.25;
 		
 		double yrMult = isExplosion ? -3*sin(ang) : sin(ang),
 			pMult = cos(ang);

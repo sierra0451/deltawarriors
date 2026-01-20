@@ -919,6 +919,83 @@ Sprite "DKSMR0", 640, 240
 	Patch "DKSMR0", 0, 0
 }
 
+Sprite "KSMAA0", 640, 240
+{
+	YScale 1.200
+	Offset 160, 38
+	Patch "KSMAA0", 0, 0
+}
+
+Sprite "KSMAB0", 640, 240
+{
+	YScale 1.200
+	Offset 160, 38
+	Patch "KSMAB0", 0, 0
+}
+
+Sprite "KSMAC0", 640, 240
+{
+	YScale 1.200
+	Offset 160, 38
+	Patch "KSMAC0", 0, 0
+}
+
+Sprite "KSMAD0", 640, 240
+{
+	YScale 1.200
+	Offset 160, 38
+	Patch "KSMAD0", 0, 0
+}
+
+Sprite "KSMAE0", 640, 240
+{
+	YScale 1.200
+	Offset 160, 38
+	Patch "KSMAE0", 0, 0
+}
+
+Sprite "KSMAF0", 640, 240
+{
+	YScale 1.200
+	Offset 160, 38
+	Patch "KSMAF0", 0, 0
+}
+
+Sprite "KSMAG0", 640, 240
+{
+	YScale 1.200
+	Offset 160, 38
+	Patch "KSMAG0", 0, 0
+}
+
+Sprite "KSMAH0", 640, 240
+{
+	YScale 1.200
+	Offset 160, 38
+	Patch "KSMAH0", 0, 0
+}
+
+Sprite "KSMAI0", 640, 240
+{
+	YScale 1.200
+	Offset 160, 38
+	Patch "KSMAI0", 0, 0
+}
+
+Sprite "KSMAJ0", 640, 240
+{
+	YScale 1.200
+	Offset 160, 38
+	Patch "KSMAJ0", 0, 0
+}
+
+Sprite "KSMAK0", 640, 240
+{
+	YScale 1.200
+	Offset 160, 38
+	Patch "KSMAK0", 0, 0
+}
+
 Sprite "DSMGA0", 85, 33
 {
 	XScale 2.000

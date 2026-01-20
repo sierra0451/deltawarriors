@@ -16,6 +16,8 @@ class KrisShotgun : DeltaWeapon
 		Weapon.AmmoType "Shell";
 		Weapon.AmmoType2 "Shell";
 		DeltaWeapon.Crosshair "DRSHGRET";
+		DeltaWeapon.RedCrosshairRange 500;
+		DeltaWeapon.TensionUse2 50;
 		
 		+SQUAREPIXELS
 		+WEAPON.NOALERT
@@ -25,32 +27,6 @@ class KrisShotgun : DeltaWeapon
 	{
 		Super.BeginPlay();
 		pumped = true;
-	}
-	
-	// pulling this code from gzalice (a previous project of mine, i.e. still MY
-	// code) lmao
-	override bool CheckAmmo(int fireMode, bool autoSwitch, bool requireAmmo,
-		int ammoCount)
-	{
-		if (sv_infiniteAmmo
-			|| owner.FindInventory('PowerInfiniteAmmo', true) != null)
-			return true;
-		if ((fireMode == PrimaryFire || fireMode == EitherFire)
-			&& Ammo1.Amount > 0)
-			return true;
-		if (fireMode == AltFire && Ammo1.Amount >= AmmoUse2)
-			return true;
-		
-		// only switch if either fire won't work; otherwise if we're dry firing
-		// our alt fire, just fail the alt fire
-		if (autoSwitch && (fireMode == PrimaryFire || fireMode == EitherFire
-			|| (fireMode == AltFire && Ammo1.Amount <= 0)))
-			PlayerPawn(owner).PickNewWeapon(null);
-		
-		if (fireMode == AltFire && Ammo1.Amount > 0 && pumped)
-			owner.A_StartSound("delta/dry_fire", CHAN_WEAPON, CHANF_NOSTOP);
-		
-		return false;
 	}
 	
 	action void A_KrisShotgunFire()
@@ -66,10 +42,9 @@ class KrisShotgun : DeltaWeapon
 	
 	action state A_KrisShotgunAltFire()
 	{
-		if (!invoker.CheckAmmo(AltFire, false) || !invoker.TryUseTension(50))
+		if (!invoker.DepleteAmmo(true))
 			return ResolveState("Ready");
 		
-		invoker.DepleteAmmo(true, false);
 		A_AlertMonsters();
 		A_FireBullets(6.5, 6.5, 16, 10, "KrisShotgunAltPuff", FBF_NORANDOM);
 		A_StartSound("delta/shotgun/fire", CHAN_WEAPON, CHANF_OVERLAP);

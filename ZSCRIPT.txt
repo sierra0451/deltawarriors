@@ -1,8 +1,9 @@
 version "4.14.3"
 
 #include "zscript/DeltaDamagePopups.zsc"
+#include "zscript/DeltaEnums.zsc"
 #include "zscript/DeltaHud.zsc"
-#include "zscript/DeltaMath.zsc"
+#include "zscript/DeltaUtil.zsc"
 #include "zscript/DeltaParriable.zsc"
 #include "zscript/DeltaSoul.zsc"
 #include "zscript/EventHandlers.zsc"
@@ -15,6 +16,8 @@ version "4.14.3"
 #include "zscript/player/SusiePlayer.zsc"
 // #include "zscript/player/RalseiPlayer.zsc"
 // #include "zscript/player/NoellePlayer.zsc"
+
+#include "zscript/projectiles/DeltaGrenade.zsc"
 
 #include "zscript/weapons/DeltaWeapon.zsc"
 #include "zscript/weapons/KrisSword.zsc"

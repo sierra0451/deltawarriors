@@ -60,12 +60,11 @@ class KrisPlayer : DeltaPlayer
 	
 	override void Travelled()
 	{
-		Super.Travelled();
-		
 		if (_isSliding)
 			EndSlide();
-		
 		_slideTics = 0;
+		
+		Super.Travelled();
 	}
 	
 	override void PlayerThink()
@@ -401,7 +400,7 @@ class KrisPlayer : DeltaPlayer
 			if (abs(diff.z) > blockHeight)
 				continue;
 			
-			Vector3 forward = DeltaMath.GetActorForward(self);
+			Vector3 forward = DeltaUtil.GetActorForward(self);
 			forward = forward.PlusZ(-forward.z);
 			
 			if ((diff dot forward) < 0.7)
@@ -439,12 +438,11 @@ class KrisPlayer : DeltaPlayer
 		A_StartSound("delta/kris/shield_parry", CHAN_AUTO, attenuation: 1.0);
 		damageTics = 12;
 		
-		FTranslatedLineTarget t;
-		double parryPitch = AimLineAttack(Angle, PLAYERMISSILERANGE, t, 0., ALF_CHECK3D);
-		
+		double parryPitch = AimLineAttack(Angle, PLAYERMISSILERANGE,
+			flags: ALF_CHECK3D);
 		double newSpeed = parried.bMissile ? 70 : 50;
 		Vector2 vecToAng = AngleToVector(angle, 1);
-		Vector2 vecToPitch = AngleToVector(pitch, 1);
+		Vector2 vecToPitch = AngleToVector(parryPitch, 1);
 		Vector3 newVel = (vecToAng.x, vecToAng.y, -vecToPitch.y) * newSpeed;
 		
 		if (parried.bMissile)

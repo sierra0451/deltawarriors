@@ -151,12 +151,10 @@ class DeltaHud : BaseStatusBar
 				
 				if (!inv)
 					continue;
-				if (!inv.AmmoType1)
-					continue;
-				if (ammos.Find(inv.AmmoType1) != ammos.Size())
-					continue;
-				
-				ammos.Push(inv.AmmoType1);
+				if (inv.AmmoType1 && ammos.Find(inv.AmmoType1) == ammos.Size())
+					ammos.Push(inv.AmmoType1);
+				if (inv.AmmoType2 && ammos.Find(inv.AmmoType2) == ammos.Size())
+					ammos.Push(inv.AmmoType2);
 			}
 		}
 	}
@@ -224,8 +222,8 @@ class DeltaHud : BaseStatusBar
 			
 			Vector3 targetPos = damageIndicators[i].sourcePos;
 			let player = CPlayer.mo;
-			Vector3 playerPos = DeltaMath.Vector3Lerp(_oldPos, _currPos, ticFrac);
-			float refAng = DeltaMath.Lerp(_oldAngle, _currAngle, ticFrac);
+			Vector3 playerPos = DeltaUtil.Vector3Lerp(_oldPos, _currPos, ticFrac);
+			float refAng = DeltaUtil.Lerp(_oldAngle, _currAngle, ticFrac);
 			Vector3 diff = level.Vec3Diff(playerPos, targetPos);
 			float ang = player.DeltaAngle(refAng, VectorAngle(diff.x, diff.y));
 			float alpha = min(1, (damageIndicators[i].timer - ticFrac) / DAMAGE_INDICATOR_FADE_TIME);
@@ -255,8 +253,8 @@ class DeltaHud : BaseStatusBar
 			
 			Vector3 targetPos = grazeIndicators[i].sourcePos;
 			let player = CPlayer.mo;
-			Vector3 playerPos = DeltaMath.Vector3Lerp(_oldPos, _currPos, ticFrac);
-			float refAng = DeltaMath.Lerp(_oldAngle, _currAngle, ticFrac);
+			Vector3 playerPos = DeltaUtil.Vector3Lerp(_oldPos, _currPos, ticFrac);
+			float refAng = DeltaUtil.Lerp(_oldAngle, _currAngle, ticFrac);
 			Vector3 diff = level.Vec3Diff(playerPos, targetPos);
 			float ang = player.DeltaAngle(refAng, VectorAngle(diff.x, diff.y));
 			float alpha = min(1, (grazeIndicators[i].timer - ticFrac) / GRAZE_INDICATOR_TIME);
@@ -572,7 +570,7 @@ class DeltaHud : BaseStatusBar
 			col: iconColor);
 		DrawString(_consoleFont, userStr, (pos.X + 26*_universalScale.x, pos.Y + 2*_universalScale.y),
 			scale: _universalScale/2);
-		double healthPerc = DeltaMath.Clamp(float(ply.Health) / ply.GetMaxHealth(), 0, 2);
+		double healthPerc = DeltaUtil.Clamp(float(ply.Health) / ply.GetMaxHealth(), 0, 2);
 		Fill(ply.GetCharacterColor(), pos.X + (28.3*_universalScale.x), pos.Y + 13*_universalScale.y,
 			barWidth * min(1, healthPerc), barHeight, DI_SCREEN_LEFT_TOP);
 		Fill(ply.GetOverhealColor(), pos.X + (28.3*_universalScale.x), pos.Y + 13*_universalScale.y,
@@ -692,7 +690,7 @@ class DeltaHud : BaseStatusBar
 		}
 		
 		Fill(Color(255, 255, 0, 0), _hBorder + panelXSpacing + barXOffset, curY,
-			DeltaMath.Lerp(_oldTp, _tpInterp.GetValue(), ticFrac) / maxTp * barWidth,
+			DeltaUtil.Lerp(_oldTp, _tpInterp.GetValue(), ticFrac) / maxTp * barWidth,
 			barHeight, DI_SCREEN_LEFT_BOTTOM);
 		Fill(Color(255, 255, 160, 64), _hBorder + panelXSpacing + barXOffset, curY,
 			tp / maxTp * barWidth, barHeight, DI_SCREEN_LEFT_BOTTOM);
@@ -779,7 +777,11 @@ class DeltaHud : BaseStatusBar
 			let am = ammos[ammos.Size() - 1 - i];
 			let amCount = CPlayer.mo.CountInv(am);
 			let ammoIcon = ammoIcons.GetIfExists(am.GetClassName());
-			double curAlpha = (CPlayer.ReadyWeapon ? (am == CPlayer.ReadyWeapon.AmmoType1) : false) ? 1 : 0.2;
+			double curAlpha = 0.2;
+			let weap = CPlayer.ReadyWeapon;
+			
+			if (weap && (am == weap.AmmoType1 || am == weap.AmmoType2))
+				curAlpha = 1;
 			
 			DrawTexture(ammoIcon, (-_hBorder - widgetWidth + 5*_universalScale.x,
 				-_vBorder - 5*_universalScale.y - hPerAmmo*i),

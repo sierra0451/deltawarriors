@@ -1,0 +1,39 @@
+enum TpResult
+{
+	TP_FAIL = 0,
+	TP_USE = 1,
+	TP_INFINITE = 2
+}
+
+enum DeltaPsp
+{
+	PSP_LEGS = -10,
+	PSP_OFFHAND = -5
+}
+
+enum HeartbeatSetting
+{
+	HB_OFF = 0,
+	HB_ON = 1,
+	HB_KRIS_ONLY = 2
+}
+
+enum DeltaRecoilType
+{
+	RECOIL_WEAPON,
+	RECOIL_DAMAGE
+}
+
+enum DeltaCrosshairState
+{
+	DELTA_XHR_NEUTRAL,
+	DELTA_XHR_FRIENDLY,
+	DELTA_XHR_ENEMY
+}
+
+enum DeltaGrenadeType
+{
+	GRENADE_NORMAL,
+	GRENADE_STICKY,
+	GRENADE_CONTACT
+}

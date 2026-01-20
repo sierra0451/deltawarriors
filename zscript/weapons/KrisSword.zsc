@@ -13,8 +13,8 @@ class KrisSword : DeltaWeapon
 		Weapon.SlotNumber 1;
 		Weapon.SelectionOrder 1000;
 		
-		DeltaWeapon.RedCrosshairRange 200;
-		DeltaWeapon.MaxLungeDistance 200;
+		DeltaWeapon.RedCrosshairRange 150;
+		DeltaWeapon.MaxLungeDistance 150;
 		DeltaWeapon.Crosshair "DRSWDRET";
 		
 		+WEAPON.AXEBLOOD

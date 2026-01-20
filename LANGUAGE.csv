@@ -152,6 +152,7 @@ OB_FRIENDLY3,"%k's trigger finger slipped, and %o caught it.",
 OB_FRIENDLY4,"%k killed their teammate, %o.",
 ,,Pickup messages
 TXT_DEFAULTPICKUPMSG,(You found an \c[DeltaHighlight]unknown item\c-.),
+PICKUP_DELTA_CHAINSAW,"You picked up a cardboard cutout of a %s. It's completely, utterly useless.","%s is where the tag for the weapon is put (want it to say ""ripsaw"" if you're playing freedoom, for example)"
 PICKUP_DELTA_SWORD,(You retrieved \c[DeltaHighlight]your sword\c-.),
 PICKUP_DELTA_REVOLVER,(You found a \c[DeltaHighlight]revolver\c-.),
 PICKUP_DELTA_KSHOTGUN,(You found a \c[DeltaHighlight]shotgun\c-.),
