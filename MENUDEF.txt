@@ -97,6 +97,7 @@ OptionMenu "DeltaControls"
 	
     SubMenu "$MENU_MOUSEOPTIONS", "DeltaMouse"
     StaticText ""
+    
 	StaticText "$MENU_MOVEMENT", "DeltaMenuHeader"
 	Control "$MENU_MOVEFRWD", "+forward"
 	Control "$MENU_MOVEBACK", "+back"
@@ -126,6 +127,9 @@ OptionMenu "DeltaControls"
 
 OptionMenu "DeltaMouse"
 {
+    
+}
+
 OptionMenu "DeltaHudOptions"
 {
 	Title "$MENU_HUD_HEADER"
