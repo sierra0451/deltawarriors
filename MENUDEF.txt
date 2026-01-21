@@ -36,7 +36,8 @@ ListMenu "EpisodeMenu"
 
 ListMenu "SkillMenu"
 {
-	Position 48, 63
+	Class "DeltaSkillMenu"
+	Position 48, 48
 	StaticTextCentered 160, 15, "$MNU_CHOOSESKILL"
 	ForceList
 }
@@ -71,6 +72,11 @@ AddOptionMenu "OptionsMenu"
 	Title "$MENU_UZDOOM_OPTIONS"
 }
 
+AddOptionMenu "SoundOptions"
+{
+	Title "$MENU_AUDIO_HEADER"
+}
+
 OptionMenu "DeltaOptions"
 {
 	Title "Options"
@@ -79,13 +85,16 @@ OptionMenu "DeltaOptions"
 	StaticText ""
 	
 	SubMenu "$MENU_CTRLHEADER", "DeltaControls"
-	SubMenu "$MENU_AUDIO_HEADER", "SoundOptions"
 	SubMenu "$MENU_HUD_HEADER", "DeltaHudOptions"
 	SubMenu "$MENU_CAMERA_HEADER", "DeltaCameraOptions"
+	SubMenu "$MENU_AUDIO_HEADER", "SoundOptions"
 	
 	StaticText ""
-	SubMenu "$MENU_UZDOOM_OPTIONS", "OptionsMenu"
+	Slider "$MENU_FOV", "fov", 75, 120, 0.1, 0
+	
+	StaticText ""
 	SubMenu "$MENU_OPT_SEARCH", "os_menu"
+	SubMenu "$MENU_UZDOOM_OPTIONS", "OptionsMenu"
 }
 
 OptionMenu "DeltaControls"
@@ -95,7 +104,7 @@ OptionMenu "DeltaControls"
 	StaticText "$MENU_CTRLCONFIG", "DeltaMenuHeader"
 	StaticText ""
 	
-    SubMenu "$MENU_MOUSEOPTIONS", "DeltaMouse"
+    SubMenu "$MENU_MOUSEOPTIONS", "MouseOptions"
     StaticText ""
     
 	StaticText "$MENU_MOVEMENT", "DeltaMenuHeader"
@@ -123,11 +132,6 @@ OptionMenu "DeltaControls"
 	Control "$MENU_WEAP6", "slot 6"
 	StaticText ""
 	SubMenu "$MENU_UZDOOM_CONTROLS", "CustomizeControls"
-}
-
-OptionMenu "DeltaMouse"
-{
-    
 }
 
 OptionMenu "DeltaHudOptions"
@@ -162,6 +166,11 @@ OptionMenu "DeltaCameraOptions"
 	StaticText "$MENU_CAMERA_CONFIG", "DeltaMenuHeader"
 	StaticText ""
 	
+	Slider "$MENU_GAMMA", "vid_gamma", 0.75, 3.0, 0.05, 2
+	Slider "$MENU_BRIGHTNESS", "vid_brightness", -0.8, 0.8, 0.05, 2
+	Slider "$MENU_CONTRAST", "vid_contrast", 0.1, 3.0, 0.1, 1
+	Slider "$MENU_SATURATION", "vid_saturation", -3.0, 3.0, 0.25, 2
+	StaticText ""
     Slider "$MENU_MOVEBOB", "movebob", 0, 1, 0.1, 2
     Slider "$MENU_STILLBOB", "stillbob", 0, 1, 0.1, 2
     StaticText ""

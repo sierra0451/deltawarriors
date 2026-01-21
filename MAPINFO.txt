@@ -68,7 +68,6 @@ Skill DeltaNormal
 
 Skill DeltaHard
 {
-    DamageFactor = 1.1
     SpawnFilter = Hard
     
     ACSReturn = 3
@@ -79,12 +78,10 @@ Skill DeltaHard
 // not calling it nightmare cuz we won't have instant reactions or respawning
 Skill DeltaVeryHard
 {
-    AmmoFactor = 2
-    DamageFactor = 1.25
+    DamageFactor = 1.1
     
     SpawnFilter = Nightmare
     FastMonsters
-    MustConfirm = "$DELTA_SKILLDESC_VERYHARD"
     
     ACSReturn = 4
     TextColor = "DeltaVeryHard"

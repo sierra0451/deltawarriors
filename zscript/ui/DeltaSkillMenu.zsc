@@ -1,0 +1,92 @@
+class DeltaSkillMenu : ListMenu
+{
+	BrokenLines lines;
+	Font consoleFont;
+	
+	const FONT_SCALE = 2;
+	const CLIP_W = 300;
+	const CLIP_H = 100;
+	
+	override void Init(Menu parent, ListMenuDescriptor desc)
+	{
+		Super.Init(parent, desc);
+		consoleFont = Font.FindFont("drconfont");
+		UpdateDescription();
+	}
+	
+	override bool MenuEvent(int mKey, bool fromController)
+	{
+		UpdateDescription();
+		return Super.MenuEvent(mKey, fromController);
+	}
+	
+	override bool MouseEvent(int type, int mX, int mY)
+	{
+		UpdateDescription();
+		return Super.MouseEvent(type, mX, mY);
+	}
+	
+	override void Drawer()
+	{
+		int fontH = consoleFont.GetHeight();
+		let strPos = (CLIP_W, Screen.GetHeight() - CLIP_H - (fontH*FONT_SCALE*lines.Count()));
+		Screen.Dim(0xff000000, 0.5, strPos.x - 10, strPos.y - 10, Screen.GetWidth() - CLIP_W*2, (fontH*FONT_SCALE*lines.Count()) + 20);
+		
+		for (int i = 0; i < lines.Count(); i++)
+		{
+			Screen.DrawText(consoleFont, Font.CR_UNTRANSLATED, strPos.x,
+				strPos.y, lines.StringAt(i), DTA_ScaleX, FONT_SCALE,
+				DTA_ScaleY, FONT_SCALE);
+			strPos.y += fontH * FONT_SCALE;
+		}
+		
+		Super.Drawer();
+	}
+	
+	void UpdateDescription()
+	{
+		int index = mDesc.mSelectedItem;
+		if (index < 0 || index >= mDesc.mItems.Size())
+			return;
+		let item = mDesc.mItems[index];
+		if (!item)
+			return;
+		let text = ListMenuItemSelectable(item);
+		if (!text)
+			return;
+		
+		let skillNum = text.mParam;
+		string localize;
+		
+		switch (text.mParam)
+		{
+			case 0: // very easy
+				localize = "$DELTA_SKILLDESC_VERYEASY";
+				break;
+			case 1: // easy
+				localize = "$DELTA_SKILLDESC_EASY";
+				break;
+			case 2: // normal
+				localize = "$DELTA_SKILLDESC_NORMAL";
+				break;
+			case 3: // hard
+				localize = "$DELTA_SKILLDESC_HARD";
+				break;
+			case 4: // very hard
+				localize = "$DELTA_SKILLDESC_VERYHARD";
+				break;
+			default:
+				break;
+		}
+		
+		let descString = StringTable.Localize(localize);
+		int charW = consoleFont.StringWidth("0");
+		// only works cuz monospace yadda yadda you get the point
+		lines = consoleFont.BreakLines(descString, floor((Screen.GetWidth() - CLIP_W * 2.) / FONT_SCALE));
+		
+		for (int i = 0; i < lines.Count(); i++)
+		{
+			
+		}
+	}
+}
