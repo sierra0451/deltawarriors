@@ -736,11 +736,11 @@ class DeltaPlayer : PlayerPawn abstract
 		
 		string
 			ot = parry.oldTarget ? parry.oldTarget.GetTag() : "null",
-			t = parry.target ? parry.target.GetTag() : "null",
+			t = inflictor.target ? inflictor.target.GetTag() : "null",
 			v = victim ? victim.GetTag() : "null";
 		A_Log("oldTarget: " .. ot .. ", target: " .. t .. ", victim: " .. v);
 		
-		if (!parry.oldTarget || parry.oldTarget == parry.target)
+		if (!parry.oldTarget || parry.oldTarget == inflictor.target)
 			return Super.GetObituary(victim, inflictor, mod, playerAttack);
 		if (parry.oldTarget == victim)
 			return _backAtYouObituary;
