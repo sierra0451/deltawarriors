@@ -119,6 +119,11 @@ class DeltaGrenade : DeltaParriable
 		return Super.CanCollideWith(other, passive);
 	}
 	
+	override void OnParry(Actor parrier)
+	{
+		grenadeType = GRENADE_CONTACT;
+	}
+	
 	override bool CanBeParried()
 	{
 		switch (grenadeType)

@@ -727,15 +727,16 @@ class DeltaPlayer : PlayerPawn abstract
 		bool playerAttack)
 	{
 		if (!inflictor || !inflictor.CountInv("DeltaParried"))
+		{
+			A_Log("inf: " .. bool(inflictor) .. ", countInv: " .. (inflictor ? inflictor.CountInv("DeltaParried") : -1));
 			return Super.GetObituary(victim, inflictor, mod, playerAttack);
+		}
 		
 		let parry = DeltaParried(inflictor.FindInventory("DeltaParried", true));
+		A_Log("oldTarget: " .. parry.oldTarget.GetTag() .. ", target: " .. parry.target.GetTag() .. ", victim: " .. victim.GetTag());
 		
-		// TO-DO: make parry obituary different if projectile was knocked back
-		// into its original thrower or if it was from someone else
 		if (!parry.oldTarget || parry.oldTarget == parry.target)
 			return Super.GetObituary(victim, inflictor, mod, playerAttack);
-		
 		if (parry.oldTarget == victim)
 			return _backAtYouObituary;
 		
