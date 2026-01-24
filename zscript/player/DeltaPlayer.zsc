@@ -137,6 +137,9 @@ class DeltaPlayer : PlayerPawn abstract
 		DeltaPlayer.MinShakiness 0.2;
 		DeltaPlayer.MaxShakiness 1;
 		
+		DeltaPlayer.BackAtYouObituary "$OBIT_DELTA_KPARRYBACK";
+		DeltaPlayer.ParryObituary "$OBIT_DELTA_KPARRY";
+		
 		+PLAYERPAWN.MAKEFOOTSTEPS
 		+NOICEDEATH
 		+DONTGIB					// prevents us from being turned into a pile of flattened meat by crushers
