@@ -137,6 +137,9 @@ class DeltaPlayer : PlayerPawn abstract
 		DeltaPlayer.MinShakiness 0.2;
 		DeltaPlayer.MaxShakiness 1;
 		
+		DeltaPlayer.BackAtYouObituary "$OBIT_DELTA_KPARRYBACK";
+		DeltaPlayer.ParryObituary "$OBIT_DELTA_KPARRY";
+		
 		+PLAYERPAWN.MAKEFOOTSTEPS
 		+NOICEDEATH
 		+DONTGIB					// prevents us from being turned into a pile of flattened meat by crushers
@@ -727,15 +730,14 @@ class DeltaPlayer : PlayerPawn abstract
 		bool playerAttack)
 	{
 		if (!inflictor || !inflictor.CountInv("DeltaParried"))
+		{
+			A_Log("inf: " .. bool(inflictor) .. ", countInv: " .. (inflictor ? inflictor.CountInv("DeltaParried") : -1));
 			return Super.GetObituary(victim, inflictor, mod, playerAttack);
+		}
 		
 		let parry = DeltaParried(inflictor.FindInventory("DeltaParried", true));
-		
-		// TO-DO: make parry obituary different if projectile was knocked back
-		// into its original thrower or if it was from someone else
-		if (!parry.oldTarget || parry.oldTarget == parry.target)
+		if (!parry.oldTarget || parry.oldTarget == inflictor.target)
 			return Super.GetObituary(victim, inflictor, mod, playerAttack);
-		
 		if (parry.oldTarget == victim)
 			return _backAtYouObituary;
 		

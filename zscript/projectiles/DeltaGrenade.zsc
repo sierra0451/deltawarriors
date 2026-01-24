@@ -57,7 +57,7 @@ class DeltaGrenade : DeltaParriable
 	{
 		Super.Tick();
 		
-		if (!fuseLit)
+		if (!fuseLit || exploded)
 			return;
 		
 		if (grenadeType == GRENADE_STICKY)
@@ -89,7 +89,7 @@ class DeltaGrenade : DeltaParriable
 	override int SpecialBounceHit(Actor bounceMobj, Line bounceLine,
 		readonly<SecPlane> bouncePlane, bool is3dFloor)
 	{
-		if (!bouncePlane)
+		if (exploded || !bouncePlane)
 			return Super.SpecialBounceHit(bounceMobj, bounceLine, bouncePlane, is3dFloor);
 		
 		if (grenadeType == GRENADE_STICKY && bouncePlane.negiC < 0)
@@ -119,6 +119,30 @@ class DeltaGrenade : DeltaParriable
 		return Super.CanCollideWith(other, passive);
 	}
 	
+	override void OnParry(Actor parrier)
+	{
+		grenadeType = GRENADE_CONTACT;
+	}
+	
+	override bool CanBeParried()
+	{
+		switch (grenadeType)
+		{
+			case GRENADE_CONTACT:
+				return !exploded;
+			
+			case GRENADE_STICKY:
+				if (stickVictim || fuseLit)
+					return false;
+				
+				return !exploded;
+			
+			case GRENADE_NORMAL:
+			default:
+				return !exploded;
+		}
+	}
+	
 	virtual void StickyLogic()
 	{
 		if (!stickVictim)
@@ -141,6 +165,7 @@ class DeltaGrenade : DeltaParriable
 		
 		fuseLit = false;
 		exploded = true;
+		SetState(ResolveState("Explode"));
 		return true;
 	}
 	
@@ -168,7 +193,7 @@ class DeltaGrenade : DeltaParriable
 				break;
 				
 			case GRENADE_CONTACT:
-				SetState(ResolveState("Explode"));
+				TryStartExplosion();
 				break;
 				
 			case GRENADE_NORMAL:
@@ -180,6 +205,6 @@ class DeltaGrenade : DeltaParriable
 	
 	action void A_GrenadeExplode()
 	{
-		invoker.TryStartExplosion();
+		invoker.Explode();
 	}
 }
