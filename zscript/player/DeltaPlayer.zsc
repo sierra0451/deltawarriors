@@ -733,7 +733,12 @@ class DeltaPlayer : PlayerPawn abstract
 		}
 		
 		let parry = DeltaParried(inflictor.FindInventory("DeltaParried", true));
-		A_Log("oldTarget: " .. parry.oldTarget.GetTag() .. ", target: " .. parry.target.GetTag() .. ", victim: " .. victim.GetTag());
+		
+		string
+			ot = parry.oldTarget ? parry.oldTarget.GetTag() : "null",
+			t = parry.target ? parry.target.GetTag() : "null",
+			v = victim ? victim.GetTag() : "null";
+		A_Log("oldTarget: " .. ot .. ", target: " .. t .. ", victim: " .. v);
 		
 		if (!parry.oldTarget || parry.oldTarget == parry.target)
 			return Super.GetObituary(victim, inflictor, mod, playerAttack);
