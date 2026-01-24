@@ -119,6 +119,25 @@ class DeltaGrenade : DeltaParriable
 		return Super.CanCollideWith(other, passive);
 	}
 	
+	override bool CanBeParried()
+	{
+		switch (grenadeType)
+		{
+			case GRENADE_CONTACT:
+				return !exploded;
+			
+			case GRENADE_STICKY:
+				if (stickVictim || fuseLit)
+					return false;
+				
+				return !exploded;
+			
+			case GRENADE_NORMAL:
+			default:
+				return !exploded;
+		}
+	}
+	
 	virtual void StickyLogic()
 	{
 		if (!stickVictim)
