@@ -735,9 +735,9 @@ class DeltaPlayer : PlayerPawn abstract
 		let parry = DeltaParried(inflictor.FindInventory("DeltaParried", true));
 		
 		string
-			ot = parry.oldTarget ? parry.oldTarget.GetTag() : "null",
-			t = inflictor.target ? inflictor.target.GetTag() : "null",
-			v = victim ? victim.GetTag() : "null";
+			ot = parry.oldTarget && parry.oldTarget.player ? parry.oldTarget.player.GetUserName() : "null or not player",
+			t = inflictor.target && inflictor.target.player ? inflictor.target.player.GetUserName() : "null or not player",
+			v = victim && victim.player ? victim.player.GetUserName() : "null or not player";
 		A_Log("oldTarget: " .. ot .. ", target: " .. t .. ", victim: " .. v);
 		
 		if (!parry.oldTarget || parry.oldTarget == inflictor.target)
