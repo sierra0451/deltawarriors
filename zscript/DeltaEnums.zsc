@@ -1,8 +1,8 @@
 enum TpResult
 {
-	TP_FAIL = 0,
-	TP_USE = 1,
-	TP_INFINITE = 2
+	TP_FAIL,
+	TP_USE,
+	TP_INFINITE
 }
 
 enum DeltaPsp
@@ -13,9 +13,9 @@ enum DeltaPsp
 
 enum HeartbeatSetting
 {
-	HB_OFF = 0,
-	HB_ON = 1,
-	HB_KRIS_ONLY = 2
+	HB_OFF,
+	HB_ON,
+	HB_KRIS_ONLY
 }
 
 enum DeltaRecoilType
@@ -36,4 +36,11 @@ enum DeltaGrenadeType
 	GRENADE_NORMAL,
 	GRENADE_STICKY,
 	GRENADE_CONTACT
+}
+
+enum DeltaWeaponAnimType
+{
+	DELTA_WEAPONANIM_MELEE,
+	DELTA_WEAPONANIM_GUN,
+	DELTA_WEAPONANIM_MAGIC
 }

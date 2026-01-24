@@ -157,6 +157,9 @@ OptionMenu "DeltaHudOptions"
     StaticText ""
     Option "$MENU_SHOWOFFHAND", "cl_delta_showOffhandIndicator", "ShowHide", "cl_delta_showCrosshair", 0, 0
     ColorPicker "$MENU_OFFHANDCOLOR", "cl_delta_offhandIndicatorColor", "cl_delta_showCrosshair", 0
+	
+	StaticText ""
+	Option "$MENU_SHOWQUICKINFO", "cl_delta_showQuickInfo", "ShowHide", "cl_delta_showCrosshair", 0, 0
 }
 
 OptionMenu "DeltaCameraOptions"

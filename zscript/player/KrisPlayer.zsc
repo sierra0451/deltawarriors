@@ -48,6 +48,64 @@ class KrisPlayer : DeltaPlayer
 		DeltaPlayer.CharacterIcon "graphics/krisIcon.png";
 	}
 	
+	States
+	{
+		Spawn:
+			DKRS A 1;
+			Loop;
+		See:
+			DKRS BACA -1;
+			Loop;
+		Airborne:
+			DKRS DEF 4;
+			Loop;
+		Pain:
+			Goto Spawn;
+		Death:
+			DKRS G 1 A_StartDeath;
+			DKRS G 1 A_CheckDeathLand;
+			Wait;
+		FinishDeath:
+			DKRS H 5 A_DeathImpact;
+			DKRS H 2;
+			DKRS H 1 A_SpawnDeathSoul;
+			DKRS H -1;
+			Stop;
+		Death.Ice:
+			DKRF A 2 A_DeltaFreezeDeath;
+			DKRF BCD 2;
+			Goto FinishIce;
+		FinishIce:
+			DKRF E TICRATE;
+			DKRF E 1 A_SpawnDeathSoul;
+			DKRF E -1;
+			Stop;
+		
+		// ============
+		//   OVERLAYS  
+		// ============
+		Offhand:
+			TNT1 A 0 { invoker.StartOffhand(); }
+		Parry:
+			DKSL A 2 { invoker.KrisShieldParry(); }
+			DKSL B 2;
+			DKSL C 2;
+			DKSL D 4;
+			DKSL E 2;
+			TNT1 A 5;
+			TNT1 A 1 A_EndOffhand;
+			Stop;
+		
+		SlideOverlay:
+			KRSL ABC 1;
+			KRSL D 1;
+			Wait;
+		StopSlideOverlay:
+			KRSL EFGH 1;
+			TNT1 A 1;
+			Stop;
+	}
+	
 	override void PostBeginPlay()
 	{
 		Super.PostBeginPlay();
@@ -223,8 +281,8 @@ class KrisPlayer : DeltaPlayer
 			slideY = -sin(_slideAngle) * _currentSlideSpeed,
 			actorX = cos(Angle),
 			actorY = sin(Angle),
-			legsOffsetX = 3 * viewAngle / (player.fov/90),
-			legsOffsetY = 80 - 3 * (pitch + viewPitch) / (player.fov/90);
+			legsOffsetX = 3 * viewAngle*cos(pitch+viewPitch) / (player.fov/90),
+			legsOffsetY = 80 - 3 * (pitch+viewPitch) / (player.fov/90);
 		
 		// 2.35 px every degree up to 34.1 looking down. 0 deg should be 48
 		A_OverlayOffset(PSP_LEGS, legsOffsetX, max(38, legsOffsetY), WOF_INTERPOLATE);
@@ -367,10 +425,7 @@ class KrisPlayer : DeltaPlayer
 				continue;
 			if (!mis.GetMissileDamage(0, 1) && !mis.bIsMonster)
 				continue;
-			if (mis is "DeltaParriable")
-			{
-				
-			}
+			
 			if (mis.bRipper) // rippers can't be parried
 				continue;
 			if (!mis.bIsMonster && mis.target && IsFriend(mis.target)) // friendly projectiles shouldn't be parried
@@ -387,7 +442,13 @@ class KrisPlayer : DeltaPlayer
 					|| damageTics != 0)
 					continue;
 			}
+			if (mis.curState.InStateSequence(mis.ResolveState("Death")))
+				continue;
 			if (mis.bMissile && mis.target == self) // "target" with projectiles is used to figure out who threw it
+				continue;
+			
+			let parriable = DeltaParriable(mis);
+			if (parriable && !parriable.CanBeParried())
 				continue;
 			
 			// code largely taken from ThinkerIterator documentation page
@@ -395,7 +456,7 @@ class KrisPlayer : DeltaPlayer
 			double blockHeight = distance + (mis.height * 1.5);
 			Vector3 diff = level.Vec3Diff(pos, mis.pos);
 			
-			if (abs(diff.x) > blockDist || abs(diff.y) > blockDist)
+			if (Distance2DSquared(mis) > blockDist**2)
 				continue;
 			if (abs(diff.z) > blockHeight)
 				continue;
@@ -403,7 +464,7 @@ class KrisPlayer : DeltaPlayer
 			Vector3 forward = DeltaUtil.GetActorForward(self);
 			forward = forward.PlusZ(-forward.z);
 			
-			if ((diff dot forward) < 0.7)
+			if ((diff dot forward) < 0.75)
 				continue;
 			
 			targets.Push(mis);
@@ -416,8 +477,7 @@ class KrisPlayer : DeltaPlayer
 		{
 			let t = targets[i];
 			let dir = level.Vec3Diff(pos, t.pos).Unit();
-			let zOffset = 1 - abs(sin(pitch));
-			let dotProduct = (zOffset*cos(angle), zOffset*sin(angle), zOffset) dot dir;
+			let dotProduct = DeltaUtil.GetActorForward(self) dot dir;
 			
 			if (dotProduct > largestDot)
 			{
@@ -432,6 +492,7 @@ class KrisPlayer : DeltaPlayer
 		TryTakeTension(PARRY_TP_COST, false);
 		
 		let parried = targets[largestDotIndex];
+		let parriable = DeltaParriable(parried);
 		
 		A_QuakeEx(0, 10, 5, 10, 0, 10, "dsempty", QF_RELATIVE | QF_SCALEDOWN);
 		A_SetBlend("white", 0.3, 12);
@@ -445,9 +506,12 @@ class KrisPlayer : DeltaPlayer
 		Vector2 vecToPitch = AngleToVector(parryPitch, 1);
 		Vector3 newVel = (vecToAng.x, vecToAng.y, -vecToPitch.y) * newSpeed;
 		
+		if (parriable)
+			parriable.OnParry(self);
+		
 		if (parried.bMissile)
 		{
-			int dam = parried.GetMissileDamage(0, 12);
+			int dam = parried.GetMissileDamage(0, bStrifeDamage ? 6 : 12);
 			parried.SetOrigin(pos + (0, 0, viewHeight), false);
 			
 			let inv = DeltaParried(parried.GiveInventoryType("DeltaParried"));
@@ -471,14 +535,10 @@ class KrisPlayer : DeltaPlayer
                 * max(1, G_SkillPropertyFloat(SKILLP_MonsterHealth)), 'Parry');
 		}
 		else if (parried.bIsMonster)
-		{
-			let forcePainFlag = !parried.bForcePain;
-			
 			LineAttack(angle, Distance3D(parried), parryPitch,
                 random[parryDmg](60, 90) *
                 max(1, G_SkillPropertyFloat(SKILLP_MonsterHealth)), 'Parry',
                 "KrisParryPuff");
-		}
 	}
 	
 	override void DeltaExtraDeathStuff()
@@ -497,86 +557,7 @@ class KrisPlayer : DeltaPlayer
 	
 	override bool CanUseOffhand()
 	{
-		return Super.CanUseOffhand() && (GetTension(PARRY_TP_COST, false) != TP_FAIL);
-	}
-	
-	States
-	{
-		Spawn:
-			DKRS A 1
-			{
-				if (!IsGrounded())
-					return ResolveState("Airborne");
-				
-				return ResolveState(null);
-			}
-			Loop;
-		See:
-			DKRS AAAABBBBAAAACCCC 1
-			{
-				let speedLerp = 1 - (invoker.Vel.Length() / (GetDefaultSpeed(invoker.GetClass()) * TICRATE));
-				self.tics = max(1, round(1 + speedLerp * 0.75));
-				
-				if (!IsGrounded())
-					return ResolveState("Airborne");
-				
-				return ResolveState(null);
-			}
-			Loop;
-		Airborne:
-			DKRS DDDDEEEEFFFF 1
-			{
-				if (IsGrounded())
-					return ResolveState("Spawn");
-				
-				return ResolveState(null);
-			}
-			Loop;
-		Pain:
-			Goto Spawn;
-		Death:
-			DKRS G 1 A_StartDeath;
-			DKRS G 1 A_CheckDeathLand;
-			Wait;
-		FinishDeath:
-			DKRS H 5 A_DeathImpact;
-			DKRS H 2;
-			DKRS H 1 A_SpawnDeathSoul;
-			DKRS H -1;
-			Stop;
-		Death.Ice:
-			DKRF A 2 A_DeltaFreezeDeath;
-			DKRF BCD 2;
-			Goto FinishIce;
-		FinishIce:
-			DKRF E TICRATE;
-			DKRF E 1 A_SpawnDeathSoul;
-			DKRF E -1;
-			Stop;
-		
-		// ============
-		//   OVERLAYS  
-		// ============
-		Offhand:
-			TNT1 A 0 { invoker.StartOffhand(); }
-		Parry:
-			DKSL A 2 { invoker.KrisShieldParry(); }
-			DKSL B 2;
-			DKSL C 2;
-			DKSL D 4;
-			DKSL E 2;
-			TNT1 A 5;
-			TNT1 A 1 A_EndOffhand;
-			Stop;
-		
-		SlideOverlay:
-			KRSL ABC 1;
-			KRSL D 1;
-			Wait;
-		StopSlideOverlay:
-			KRSL EFGH 1;
-			TNT1 A 1;
-			Stop;
+		return GetTension(PARRY_TP_COST, false) != TP_FAIL;
 	}
 }
 

@@ -1,9 +1,10 @@
 class DeltaWeapon : Weapon
 {
-	protected double _redCrosshairRange;	// maximum distance an enemy can be at from player and still have red crosshairs when aimed at
-	protected double _maxLungeDistance;		// maximum distance the lunge check will detect targets from
-	protected double _stopLungeDistance;	// distance user must be at during lunge before they stop and attack
-	protected string _altFireIcon;			// used for displaying alt fire key and cost (keep as null if you don't want anything there)
+	protected DeltaWeaponAnimType _animType;	// used to determine if third person sprite uses melee, gun, or magic animations when holding this weapon
+	protected double _redCrosshairRange;		// maximum distance an enemy can be at from player and still have red crosshairs when aimed at
+	protected double _maxLungeDistance;			// maximum distance the lunge check will detect targets from
+	protected double _stopLungeDistance;		// distance user must be at during lunge before they stop and attack
+	protected string _altFireIcon;				// used for displaying alt fire key and cost (keep as null if you don't want anything there)
 	protected string _crosshair;
     protected bool _atEase;
 	protected int _easeTics;
@@ -17,6 +18,7 @@ class DeltaWeapon : Weapon
 	const EASE_TICS_SET_ATTACK = -25;
 	const TP_FAIL_SOUND = "delta/tp_fail";
 	
+	property AnimType: _animType;
 	property RedCrosshairRange: _redCrosshairRange;
 	property MaxLungeDistance: _maxLungeDistance;
 	property StopLungeDistance: _stopLungeDistance;
@@ -30,6 +32,7 @@ class DeltaWeapon : Weapon
 	{
 		Weapon.BobStyle "Smooth";
 		Weapon.BobSpeed 2.5;
+		DeltaWeapon.AnimType DELTA_WEAPONANIM_GUN;
 		DeltaWeapon.RedCrosshairRange PLAYERMISSILERANGE / 2.;
 		DeltaWeapon.MaxLungeDistance -1;
 		DeltaWeapon.StopLungeDistance 5;
@@ -374,6 +377,11 @@ class DeltaWeapon : Weapon
 	clearscope float GetRedCrosshairRange()
 	{
 		return _redCrosshairRange;
+	}
+	
+	clearscope DeltaWeaponAnimType GetAnimType()
+	{
+		return _animType;
 	}
 	
 	ui TextureID GetAltFireIcon()

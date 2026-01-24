@@ -45,8 +45,25 @@ class DeltaUtil
 		if (!a)
 			return (0, 0, 0);
 		
-		let zOffset = countPitch ? 1 - abs(sin(a.pitch)) : 1;
-		return (zOffset*cos(a.angle), zOffset*sin(a.angle), countPitch ? zOffset : 0);
+		let zOffset = countPitch ? cos(a.pitch) : 1;
+		return (zOffset*cos(a.angle), zOffset*sin(a.angle), countPitch ? sin(a.pitch) : 0);
+	}
+	
+	clearscope static Vector3 GetActorRight(Actor a, bool countRoll = false)
+	{
+		if (!a)
+			return (0, 0, 0);
+		
+		let zOffset = countRoll ? cos(a.roll) : 1;
+		return (countRoll*cos(a.angle), countRoll * -sin(a.angle), countRoll ? sin(a.roll) : 0);
+	}
+	
+	clearscope static Vector3 GetActorUp(Actor a, bool countRoll = false)
+	{
+		if (!a)
+			return (0, 0, 0);
+		
+		return GetActorForward(a) cross GetActorRight(a, countRoll);
 	}
 }
 

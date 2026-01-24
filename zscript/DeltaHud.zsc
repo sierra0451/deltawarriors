@@ -21,7 +21,8 @@ class DeltaHud : BaseStatusBar
 	private TextureID _hpText, _tpText, _tpMaxText, _tpHighlight,
 		_leftPanelBack, _vignette, _infiniteText, _damageIndicator,
 		_grazeIndicator, _defaultCrosshair, _offhandCrosshair,
-		_coopPanelBack, _deathmatchPanelBack, _deathmatchCurrentPlayer;
+		_coopPanelBack, _deathmatchPanelBack, _deathmatchCurrentPlayer,
+		_reticleBarOverlay, _reticleBar;
 	private double _oldTp;
 	DynamicValueInterpolator _tpInterp;
 	
@@ -69,6 +70,8 @@ class DeltaHud : BaseStatusBar
 		_coopPanelBack 				= TexMan.CheckForTexture("COOPBACK");
 		_deathmatchPanelBack 		= TexMan.CheckForTexture("DTHMBACK");
 		_deathmatchCurrentPlayer 	= TexMan.CheckForTexture("DTHMCPLY");
+		_reticleBarOverlay 			= TexMan.CheckForTexture("DRRTBOVR");
+		_reticleBar 				= TexMan.CheckForTexture("DRRETBAR");
 		
 		controlIcons.Insert(DELTA_CONTROLICON_MOUSE1, TexMan.CheckForTexture("DRMSELCL"));
 		controlIcons.Insert(DELTA_CONTROLICON_MOUSE2, TexMan.CheckForTexture("DRMSERCL"));
@@ -193,7 +196,7 @@ class DeltaHud : BaseStatusBar
 		{
 			DrawLeftPanel(sv_infiniteAmmo || (CPlayer.mo.FindInventory('PowerInfiniteAmmo', true) != null), ticFrac);
 			DrawRightPanel(sv_infiniteAmmo || (CPlayer.mo.FindInventory('PowerInfiniteAmmo', true) != null));
-			DrawReticle();
+			DrawReticle(ticFrac);
 			
 			// note to self: getting remaining air time for being underwater is
 			// this formula: player.air_finished - level.mapTime
@@ -831,13 +834,15 @@ class DeltaHud : BaseStatusBar
 		}
 	}
 	
-	protected void DrawReticle()
+	protected void DrawReticle(double ticFrac)
 	{
 		if (CPlayer.cheats & CF_CHASECAM || automapActive
 			|| !(CPlayer.mo is "DeltaPlayer") || !cl_delta_showCrosshair)
 			return;
 		
 		DeltaPlayer ply = DeltaPlayer(CPlayer.mo);
+		DrawQuickInfo(ticFrac);
+		
 		if (ply.GetIsUsingOffhand())
 			return;
 		
@@ -848,16 +853,86 @@ class DeltaHud : BaseStatusBar
 		if (weap)
 			crosshair = weap.GetCrosshair();
 		
-		Color xhairColor = xhairState == DELTA_XHR_NEUTRAL ? cl_delta_crosshairColor :
-			(xhairState == DELTA_XHR_FRIENDLY ? cl_delta_crosshairFriendlyColor : cl_delta_crosshairEnemyColor);
+		Color xhairColor = xhairState == DELTA_XHR_NEUTRAL ?
+			cl_delta_crosshairColor : (xhairState == DELTA_XHR_FRIENDLY ?
+			cl_delta_crosshairFriendlyColor : cl_delta_crosshairEnemyColor);
 		xhairColor |= 0xff000000;
-		DrawTexture(crosshair, (0, 0), DI_SCREEN_CENTER | DI_ITEM_CENTER, scale: _universalScale * 0.5, col: xhairColor);
+		DrawTexture(crosshair, (0, 0), DI_SCREEN_CENTER | DI_ITEM_CENTER,
+			scale: _universalScale * 0.5, col: xhairColor);
 		
 		if (!ply.CanUseOffhand() || !cl_delta_showOffhandIndicator)
 			return;
 		
 		DrawTexture(_offhandCrosshair, (0, 0), DI_SCREEN_CENTER | DI_ITEM_CENTER,
 			scale: _universalScale * 0.5, col: 0xff000000 | cl_delta_offhandIndicatorColor);
+	}
+	
+	protected void DrawQuickInfo(double ticFrac)
+	{
+		if (!cl_delta_showQuickInfo)
+			return;
+		
+		DeltaPlayer ply = DeltaPlayer(CPlayer.mo);
+		let reticleBarOffset = (-75 * _universalScale.x, 0);
+		
+		Screen.EnableStencil(true);
+		Screen.SetStencil(0, SOP_Increment, SF_ColorMaskOff);
+		
+		// defining stencil mask
+		DrawTexture(_reticleBar, reticleBarOffset, 
+			DI_SCREEN_CENTER | DI_ITEM_VCENTER | DI_ITEM_RIGHT,
+			scale: _universalScale * 0.5);
+		DrawTexture(_reticleBar, reticleBarOffset, 
+			DI_SCREEN_CENTER | DI_ITEM_VCENTER | DI_ITEM_RIGHT,
+			scale: (_universalScale.x * -0.5, _universalScale.y * 0.5));
+		
+		reticleBarOffset.x *= -1;
+		DrawTextureRotated(_reticleBar, reticleBarOffset,
+			DI_SCREEN_CENTER | DI_ITEM_VCENTER | DI_ITEM_RIGHT, 180,
+			scale: (1/_universalScale.x, 1/_universalScale.y) * 2);
+		reticleBarOffset.x *= -1;
+		
+		Screen.SetStencil(1, SOP_Keep, SF_AllOn);
+		
+		// using stencil mask
+		int width, height;
+		[width, height] = TexMan.GetSize(_reticleBar);
+		double
+			realWidth = width * _universalScale.x * 0.5,
+			realHeight = height * _universalScale.y * 0.5,
+			curX = reticleBarOffset.x - realWidth,
+			curY = reticleBarOffset.y + realHeight*0.5;
+		
+		Fill(0xc0550000, curX, curY, realWidth, -realHeight, DI_SCREEN_CENTER);
+		Fill(ply.GetCharacterColor(), curX, curY, realWidth,
+			-realHeight * DeltaUtil.Clamp(GetHealthPerc(), 0, 1),
+			DI_SCREEN_CENTER);
+		Fill(ply.GetOverhealColor(), curX, curY, realWidth,
+			-realHeight * max(0, GetHealthPerc()-1), DI_SCREEN_CENTER);
+		
+		double tp = ply.tensionPoints,
+			maxTp = ply.maxTensionPoints,
+			tpLerp = DeltaUtil.Lerp(_oldTp, _tpInterp.GetValue(), ticFrac);
+		curX = -reticleBarOffset.x - realWidth*0.5;
+		Fill(0xc0550000, curX, curY, realWidth, -realHeight, DI_SCREEN_CENTER);
+		Fill(Color(255, 255, 0, 0), curX, curY, realWidth,
+			-realHeight * DeltaUtil.Clamp(tpLerp / maxTp, 0, 1),
+			DI_SCREEN_CENTER);
+		Fill(0xffffa040, curX, curY, realWidth,
+			-realHeight * DeltaUtil.Clamp(tp/maxTp, 0, 1), DI_SCREEN_CENTER);
+		Fill(0xffffffff, curX, curY - realHeight * DeltaUtil.Clamp(tp/maxTp, 0, 1), realWidth,
+			_universalScale.y * 0.5, DI_SCREEN_CENTER);
+		
+		Screen.EnableStencil(false);
+		Screen.ClearStencil();
+		
+		DrawTexture(_reticleBarOverlay, reticleBarOffset,
+			DI_SCREEN_CENTER | DI_ITEM_VCENTER | DI_ITEM_RIGHT,
+			scale: _universalScale * 0.5);
+		reticleBarOffset.x *= -1;
+		DrawTextureRotated(_reticleBarOverlay, reticleBarOffset,
+			DI_SCREEN_CENTER | DI_ITEM_VCENTER | DI_ITEM_RIGHT, 180,
+			scale: (1/_universalScale.x, 1/_universalScale.y) * 2);
 	}
 	
 	protected void DrawDeathStuff()

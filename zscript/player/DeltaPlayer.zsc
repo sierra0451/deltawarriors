@@ -15,8 +15,8 @@ class DeltaPlayer : PlayerPawn abstract
 	int hugReactionTime;
 	Actor lungeTarget;
 	
-	protected int airTimer; 								// when alive, used to handle coyote time. when dead, used to determine if
-															// we made a thud sound upon corpse landing
+	protected int airTimer; 								// when alive, used to handle coyote time. when dead, used to determine
+															// if we make a thud sound upon corpse landing
 	protected int jumpBuffer, airBobTics, hugTimer;
 	protected float customBobPerc;
 	protected int damageTics; 								// invulnerability frames, essentially
@@ -37,13 +37,16 @@ class DeltaPlayer : PlayerPawn abstract
 	protected Array<Actor> grazed;
 	
 	protected bool isUsingOffhand;
-	protected string offhandIcon;
-	protected string characterIcon;
+	protected string offhandIcon, characterIcon;
 	
-	protected LinearValueInterpolator heartbeat;
-	protected LinearValueInterpolator shakiness;
+	protected LinearValueInterpolator heartbeat, shakiness;
 	
 	protected float oldAngle;
+	
+	protected state AirGunState,	AirMeleeState,		AirMagicState,
+					SpawnGunState,	SpawnMeleeState,	SpawnMagicState,
+					SeeGunState,	SeeMeleeState, 		SeeMagicState,
+					PainGunState,	PainMeleeState, 	PainMagicState;
 	
 	private float _targetRoll;
 	private bool _frozenDeath;								// using this for custom ice death that doesn't automatically shatter us lol
@@ -51,16 +54,14 @@ class DeltaPlayer : PlayerPawn abstract
 	private Vector2 _currentFlinch;							// used for weapon flinching when taking damage
 	private int _flinchTics;
 	
-	private double _oldTurn;
-	private double _turn;
+	private double _oldTurn, _turn;
 	
 	private TextureID _offhandIconId;
 	private TextureID _characterIconId;						// used for health displays in co-op and team deathmatch
 	
 	private DeltaCrosshairState _crosshairState;
 	
-	private float _originalHeight;							// used for fixing compatibility issues with maps that use voodoo dolls
-															// and conveyor belts
+	private float _originalHeight;							// used for fixing compatibility issues with maps that use voodoo doll scripting
 	
 	private RecoilEvent[10] _recoils;
 	
@@ -99,14 +100,9 @@ class DeltaPlayer : PlayerPawn abstract
 	
 	Default
 	{
-		Height 36;
-		Radius 16;
-		Speed 0.7;
-		Mass 100;
-		PainChance 256;
-		
 		Health 100;
 		Player.MaxHealth 100;
+		PainChance 256;
 		
 		Player.MugShotMaxHealth -1;
 		
@@ -156,6 +152,20 @@ class DeltaPlayer : PlayerPawn abstract
 		// load icon textures before we do (most of) the rest of our initialization
 		_offhandIconId = TexMan.CheckForTexture(offhandIcon);
 		_characterIconId = TexMan.CheckForTexture(characterIcon);
+		
+		// grab our states
+		AirGunState = FindState("AirGun");
+		AirMeleeState = FindState("AirMelee");
+		AirMagicState = FindState("AirMagic");
+		SpawnGunState = FindState("SpawnGun");
+		SpawnMeleeState = FindState("SpawnMelee");
+		SpawnMagicState = FindState("SpawnMagic");
+		SeeGunState = FindState("SeeGun");
+		SeeMeleeState = FindState("SeeMelee");
+		SeeMagicState = FindState("SeeMagic");
+		PainGunState = FindState("PainGun");
+		PainMeleeState = FindState("PainMelee");
+		PainMagicState = FindState("PainMagic");
 	}
 	
 	override void PostBeginPlay()
@@ -242,14 +252,17 @@ class DeltaPlayer : PlayerPawn abstract
 		UserCmd cmd = player.cmd;
 		bool doingMoveInput = player.buttons & (BT_MOVERIGHT | BT_MOVELEFT | BT_BACK | BT_FORWARD);
 		
-		// [RH] 180-degree turn overrides all other yaws
-		if (player.turnticks && !lunging)
+		if (!lunging)
 		{
-			player.turnticks--;
-			A_SetAngle(Angle + (180. / TURN180_TICKS), SPF_INTERPOLATE);
+			// [RH] 180-degree turn overrides all other yaws
+			if (player.turnticks)
+			{
+				player.turnticks--;
+				A_SetAngle(Angle + (180. / TURN180_TICKS), SPF_INTERPOLATE);
+			}
+			else
+				Angle += cmd.yaw * (360./65536.);
 		}
-		else if (!lunging)
-			Angle += cmd.yaw * (360./65536.);
 
 		player.onground = (pos.z <= floorz) || bOnMobj || bMBFBouncer || (player.cheats & CF_NOCLIP2);
 
@@ -259,67 +272,59 @@ class DeltaPlayer : PlayerPawn abstract
 		// anomalies. The thrust applied to bobbing is always the same strength on
 		// ice, because the player still "works just as hard" to move, while the
 		// thrust applied to the movement varies with 'movefactor'.
+		double forwardmove, sidemove;
+		double bobfactor;
+		double friction, movefactor;
+		double fm, sm;
+		double perc = 1 - airBobTics / float(MAX_AIR_BOB_TICS);
 
-		//if (cmd.forwardmove | cmd.sidemove)
+		[friction, movefactor] = GetFriction();
+		bobfactor = friction < ORIG_FRICTION ? movefactor : ORIG_FRICTION_FACTOR;
+		bobfactor *= perc;
+		
+		fm = cmd.forwardmove;
+		sm = cmd.sidemove;
+		[fm, sm] = TweakSpeeds (fm, sm);
+		fm *= Speed / 256;
+		sm *= Speed / 256;
+		
+		if (!player.onground && !bNoGravity && !waterlevel)
+			ApplyAirControl(movefactor, bobfactor);
+
+		// When crouching, speed and bobbing have to be reduced
+		if (CanCrouch() && player.crouchfactor != 1)
 		{
-			double forwardmove, sidemove;
-			double bobfactor;
-			double friction, movefactor;
-			double fm, sm;
-			double perc = 1 - airBobTics / float(MAX_AIR_BOB_TICS);
-
-			[friction, movefactor] = GetFriction();
-			bobfactor = friction < ORIG_FRICTION ? movefactor : ORIG_FRICTION_FACTOR;
-			bobfactor *= perc;
-			
-			fm = cmd.forwardmove;
-			sm = cmd.sidemove;
-			[fm, sm] = TweakSpeeds (fm, sm);
-			fm *= Speed / 256;
-			sm *= Speed / 256;
-			
-			if (!player.onground && !bNoGravity && !waterlevel)
+			fm *= player.crouchfactor;
+			sm *= player.crouchfactor;
+			bobfactor *= player.crouchfactor;
+		}
+		
+		forwardmove = fm * movefactor * (35 / TICRATE);
+		sidemove = sm * movefactor * (35 / TICRATE);
+		
+		if (lunging)
+			player.vel = (0, 0);
+		else
+		{
+			if (forwardmove)
 			{
-				// [RH] allow very limited movement if not on ground.
-				// [AA] but also allow authors to override it.
-				ApplyAirControl(movefactor, bobfactor);
+				Bob(Angle, cmd.forwardmove * bobfactor / 256., true);
+				ForwardThrust(forwardmove, Angle);
 			}
-
-			// When crouching, speed and bobbing have to be reduced
-			if (CanCrouch() && player.crouchfactor != 1)
+			if (sidemove)
 			{
-				fm *= player.crouchfactor;
-				sm *= player.crouchfactor;
-				bobfactor *= player.crouchfactor;
-			}
-			
-			forwardmove = fm * movefactor * (35 / TICRATE);
-			sidemove = sm * movefactor * (35 / TICRATE);
-			
-			if (lunging)
-				player.vel = (0, 0);
-			else
-			{
-				if (forwardmove)
-				{
-					Bob(Angle, cmd.forwardmove * bobfactor / 256., true);
-					ForwardThrust(forwardmove, Angle);
-				}
-				if (sidemove)
-				{
-					let a = Angle - 90;
-					Bob(a, cmd.sidemove * bobfactor / 256., false);
-					Thrust(sidemove, a);
-				}
-			}
-			
-			if (player.cheats & CF_REVERTPLEASE)
-			{
-				player.cheats &= ~CF_REVERTPLEASE;
-				player.camera = player.mo;
+				let a = Angle - 90;
+				Bob(a, cmd.sidemove * bobfactor / 256., false);
+				Thrust(sidemove, a);
 			}
 		}
-			
+		
+		if (player.cheats & CF_REVERTPLEASE)
+		{
+			player.cheats &= ~CF_REVERTPLEASE;
+			player.camera = player.mo;
+		}
+		
 		if (!IsPredicting())
 		{
 			if (doingMoveInput && Vel.LengthSquared() > 0)
@@ -737,6 +742,31 @@ class DeltaPlayer : PlayerPawn abstract
 		return _parryObituary;
 	}
 	
+	override void PlayIdle()
+	{
+		if (IsGrounded())
+		{
+			if (InStateSequence(CurState, ResolveState("Airborne")) || InStateSequence(CurState, SeeState))
+				SetState(SpawnState);
+		}
+		else if (InStateSequence(CurState, SeeState) || InStateSequence(CurState, SpawnState))
+			SetState(ResolveState("Airborne"));
+	}
+	
+	override void PlayRunning()
+	{
+		if (IsGrounded())
+		{
+			if (InStateSequence(CurState, ResolveState("Airborne")) || InStateSequence(CurState, SpawnState))
+				SetState(SeeState);
+			
+			if (tics == -1)
+				A_SetTics((player.cmd.buttons & BT_RUN) ? 4 : 8);
+		}
+		else if (InStateSequence(CurState, SeeState) || InStateSequence(CurState, SpawnState))
+			SetState(ResolveState("Airborne"));
+	}
+	
 	void StartLunge(Actor target, float stopDistance)
 	{
 		if (!CanLunge())
@@ -892,6 +922,34 @@ class DeltaPlayer : PlayerPawn abstract
 			tensionDrainTimer--;
 		else if (tensionPoints > 0)
 			tensionPoints = max(0, tensionPoints - 5./TICRATE);
+	}
+	
+	protected state GetStateByAnimType(string prefix)
+	{
+		if (!player.ReadyWeapon)
+			return null;
+		
+		let weap = DeltaWeapon(player.ReadyWeapon);
+		if (!weap)
+			return null;
+		
+		string suffix;
+		
+		switch (weap.GetAnimType())
+		{
+			case DELTA_WEAPONANIM_MELEE:
+				suffix = "Melee";
+				break;
+			case DELTA_WEAPONANIM_MAGIC:
+				suffix = "Magic";
+				break;
+			case DELTA_WEAPONANIM_GUN:
+			default:
+				suffix = "Gun";
+				break;
+		}
+		
+		return FindStateByString(prefix .. suffix);
 	}
 	
 	protected void HandleHeartbeat()
@@ -1262,6 +1320,22 @@ class DeltaPlayer : PlayerPawn abstract
 		return true;
 	}
 	
+	protected action state A_CheckAirborne(statelabel airborneDest)
+	{
+		if (!invoker.IsGrounded())
+			return ResolveState(airborneDest);
+		
+		return ResolveState(null);
+	}
+	
+	protected action state A_CheckGrounded(statelabel groundedDest)
+	{
+		if (invoker.IsGrounded())
+			return ResolveState(groundedDest);
+		
+		return ResolveState(null);
+	}
+	
 	// retooling zdoom's implementation of freeze death for our own freeze death!
 	protected action void A_DeltaFreezeDeath()
 	{
@@ -1381,7 +1455,7 @@ class DeltaPlayer : PlayerPawn abstract
 	
 	clearscope virtual bool CanUseOffhand()
 	{
-		return true;
+		return false;
 	}
 	
 	clearscope Color GetCharacterColor()

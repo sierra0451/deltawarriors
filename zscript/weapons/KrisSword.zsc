@@ -13,13 +13,14 @@ class KrisSword : DeltaWeapon
 		Weapon.SlotNumber 1;
 		Weapon.SelectionOrder 1000;
 		
+		DeltaWeapon.AnimType DELTA_WEAPONANIM_MELEE;
 		DeltaWeapon.RedCrosshairRange 150;
 		DeltaWeapon.MaxLungeDistance 150;
 		DeltaWeapon.Crosshair "DRSWDRET";
 		
 		+WEAPON.AXEBLOOD
 		+WEAPON.MELEEWEAPON
-		+WEAPON.NOALERT			// wanna handle this manually
+		+WEAPON.NOALERT				// wanna handle alerting manually
 		+SQUAREPIXELS
 	}
 	

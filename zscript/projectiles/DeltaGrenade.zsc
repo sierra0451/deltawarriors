@@ -7,6 +7,7 @@ class DeltaGrenade : DeltaParriable
 	
 	protected double curTime;
 	protected bool fuseLit;
+	protected bool exploded;
 	protected Vector3 stickOffset;
 	protected Actor stickVictim;
 	
@@ -49,6 +50,7 @@ class DeltaGrenade : DeltaParriable
 		Super.BeginPlay();
 		curTime = fuseTime;
 		fuseLit = false;
+		exploded = false;
 	}
 	
 	override void Tick()
@@ -63,7 +65,7 @@ class DeltaGrenade : DeltaParriable
 		
 		curTime -= 1./TICRATE;
 		if (curTime <= 0)
-			StartExplosion();
+			TryStartExplosion();
 	}
 	
 	override int SpecialMissileHit(Actor victim)
@@ -122,9 +124,9 @@ class DeltaGrenade : DeltaParriable
 		if (!stickVictim)
 			return;
 		
-		if (stickVictim.health <= 0)
+		if (stickVictim.health <= 0 && !exploded)
 		{
-			StartExplosion();
+			TryStartExplosion();
 			return;
 		}
 		
@@ -132,10 +134,14 @@ class DeltaGrenade : DeltaParriable
 			flags: WARPF_ABSOLUTEOFFSET | WARPF_INTERPOLATE);
 	}
 	
-	virtual void StartExplosion()
+	virtual bool TryStartExplosion()
 	{
+		if (exploded)
+			return false;
+		
 		fuseLit = false;
-		SetState(ResolveState("Explode"));
+		exploded = true;
+		return true;
 	}
 	
 	virtual void Explode()
@@ -162,7 +168,7 @@ class DeltaGrenade : DeltaParriable
 				break;
 				
 			case GRENADE_CONTACT:
-				StartExplosion();
+				SetState(ResolveState("Explode"));
 				break;
 				
 			case GRENADE_NORMAL:
@@ -174,6 +180,6 @@ class DeltaGrenade : DeltaParriable
 	
 	action void A_GrenadeExplode()
 	{
-		invoker.Explode();
+		invoker.TryStartExplosion();
 	}
 }
