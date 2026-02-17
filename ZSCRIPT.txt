@@ -1,29 +1,51 @@
 version "4.14.3"
 
-#include "zscript/DeltaDamagePopups.zsc"
+// basics
 #include "zscript/DeltaEnums.zsc"
-#include "zscript/DeltaHud.zsc"
 #include "zscript/DeltaUtil.zsc"
+#include "zscript/DeltaEvents.zsc"
 #include "zscript/DeltaParriable.zsc"
-#include "zscript/DeltaSoul.zsc"
-#include "zscript/EventHandlers.zsc"
+#include "zscript/DeltaBadExplosion.zsc"
 
+// items
 #include "zscript/items/HealthReplacements.zsc"
 #include "zscript/items/TensionItems.zsc"
 
-#include "zscript/player/DeltaPlayer.zsc"
+// player scripts
+#include "zscript/player/DeltaPlayer..zsc"
+#include "zscript/player/DeltaPlayer.Lunge.zsc"
+#include "zscript/player/DeltaPlayer.Offhand.zsc"
+#include "zscript/player/DeltaPlayer.StatesActions.zsc"
 #include "zscript/player/KrisPlayer.zsc"
-#include "zscript/player/SusiePlayer.zsc"
+// #include "zscript/player/SusiePlayer.zsc"
 // #include "zscript/player/RalseiPlayer.zsc"
 // #include "zscript/player/NoellePlayer.zsc"
 
+// ui
+#include "zscript/ui/DeltaHud..zsc"
+#include "zscript/ui/DeltaHud.BossHealth.zsc"
+#include "zscript/ui/DeltaHud.DamagePopups.zsc"
+#include "zscript/ui/DeltaHud.Indicators.zsc"
+#include "zscript/ui/DeltaHud.Messages.zsc"
+#include "zscript/ui/DeltaHud.Multiplayer.zsc"
+#include "zscript/ui/DeltaPopups..zsc"
+#include "zscript/ui/DeltaPopups.Damage.zsc"
+	// menu
+	#include "zscript/ui/menu/DeltaListMenu.zsc"
+	#include "zscript/ui/menu/DeltaOptionMenu.zsc"
+	#include "zscript/ui/menu/DeltaSkillMenu.zsc"
+
+// projectiles
 #include "zscript/projectiles/DeltaGrenade.zsc"
 
-#include "zscript/ui/DeltaSkillMenu.zsc"
-
+// weapons
 #include "zscript/weapons/DeltaWeapon.zsc"
-#include "zscript/weapons/KrisSword.zsc"
-#include "zscript/weapons/KrisRevolver.zsc"
-#include "zscript/weapons/KrisShotgun.zsc"
-#include "zscript/weapons/KrisSMG.zsc"
 #include "zscript/weapons/WeaponReplacements.zsc"
+	// kris's weapons
+	#include "zscript/weapons/kris/KrisSword.zsc"
+	#include "zscript/weapons/kris/KrisRevolver.zsc"
+	#include "zscript/weapons/kris/KrisShotgun.zsc"
+	#include "zscript/weapons/kris/KrisSMG.zsc"
+
+// soul
+#include "zscript/DeltaSoul.zsc"

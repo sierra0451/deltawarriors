@@ -1,0 +1,117 @@
+struct DeltaMessageInfo
+{
+	string contents;
+	int timer;
+	EPrintLevel printLevel;
+}
+
+extend class DeltaHud
+{
+	const MAX_DISPLAYED_MESSAGES = 4;
+	const MESSAGE_REMAIN_TIME = TICRATE * 5;
+	const MESSAGE_FADE_TIME = floor(TICRATE * 0.5);
+	const MESSAGE_TOTAL_TIME = MESSAGE_REMAIN_TIME + MESSAGE_FADE_TIME;
+	
+	protected bool hasToDoWithCommands;
+	
+	private Array<string> _messageContents;
+	private Array<int> _messageTimers;
+	private Array<EPrintLevel> _messageLevels;
+	
+	override bool ProcessNotify(EPrintLevel lvl, String outline)
+	{
+		if (!level.mapTime || hasToDoWithCommands)
+			return false;
+		
+		let printTypes = lvl & PRINT_TYPES;
+		
+		if (lvl & PRINT_NONOTIFY)
+			return false;
+		if (printTypes == PRINT_LOG)
+			return false;
+		if (printTypes >= 0x7F && printTypes != PRINT_BOLD)
+		{
+			hasToDoWithCommands = true;
+			return false;
+		}
+		if (printTypes == PRINT_MEDIUM)
+			outline = "(" .. outline.Mid(0, outline.CodePointCount()-1) .. ")" .. outline.CharAt(outline.CodePointCount()-1);
+		
+		_messageContents.Push(outline);
+		_messageTimers.Push(MESSAGE_TOTAL_TIME);
+		_messageLevels.Push(lvl);
+		return true; // don't show base message!
+	}
+	
+	protected void TickMessages()
+	{
+		hasToDoWithCommands = false;
+		
+		if (!_messageContents.Size())
+			return;
+		
+		for (int i = _messageContents.Size() - 1; i >= 0; i--)
+		{
+			if (!_messageTimers[i])
+				continue;
+			
+			_messageTimers[i]--;
+			
+			if (_messageTimers[i])
+				continue;
+			
+			_messageContents.Delete(i);
+			_messageTimers.Delete(i);
+			_messageLevels.Delete(i);
+		}
+	}
+	
+	protected void DrawMessages(double ticFrac)
+	{
+		if (!_messageContents.Size())
+			return;
+		
+		Array<int> notifsDisplayed;
+		
+		for (int i = 0; i < _messageContents.Size(); i++)
+		{
+			if (!_messageTimers[i])
+				continue;
+			if (_messageLevels[i] & PRINT_NONOTIFY)
+				continue;
+			
+			notifsDisplayed.Push(i);
+			
+			if (notifsDisplayed.Size() > MAX_DISPLAYED_MESSAGES)
+				notifsDisplayed.Delete(0, notifsDisplayed.Size() - MAX_DISPLAYED_MESSAGES);
+		}
+		
+		int lineIndex = 0;
+		Vector2 msgScale = _universalScale * 2;
+		
+		for (int i = 0; i < notifsDisplayed.Size(); i++)
+		{
+			int notif = notifsDisplayed[i];
+			int timer = _messageTimers[notif];
+			double fadePerc = min(1, double(timer - ticFrac) / MESSAGE_FADE_TIME);
+			
+			let lines = _consoleFont.mFont.BreakLines(_messageContents[notif],
+				(Screen.GetWidth() - _hBorder*4) * msgScale.x/2);
+			
+			for (int j = 0; j < lines.Count(); j++)
+			{
+				let str = lines.StringAt(j);
+				str.StripLeftRight();
+				//str = String.Format("%X: " .. str, _messageLevels[i]);
+				let width = _consoleFont.mFont.StringWidth(str);
+				
+				DrawString(_consoleFont, str,
+					((-width / 2 - _hBorder) * msgScale.x / 2,
+						20 * msgScale.y / 2 * lineIndex),
+					DI_SCREEN_CENTER_TOP, alpha: fadePerc,
+					scale: msgScale / 2);
+				lineIndex++;
+			}
+		}
+	}
+}

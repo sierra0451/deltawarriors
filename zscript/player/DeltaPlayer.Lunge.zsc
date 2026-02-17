@@ -1,0 +1,122 @@
+extend class DeltaPlayer
+{
+	Actor lungeTarget;
+	
+	protected bool lunging;
+	protected double lungeSpeed, lungeStopDistance;
+	protected Vector3 preLungeVel;
+	
+	void StartLunge(Actor target, double stopDistance)
+	{
+		if (!CanLunge())
+			return;
+		
+		preLungeVel = Vel;
+		lungeTarget = target;
+		lungeStopDistance = stopDistance;
+		
+		if (LungeBlocked())
+		{
+			StopLunge();
+			return;
+		}
+		
+		lunging = bNoGravity = true;
+		bSolid = false;
+		SetState(ResolveState("Lunge"));
+	}
+	
+	bool LungeBlocked(Actor _target = null)
+	{
+		if (!_target && !lungeTarget)
+			return true;
+		if (!_target)
+			_target = lungeTarget;
+		
+		Vector3 diff = level.Vec3Diff(pos, _target.pos);
+		Vector3 diffUnit = diff.Unit();
+		FLineTraceData output;
+		
+		LineTrace(AngleTo(_target), diff.Length(), PitchTo(_target), TRF_BLOCKSELF,
+			player.mo.height * 0.5 * crouchFactor,
+			data: output);
+		bool pcm = CheckMove(_target.pos.XY, PCM_NOACTORS)
+			&& output.HitActor;
+		
+		return !pcm || _target.health <= 0;
+	}
+	
+	void HandleLunging()
+	{
+		if (!lunging || !player)
+			return;
+		
+		AdjustLungeAngles();
+		
+		Vector3
+			diff = level.Vec3Diff(pos, lungeTarget.pos),
+			diffUnit = diff.Unit();
+		double dist = diff.Length() - radius - lungeTarget.radius;
+		Vel = diffUnit * min(lungeSpeed, dist);
+		
+		if (LungeBlocked())
+		{
+			StopLunge();
+			SetState(SpawnState);
+			return;
+		}
+		
+		if (dist <= lungeStopDistance + Vel.Length() ||
+			(diff.XY.Length() < lungeStopDistance &&
+			abs(diff.z) - height <= lungeStopDistance + abs(Vel.Z)))
+		{
+			let desiredPos = level.Vec2Diff(pos.xy, lungeTarget.pos.xy);
+			desiredPos *= (desiredPos.Length() - lungeStopDistance) / desiredPos.Length();
+			StopLunge(true);
+			TryMove(pos.XY + desiredPos, 0);
+			AdjustLungeAngles();
+			player.vel = (0, 0);
+		}
+	}
+	
+	protected void AdjustLungeAngles()
+	{
+		let diff = level.Vec3Diff(pos, lungeTarget.pos);
+		let diffUnit = diff.Unit();
+		A_SetAngle(VectorAngle(diff.x, diff.y), SPF_INTERPOLATE);
+		
+		if (level.IsFreelookAllowed())
+		{
+			let minPitchAdjust = 5.;
+			let check = level.Vec3Diff(GetViewPos(), lungeTarget.pos);
+			let checkUnit = check.Unit();
+			let targetPitch = -asin(checkUnit.z);
+			
+			if (pitch > targetPitch)
+				A_SetPitch(targetPitch, SPF_INTERPOLATE);
+			else
+			{
+				check = level.Vec3Diff(GetViewPos(),
+					lungeTarget.pos.PlusZ(lungeTarget.height));
+				checkUnit = check.Unit();
+				targetPitch = -asin(checkUnit.z);
+				
+				if (pitch < targetPitch)
+					A_SetPitch(targetPitch, SPF_INTERPOLATE);
+			}
+		}
+	}
+	
+	void StopLunge(bool resetVelocity = false)
+	{
+		Vel = resetVelocity ? (0, 0, 0) : preLungeVel;
+		lunging = bNoGravity = false;
+		
+		if (health > 0)
+			bSolid = true;
+		if (!player || !player.ReadyWeapon || !(player.ReadyWeapon is "DeltaWeapon"))
+			return;
+		
+		DeltaWeapon(player.ReadyWeapon).MarkReadyToStopLunging();
+	}
+}

@@ -1,0 +1,69 @@
+extend class DeltaPlayer
+{
+	protected bool isUsingOffhand;
+	protected string offhandIcon;
+	
+	private TextureID _offhandIconId;
+	
+	action state A_StartOffhand()
+	{
+		if (!invoker.StartOffhand())
+			return ResolveState("Null");
+		
+		return ResolveState(null);
+	}
+	
+	virtual bool StartOffhand()
+	{
+		isUsingOffhand = true;
+		return true;
+	}
+	
+	// Wrap up
+	action void A_EndOffhand()
+	{
+		invoker.isUsingOffhand = false;
+	}
+	
+	clearscope virtual bool CanUseOffhand()
+	{
+		return false;
+	}
+	
+	clearscope bool GetIsUsingOffhand()
+	{
+		return isUsingOffhand;
+	}
+	
+	clearscope TextureID GetOffhandIconID()
+	{
+		return _offhandIconId;
+	}
+}
+
+// used to modify projectile damage directly!
+class DeltaParryDamage : Inventory
+{
+	Default
+	{
+		+Inventory.UNDROPPABLE;
+		+Inventory.UNTOSSABLE;
+	}
+	
+	override void ModifyDamage(int damage, Name damageType, out int newDamage, bool passive, Actor inflictor, Actor source, int flags)
+	{
+		if (passive || !inflictor || !inflictor.CountInv("DeltaParried"))
+			return;
+		
+		newDamage = random[parryDamage](15, 20) * max(5, inflictor.GetMissileDamage(0, 1))
+            * max(1, G_SkillPropertyFloat(SKILLP_MonsterHealth));
+	}
+}
+
+class DeltaParried : Inventory
+{
+	// allows us to save who initially fired the projectile for differentiating
+	// between killing a player with their own projectile and killing them with
+	// someone else's
+	Actor oldTarget;
+}

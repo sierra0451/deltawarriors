@@ -1,9 +1,11 @@
-class DeltaGrenade : DeltaParriable
+class DeltaGrenade : DeltaParriable abstract
 {
 	DeltaGrenadeType grenadeType;
 	Array<Actor> hitActors;
 	double actorBounceFactor, fuseTime;
 	sound armedSound, stickSound, explosionSound;
+	class<DeltaGrenadeHitbox> hitboxClass;
+	DeltaGrenadeHitbox hitbox;
 	
 	protected double curTime;
 	protected bool fuseLit;
@@ -17,13 +19,14 @@ class DeltaGrenade : DeltaParriable
 	property ArmedSound: armedSound;
 	property StickSound: stickSound;
 	property ExplosionSound: explosionSound;
+	property HitboxClass: hitboxClass;
 	
 	Default
 	{
 		Radius 6;
 		Height 8;
 		Speed 35;
-		DamageFunction 3;
+		DamageFunction random[grenadeDamage](3, 5);
 		Gravity 0.5;
 		Projectile;
 		BounceType "Grenade";
@@ -35,6 +38,7 @@ class DeltaGrenade : DeltaParriable
 		DeltaGrenade.GrenadeType GRENADE_NORMAL;
 		DeltaGrenade.ActorBounceFactor 0.25;
 		DeltaGrenade.FuseTime 3;
+		DeltaGrenade.HitboxClass "";
 		
 		-NOGRAVITY
 		+ALLOWBOUNCEONACTORS
@@ -51,6 +55,18 @@ class DeltaGrenade : DeltaParriable
 		curTime = fuseTime;
 		fuseLit = false;
 		exploded = false;
+	}
+	
+	override void PostBeginPlay()
+	{
+		Super.PostBeginPlay();
+		
+		if (hitboxClass == null)
+			return;
+		
+		hitbox = DeltaGrenadeHitbox(Actor.Spawn(hitboxClass, pos));
+		if (hitbox)
+			hitbox.parent = self;
 	}
 	
 	override void Tick()
@@ -72,6 +88,10 @@ class DeltaGrenade : DeltaParriable
 	{
 		if (!victim || !target || victim == target)
 			return Super.SpecialMissileHit(victim);
+		
+		if (victim is "DeltaGrenadeHitbox" && DeltaGrenadeHitbox(victim).parent
+			&& DeltaGrenadeHitbox(victim).parent == self)
+			return MHIT_PASS;
 		
 		if (victim.bShootable)
 			OnGrenadeHitActor(victim);
@@ -111,6 +131,10 @@ class DeltaGrenade : DeltaParriable
 	
 	override bool CanCollideWith(Actor other, bool passive)
 	{
+		if (target && other == target)
+			return false;
+		if (other == hitbox)
+			return false;
 		if (stickVictim)
 			return false;
 		if (hitActors.Find(other) != hitActors.Size())
@@ -178,6 +202,13 @@ class DeltaGrenade : DeltaParriable
 	
 	virtual void OnGrenadeHitActor(Actor victim)
 	{
+		if (victim is "DeltaGrenadeHitbox")
+		{
+			DeltaGrenadeHitbox(victim).parent.TryStartExplosion();
+			TryStartExplosion();
+			return;
+		}
+		
 		switch (grenadeType)
 		{
 			case GRENADE_STICKY:
@@ -188,8 +219,14 @@ class DeltaGrenade : DeltaParriable
 				stickOffset = pos - victim.pos;
 				fuseLit = true;
 				A_StartSound(stickSound, CHAN_AUTO);
+				int dmg = victim.DamageMobj(self, target, random[stickyDamage](5, 10), 'None');
+				
 				Vel = (0, 0, 0);
 				A_NoGravity();
+				if (dmg <= 0)
+					break;
+				
+				DeltaUtil.ForceActorPain(victim);
 				break;
 				
 			case GRENADE_CONTACT:
@@ -206,5 +243,65 @@ class DeltaGrenade : DeltaParriable
 	action void A_GrenadeExplode()
 	{
 		invoker.Explode();
+	}
+}
+
+class DeltaGrenadeHitbox : Actor abstract
+{
+	DeltaGrenade parent;
+	
+	Default
+	{
+		Radius 10;
+		Height 12;
+		Health 20;
+		
+		+SHOOTABLE		// not immune to hitscans!
+		+NONSHOOTABLE	// can't be hit by projectiles <3
+		+NOBLOOD
+	}
+	
+	override void Tick()
+	{
+		Super.Tick();
+		
+		if (parent)
+			SetOrigin(parent.pos + (0, 0, parent.height*0.5 - height*0.5), true);
+		else
+			Destroy();
+	}
+	
+	override bool CanCollideWith(Actor other, bool passive)
+	{
+		if (parent)
+		{
+			if (other == parent)
+				return false;
+			if (parent.target && other == parent.target)
+				return false;
+		}
+		
+		return Super.CanCollideWith(other, passive);
+	}
+	
+	override int DamageMobj(Actor inflictor, Actor source, int damage, Name mod,
+		int flags, double angle)
+	{
+		if (!(flags & DMG_INFLICTOR_IS_PUFF))
+			return 0;
+		
+		if (source == parent.target)
+			return Super.DamageMobj(inflictor, source, damage * 10, mod, flags, angle);
+		
+		return Super.DamageMobj(inflictor, source, damage, mod, flags, angle);
+	}
+	
+	override void Die(Actor source, Actor inflictor, int dmgFlags,
+		Name meansOfDeath)
+	{
+		if (parent)
+			parent.TryStartExplosion();
+		
+		Super.Die(source, inflictor, dmgFlags, meansOfDeath);
 	}
 }

@@ -36,6 +36,7 @@ The single biggest new mechanic introduced by DeltaWarriors (a mechanic borrowed
     - Hold crouch while running to move Kris into a slide. This will preserve some of their momentum (if moving slowly enough, they get a slight speed boost). While sliding, they can slip by smaller enemies and projectiles, and generally be unaffected by outside physical forces like knockback, although friction will slow them down over time.
 
 And, of course, credits go to:
+- CheetoThunderstorm for making Kris's third person sprites, and doing an incredible job at that. This whole thing wouldn't be possible without their help <3
 - itsmeveronica for making [the Susie and Ralsei mods that inspired this whole thing in the first place <3](https://www.moddb.com/games/doom-ii/addons/susienralsei)
 - F.lorui for the [Kris model I used in their first person renders](https://www.deviantart.com/f-lorui/art/Dark-World-Kris-775062688)
 - Comrade1280 on Sketchfab for [Kris's revolver model](https://sketchfab.com/3d-models/high-caliber-revolver-038416d7fb2649e2833d5989b47885db)

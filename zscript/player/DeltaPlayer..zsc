@@ -1,0 +1,1569 @@
+struct RecoilEvent
+{
+	Vector3 recoil;
+	int startTime, curTime, leadInTime;
+	DeltaRecoilType recoilType;
+}
+
+class DeltaPlayer : PlayerPawn abstract
+{
+	const COYOTE_TIME = 3;
+	const MAX_AIR_BOB_TICS = 7;
+	const DAMAGE_IFRAMES = 10;
+	const DRAIN_TIMER_START = TICRATE * 12;			// tp lasts for 12 seconds before we start draining it
+	const DRAIN_AMOUNT = 5./TICRATE;
+	const RECOIL_TICS = 5;
+	const DEFAULT_RED_CROSSHAIR_RANGE = 500;
+	
+	double tensionPoints;
+	double maxTensionPoints;
+	int ticLastGrazed;
+	int tensionDrainTimer;
+	bool beingHugged;
+	int hugReactionTime;
+	
+	protected int coyoteTimer; 						// used to handle coyote time
+	protected int jumpBuffer, crouchBuffer, airBobTics, hugTimer;
+	protected double customBobPerc;
+	protected int damageTics; 						// invulnerability frames, essentially
+	protected int deathTimer; 						// used for first person death animation and for "Press E to respawn" prompt
+	protected Color characterColor, overhealColor;
+	protected double deathPitchFP, deathPitchTP;
+	
+	protected double flinchMultiplier;				// wanna be able to make certain characters flinch more or flinch less at incoming damage
+	protected int startFlinchTics;
+	protected int shakinessMaxHealth;				// lowest possible health where we'll still be at minimum hand shakiness
+	protected double minShakiness, maxShakiness;
+	protected int oldShakiness;						// used for interpolation
+	protected string backAtYouObituary, parryObituary;
+	
+	protected Array<Actor> grazed;
+	
+	protected string characterIcon;
+	
+	protected LinearValueInterpolator heartbeat, shakiness;
+	
+	protected double oldAngle;
+	
+	protected state
+		SpawnGunState,		SpawnMeleeState,		SpawnMagicState,
+		SeeGunState,		SeeMeleeState, 			SeeMagicState,
+		PainGunState,		PainMeleeState, 		PainMagicState,
+		AirGunState,		AirMeleeState,			AirMagicState,
+		AirPainGunState,	AirPainMeleeState,		AirPainMagicState;
+	protected DeltaWeaponAnimType lastAnimType;
+	
+	protected string
+		gunStandSprite, meleeStandSprite, magicStandSprite,
+		gunCrouchSprite, meleeCrouchSprite, magicCrouchSprite;
+	protected double crouchFactor;
+	
+	private double _targetRoll;
+	private bool _frozenDeath;			// using this for custom ice death that doesn't automatically shatter us lol
+	
+	private Vector2 _currentFlinch;		// used for weapon flinching when taking damage
+	private int _flinchTics;
+	
+	private double _oldTurn, _turn;
+	private double _originalHeight;		// used for fixing compatibility issues with maps that use voodoo doll scripting
+	
+	private TextureID _characterIconId;	// used for health displays in co-op and team deathmatch
+	
+	private DeltaCrosshairState _crosshairState;
+	
+	private RecoilEvent[10] _recoils;
+	private double _landPunch, _deltaLandPunch;
+	
+	private Array<Name> _dynamicLights;
+	
+	// Damage types that ignore I-frames.
+	static const Name DAMAGE_TYPES_IGNORE_IFRAMES[] =
+	{
+		'Crush',
+		'Telefrag',
+		'Falling',
+		'Suicide',
+		'Exit',
+		'Poison'
+	};
+	
+	property HugReactionTime: hugReactionTime;
+	property CharacterColor: characterColor;		// mostly used for hud elements
+	property OverhealColor: overhealColor;			// used for overheal bar on hud
+	property FlinchMultiplier: flinchMultiplier;
+	property StartFlinchTics: startFlinchTics;
+	property LungeSpeed: lungeSpeed;
+	property OffhandIcon: offhandIcon;
+	property CharacterIcon: characterIcon;
+	property GunStandSprite: gunStandSprite;
+	property MeleeStandSprite: meleeStandSprite;
+	property MagicStandSprite: magicStandSprite;
+	property GunCrouchSprite: gunCrouchSprite;
+	property MeleeCrouchSprite: meleeCrouchSprite;
+	property MagicCrouchSprite: magicCrouchSprite;
+	property ShakinessMaxHealth: shakinessMaxHealth;
+	property MinShakiness: minShakiness;
+	property MaxShakiness: maxShakiness;
+	property BackAtYouObituary: backAtYouObituary;	// used specifically if we kill by parrying a projectile back into its original owner
+	property ParryObituary: parryObituary;			// used if we kill by parrying otherwise
+	
+	Default
+	{
+		Health 100;
+		Player.MaxHealth 100;
+		PainChance 256;
+		
+		Player.MugShotMaxHealth -1;
+		
+		Player.DisplayName "DeltaPlayer";
+		Player.SoundClass "delta";
+		Player.ViewHeight 32.0;
+		
+		// strafing should be same speed as moving forward
+		Player.ForwardMove 1, 1;
+		Player.SideMove 1.25, 1.25;
+		
+		Player.AttackZOffset 12;
+		Player.JumpZ 12;
+		Player.GruntSpeed 3;
+		Player.ViewBob 0.2;
+		Player.ViewBobSpeed 12;
+		Player.FlyBob 0;
+		Player.InvulnerabilityMode "Reflective";
+		
+		DeltaPlayer.HugReactionTime 20;
+		DeltaPlayer.CharacterColor Color(127, 127, 127);
+		DeltaPlayer.OverhealColor Color(60, 220, 60);
+		
+		DeltaPlayer.FlinchMultiplier 10;
+		DeltaPlayer.StartFlinchTics 5;
+		DeltaPlayer.LungeSpeed 45;
+		
+		DeltaPlayer.OffhandIcon "";
+		DeltaPlayer.CharacterIcon "";
+		DeltaPlayer.GunCrouchSprite "";
+		DeltaPlayer.MeleeCrouchSprite "";
+		DeltaPlayer.MagicCrouchSprite "";
+		
+		DeltaPlayer.ShakinessMaxHealth 50;
+		DeltaPlayer.MinShakiness 0.2;
+		DeltaPlayer.MaxShakiness 1;
+		
+		DeltaPlayer.BackAtYouObituary "$OBIT_DELTA_KPARRYBACK";
+		DeltaPlayer.ParryObituary "$OBIT_DELTA_KPARRY";
+		
+		+PLAYERPAWN.NOTHRUSTWHENINVUL
+		+NOICEDEATH
+		+FLOORCLIP
+		+DONTGIB					// prevents us from being turned into a pile of flattened meat by crushers
+	}
+	
+	override void BeginPlay()
+	{
+		_originalHeight = height;
+		height = 56;
+		crouchFactor = 1;
+		
+		Super.BeginPlay();
+		// load icon textures before we do (most of) the rest of our initialization
+		_offhandIconId = TexMan.CheckForTexture(offhandIcon);
+		_characterIconId = TexMan.CheckForTexture(characterIcon);
+		
+		// grab our states
+		AirGunState = FindState("AirGun");
+		AirMeleeState = FindState("AirMelee");
+		AirMagicState = FindState("AirMagic");
+		SpawnGunState = FindState("SpawnGun");
+		SpawnMeleeState = FindState("SpawnMelee");
+		SpawnMagicState = FindState("SpawnMagic");
+		SeeGunState = FindState("SeeGun");
+		SeeMeleeState = FindState("SeeMelee");
+		SeeMagicState = FindState("SeeMagic");
+		PainGunState = FindState("PainGun");
+		PainMeleeState = FindState("PainMelee");
+		PainMagicState = FindState("PainMagic");
+		AirPainGunState = FindState("AirPainGun");
+		AirPainMeleeState = FindState("AirPainMelee");
+		AirPainMagicState = FindState("AirPainMagic");
+	}
+	
+	override void PostBeginPlay()
+	{
+		Super.PostBeginPlay();
+		
+		// fixing issues with maps that make use of voodoo dolls and currents
+		if (player != NULL && player.mo == self)
+		{
+			fullHeight = _originalHeight;
+			height = _originalHeight;
+		}
+		
+		coyoteTimer = 0;
+		jumpBuffer = 0;
+		crouchBuffer = 0;
+		ticLastGrazed = -1;
+		hugTimer = 0;
+		deathTimer = -1;
+		tensionPoints = 0;
+		maxTensionPoints = 250;
+		tensionDrainTimer = 0;
+		airBobTics = 0;
+		beingHugged = false;
+		lunging = false;
+		isUsingOffhand = false;
+		_turn = 0;
+		_oldTurn = 0;
+		
+		_targetRoll = 0;
+	}
+	
+	override void Travelled()
+	{
+		Super.Travelled();
+		
+		coyoteTimer = 0;
+		jumpBuffer = 0;
+		crouchBuffer = 0;
+		ticLastGrazed = -1;
+		hugTimer = 0;
+		tensionPoints = 0;
+		tensionDrainTimer = 0;
+		airBobTics = 0;
+		beingHugged = false;
+		lunging = false;
+		isUsingOffhand = false;
+		oldAngle = angle;
+		_turn = 0;
+		_oldTurn = 0;
+		
+		_targetRoll = 0;
+	}
+	
+	override void Tick()
+	{
+		Actor.Tick();
+		
+		if (Health <= 0)
+			AnimateDeath();
+		
+		if (IsPredicting())
+			return;
+		
+		if (player != null && player.mo == self && CanCrouch() && player.playerstate != PST_DEAD)
+			Height = FullHeight * crouchFactor;
+		else if (health > 0)
+			Height = FullHeight;
+	}
+	
+	virtual void AnimateDeath()
+	{
+		
+	}
+	
+	override void PlayerThink()
+	{
+		Super.PlayerThink();
+		HandleViewAngles();
+		HandleTurning();
+		
+		if (IsPredicting())
+			return;
+		
+		HandleHeartbeat();
+		
+		if (player.PlayerState == PST_DEAD)
+			return;
+		
+		AnimatePlayer();
+		HandleFlinch();
+		HandleHandedness();
+		HandleCrosshair();
+		HandleLunging();
+		HandleIFrames();
+		DrainTension();
+		HandleRalseiHugs();
+		HandleAirStuff();
+		CheckGraze();
+	}
+	
+	// grabbing code from uzdoom.pk3 and retooling for more preferred feeling
+	override void MovePlayer()
+	{
+		if (!player)
+			return;
+		
+		UserCmd cmd = player.cmd;
+		
+		if (!lunging)
+		{
+			// [RH] 180-degree turn overrides all other yaws
+			if (player.turnticks)
+			{
+				player.turnticks--;
+				A_SetAngle(Angle + (180. / TURN180_TICKS), SPF_INTERPOLATE);
+			}
+			else
+				Angle += cmd.yaw * (360./65536.);
+		}
+		
+		player.onground = (pos.z <= floorz) || bOnMobj || bMBFBouncer || (player.cheats & CF_NOCLIP2);
+		
+		// killough 10/98:
+		//
+		// We must apply thrust to the player and bobbing separately, to avoid
+		// anomalies. The thrust applied to bobbing is always the same strength on
+		// ice, because the player still "works just as hard" to move, while the
+		// thrust applied to the movement varies with 'movefactor'.
+		double forwardmove, sidemove;
+		double bobfactor;
+		double friction, movefactor;
+		double fm, sm;
+		double perc = 1 - airBobTics / double(MAX_AIR_BOB_TICS);
+		
+		[friction, movefactor] = GetFriction();
+		bobfactor = friction < ORIG_FRICTION ? movefactor : ORIG_FRICTION_FACTOR;
+		bobfactor *= perc * perc;
+		
+		fm = cmd.forwardmove;
+		sm = cmd.sidemove;
+		[fm, sm] = TweakSpeeds (fm, sm);
+		fm *= Speed / 256;
+		sm *= Speed / 256;
+		
+		if (!player.onground && !bNoGravity && !waterlevel)
+			ApplyAirControl(movefactor, bobfactor);
+		
+		// When crouching, speed and bobbing have to be reduced
+		if (CanCrouch() && crouchFactor != 1)
+		{
+			fm *= crouchFactor;
+			sm *= crouchFactor;
+			bobfactor *= crouchFactor;
+		}
+		
+		forwardmove = fm * movefactor * (35 / TICRATE);
+		sidemove = sm * movefactor * (35 / TICRATE);
+		
+		if (lunging)
+			player.vel = (0, 0);
+		else
+		{
+			if (forwardmove)
+			{
+				Bob(Angle, cmd.forwardmove * bobfactor / 256., true);
+				ForwardThrust(forwardmove, Angle);
+			}
+			if (sidemove)
+			{
+				let a = Angle - 90;
+				Bob(a, cmd.sidemove * bobfactor / 256., false);
+				Thrust(sidemove, a);
+			}
+		}
+		
+		if (player.cheats & CF_REVERTPLEASE)
+		{
+			player.cheats &= ~CF_REVERTPLEASE;
+			player.camera = player.mo;
+		}
+	}
+	
+	override int DamageMobj(Actor inflictor, Actor source, int damage, Name mod, int flags, double angle)
+	{
+		bool ignoreIFrames = false;
+		
+		if (source && source.player)
+			ignoreIFrames = true;
+		else
+		{
+			foreach (damageType : DAMAGE_TYPES_IGNORE_IFRAMES)
+			{
+				if (mod == damageType)
+				{
+					ignoreIFrames = true;
+					break;
+				}
+			}
+		}
+		
+		if (_frozenDeath && mod != "Ice")
+		{
+			Vel = (0, 0, 0);
+			A_FreezeDeathChunks();
+		}	
+		
+		if (damageTics > 0 && !ignoreIFrames)
+			return 0;
+		
+		int finalDamage = Super.DamageMobj(inflictor, source, damage, mod, flags, angle);
+		
+		if (finalDamage > 0 && Health > 0)
+		{
+			A_StartSound("delta/hurt", CHAN_VOICE, 0, 1, 0.5);
+			
+			if (!ignoreIFrames)
+				damageTics = (inflictor && (inflictor.bIsPuff || inflictor.bIsMonster)) ? -1 : DAMAGE_IFRAMES;
+			
+			if (mod == 'Falling')
+				A_StartSound("delta/fall_damage", CHAN_AUTO);
+			else if (mod == 'Drowning')
+				A_StartSound("delta/drown", CHAN_AUTO);
+			
+			double ang = source ?
+				DeltaAngle(self.angle, AngleTo(inflictor)) + cfrandom(-15, 15) : 0;
+			DamageFlinch(ang, finalDamage, flags);
+		}
+		else if (mod == 'Suicide')
+		{
+			let exp = Spawn("DeltaBadExplosion");
+			exp.SetOrigin(pos.PlusZ((exp.height - fullHeight)/2.), false);
+			
+			vel.z += frandom[explodeLaunch](10, 15);
+		}
+		
+		if (player)
+			player.damageCount = min(35, player.damageCount);
+		
+		return finalDamage;
+	}
+	
+	override void Die(Actor source, Actor inflictor, int dmgFlags, Name MeansOfDeath)
+	{
+		Super.Die(source, inflictor, dmgFlags, MeansOfDeath);
+		
+		A_StartDeath();
+		
+		if (MeansOfDeath == 'Falling')
+			A_StartSound("delta/fall_damage", CHAN_AUTO);
+		else if (MeansOfDeath == 'Drowning')
+			A_StartSound("delta/drown", CHAN_AUTO);
+		
+		if (MeansOfDeath != 'Suicide')
+		{
+			A_StopSound();
+			A_StartSound("delta/hurt", CHAN_VOICE);
+		}
+		
+		if (lunging)
+		{
+			let oldVel = Vel;
+			StopLunge();
+			Vel = oldVel;
+		}
+		
+		deathTimer = 0;
+		deathPitchFP = deathPitchTP = Pitch;
+	}
+	
+	override void PlayerSquatView(Actor onmobj)
+	{
+		Super.PlayerSquatView(onMobj);
+		
+		if (health <= 0)
+			return;
+		
+		_deltaLandPunch = -player.deltaViewHeight / 2;
+	}
+	
+	// taking implementation from uzdoom.pk3, slightly retooling for different look on death
+	override void DeathThink()
+	{
+		if (!IsPredicting())
+			deathTimer++;
+		
+		if (crouchFactor != 1)
+			DeltaUncrouch();
+		
+		if (!player)
+			return;
+		
+		player.onGround = (pos.Z <= floorz);
+		
+		if (!_frozenDeath && player.onGround)
+		{
+			// Fall to ground (if not frozen)
+			player.deltaViewHeight = 0;
+			if (player.viewHeight > 6)
+				player.viewHeight -= deathTimer;
+				
+			if (player.viewHeight < 6)
+				player.viewHeight = 6;
+			
+			if (player.viewHeight == 6)
+			{
+				if (deathPitchFP > -19.)
+				{
+					double lookDelta = (-19. - deathPitchFP) / 8;
+					deathPitchFP += lookDelta;
+				}
+				
+				if (abs(deathPitchTP) > 0.01)
+				{
+					double lookDelta = -deathPitchTP / 8;
+					deathPitchTP += lookDelta;
+				}
+				else if (!(deathPitchTP ~== 0))
+					deathPitchTP = 0;
+				
+				if ((player.cheats & CF_CHASECAM) || r_deathcamera)
+					Pitch = deathPitchTP;
+				else
+					Pitch = deathPitchFP;
+			}
+		}
+		
+		player.mo.CalcHeight();
+		
+		if (player.damagecount)
+			player.damagecount--;
+		if (player.poisoncount)
+			player.poisoncount--;
+		
+		bool playerWantsToRespawn = (player.cmd.buttons & BT_USE);
+		bool respawnAllowed = multiplayer || level.AllowRespawn
+			|| sv_singleplayerrespawn
+			|| G_SkillPropertyInt(SKILLP_PlayerRespawn);
+		
+		if ((playerWantsToRespawn ||
+			((deathmatch || alwaysapplydmflags) && sv_forcerespawn)) && !sv_norespawn)
+		{
+			if (Level.maptime >= player.respawn_time
+				|| ((player.cmd.buttons & BT_USE) && player.Bot == NULL))
+			{
+				player.cls = NULL; // Force a new class if the player is using a random class
+				player.playerstate = respawnAllowed ? PST_REBORN : PST_ENTER;
+				
+				if (special1 > 2)
+					special1 = 0;
+			}
+		}
+	}
+	
+	// Grabbing GZDoom's player code and retooling it to work with coyote time and jump buffering
+	override void CheckJump()
+	{
+		if (!player)
+			return;
+		
+		// Buffer jump inputs
+		if (player.cmd.buttons & BT_JUMP)
+			jumpBuffer = 3;
+		
+		// [RH] check for jump
+		if (jumpBuffer > 0)
+		{
+			jumpBuffer--;
+			
+			if (waterlevel >= 2)
+			{
+				Vel.Z = 4 * Speed;
+			}
+			else if (bNoGravity)
+			{
+				Vel.Z = 3.;
+			}
+			else if (level.IsJumpingAllowed() && coyoteTimer <= COYOTE_TIME
+				&& Vel.Z <= 0)
+			{
+				if (IsCrouching())
+					player.crouchOffset = 0;
+				
+				double jumpvelz = JumpZ * 35 / TICRATE;
+				double jumpfac = 0;
+				
+				// [BC] If the player has the high jump power, double their jump velocity.
+				// (actually, pick the best factors from all active items.)
+				for (let p = Inv; p != null; p = p.Inv)
+				{
+					let pp = PowerHighJump(p);
+					if (pp)
+					{
+						double f = pp.Strength;
+						if (f > jumpfac) jumpfac = f;
+					}
+				}
+				if (jumpfac > 0) jumpvelz *= jumpfac;
+				
+				Vel.Z = jumpvelz;
+				bOnMobj = false;
+				jumpBuffer = 0;
+				coyoteTimer = COYOTE_TIME + 1;
+				
+				if (!IsPredicting())
+					A_StartSound("*jump", CHAN_BODY);
+			}
+		}
+	}
+	
+	override void CheckCrouch(bool totallyFrozen)
+	{
+		if (!player)
+			return;
+		
+		let buttons = player.cmd.buttons;
+		
+		if (CanCrouch() && player.health > 0 && level.IsCrouchingAllowed())
+		{
+			if (!totallyfrozen)
+			{
+				int crouchDir = player.crouching;
+				
+				if (crouchDir == 0)
+					crouchDir = (buttons & BT_CROUCH) ? -1 : 1;
+				else if (buttons & BT_CROUCH)
+					player.crouching = 0;
+				
+				if (crouchDir == 1 && IsCrouching() && pos.Z + height < ceilingz)
+					CrouchMove(2);
+				else if (crouchDir == -1 && crouchFactor > 0.5)
+					CrouchMove(-2);
+			}
+		}
+		else
+			DeltaUncrouch();
+		
+		player.crouchOffset = -(ViewHeight) * (1 - crouchFactor);
+	}
+	
+	virtual void DeltaUncrouch()
+	{
+		if (player)
+			player.Uncrouch();
+		
+		if (crouchFactor != 1)
+			crouchFactor = 1;
+	}
+	
+	// modifying uzdoom's source code (not using Super.CrouchMove cuz i need to insert some stuff more directly)
+	override void CrouchMove(int direction)
+	{
+		if (!player)
+			return;
+		
+		double defaultHeight = FullHeight;
+		double savedHeight = Height;
+		double crouchSpeed = direction * CROUCHSPEED;
+		double oldHeight = player.viewheight;
+		
+		player.crouchDir = direction;
+		crouchFactor += crouchspeed;
+		
+		if (!IsGrounded())
+			SetOrigin((pos.x, pos.y, pos.z + crouchspeed), false);
+		
+		// check whether the move is ok
+		Height = defaultheight * crouchFactor;
+		if (!TryMove(Pos.XY, false, NULL))
+		{
+			Height = savedheight;
+			if (direction > 0)
+			{
+				// doesn't fit
+				crouchFactor -= crouchspeed;
+				
+				if (!player.onGround)
+					SetOrigin((pos.x, pos.y, pos.z - crouchspeed), false);
+		
+				return;
+			}
+		}
+		Height = savedheight;
+
+		crouchFactor = clamp(crouchFactor, 0.5, 1.);
+		player.viewheight = ViewHeight * crouchFactor;
+		player.crouchviewdelta = player.viewheight - ViewHeight;
+
+		// Check for eyes going above/below fake floor due to crouching motion.
+		CheckFakeFloorTriggers(pos.Z + oldheight, true);
+	}
+	
+	override bool CanCollideWith(Actor other, bool passive)
+	{
+		if (other.bIsMonster && lunging && other != lungeTarget)
+			return false;
+		if (other.bMissile && damageTics)
+			return false;
+		if (other.player)
+		{
+			if (other.player.cheats & CF_PREDICTING)
+				return true;
+			if (IsFriend(other))
+				return false;
+		}
+		
+		return Super.CanCollideWith(other, passive);
+	}
+	
+	override bool PreTeleport(Vector3 destPos, double destAngle, int flags)
+	{
+		let oldAng = angle;
+		let result = Super.PreTeleport(destPos, destAngle, flags);
+		
+		if (result)
+			oldAngle -= DeltaAngle(destAngle, oldAng);
+		
+		return result;
+	}
+	
+	override void HasReceived(Inventory item)
+	{
+		if (item is "Health" && item.GetClass() != "Health" && !item.bQuiet)
+			A_StartSound("delta/heal", CHAN_VOICE);
+	}
+	
+	override Vector2 BobWeapon(double ticfrac)
+	{
+		let originalBob = lunging ? (0, 0) : Super.BobWeapon(ticfrac);
+		double perc = 1 - airBobTics / double(MAX_AIR_BOB_TICS);
+		perc *= perc * customBobPerc;
+		
+		Vector2 bobFlinch = (0, 0);
+		if (_flinchTics)
+			bobFlinch = _currentFlinch * ((_flinchTics - ticFrac) / startFlinchTics);
+		
+		bobFlinch.y = abs(bobFlinch.y);
+		
+		int t = level.time;
+		double
+			s = shakiness ? DeltaUtil.Lerp(oldShakiness, shakiness.GetValue(), ticFrac)/100. : 0,
+			shakeDiff = s - minShakiness,
+			shakeX = sin(t/11.) * 2 - shakeDiff * sin(TICRATE*0.85*t),
+			shakeY = max(0, (0.5+0.5*sin(2*t)) * 5 + shakeDiff * sin(TICRATE/2.*t));
+		Vector2 shake = (shakeX, shakeY * 0.5);
+		
+		return originalBob * perc + bobFlinch + shake * s
+			+ (DeltaUtil.Lerp(_oldTurn, _turn, ticFrac), 0);
+	}
+	
+	override void CheatGive(string name, int amount)
+	{
+		if (name ~== "armor")
+			return;
+		
+		if (name ~== "tensionPoints" || name ~== "tp")
+		{
+			if (amount < 0)
+				return;
+			
+			if (amount == 0)
+				amount = maxTensionPoints;
+			
+			tensionPoints = min(maxTensionPoints, tensionPoints + amount);
+			tensionDrainTimer = DRAIN_TIMER_START;
+		}
+		else
+		{
+			if (name ~== "all" || name ~== "everything" || name ~== "ammo")
+			{
+				tensionPoints = maxTensionPoints;
+				tensionDrainTimer = DRAIN_TIMER_START;
+			}
+			
+			Super.CheatGive(name, amount);
+		}
+	}
+	
+	override void CheatTake(string name, int amount)
+	{
+		if (name ~== "armor")
+			return;
+			
+		if (name ~== "tensionPoints" || name ~== "tp")
+		{
+			if (amount < 0)
+				return;
+			
+			if (amount == 0)
+			{
+				tensionPoints = 0;
+				return;
+			}
+			
+			tensionPoints = max(0, tensionPoints - amount);
+			tensionDrainTimer = DRAIN_TIMER_START;
+		}
+		else
+			Super.CheatTake(name, amount);
+	}
+	
+	override void MakeFootsteps()
+	{
+		if (IsPredicting())
+			return;
+		if (reactionTime > 0)
+			return;
+		
+		Super.MakeFootsteps();
+	}
+	
+	// taking from uzdoom.pk3 and retooling, removing grunts entirely
+	override void PlayerLandedMakeGruntSound(actor onmobj)
+	{
+		// [RH] only make noise if alive
+		if (self.health > 0 && !Alternative)
+		{
+			bool isliquid = (pos.Z <= floorz) && HitFloor ();
+			
+			if (onmobj != NULL || !isliquid)
+				A_StartSound("*land", CHAN_AUTO);
+		}
+	}
+	
+	override string GetObituary(Actor victim, Actor inflictor, Name mod,
+		bool playerAttack)
+	{
+		if (!inflictor || !inflictor.CountInv("DeltaParried"))
+			return Super.GetObituary(victim, inflictor, mod, playerAttack);
+		
+		let parry = DeltaParried(inflictor.FindInventory("DeltaParried", true));
+		if (!parry.oldTarget || parry.oldTarget == inflictor.target)
+			return Super.GetObituary(victim, inflictor, mod, playerAttack);
+		if (parry.oldTarget == victim)
+			return backAtYouObituary;
+		
+		return parryObituary;
+	}
+	
+	override void PlayIdle()
+	{
+		let curAnimType = DELTA_WEAPONANIM_GUN;
+		if (player && player.ReadyWeapon && (player.ReadyWeapon is "DeltaWeapon"))
+			curAnimType = DeltaWeapon(player.ReadyWeapon).GetAnimType();
+		
+		if (curAnimType != lastAnimType || InAirState() || InAirPainState() || InSeeState())
+			SetState(A_DeltaGetState("Spawn"));
+		
+		if (!InSpawnState())
+			return;
+		
+		switch (curAnimType)
+		{
+			case DELTA_WEAPONANIM_MELEE:
+				A_UseMeleeSprite();
+				break;
+			case DELTA_WEAPONANIM_MAGIC:
+				A_UseMagicSprite();
+				break;
+			default:
+				A_UseGunSprite();
+				break;
+		}
+	}
+	
+	override void PlayRunning()
+	{
+		let curAnimType = DELTA_WEAPONANIM_GUN;
+		if (player && player.ReadyWeapon && (player.ReadyWeapon is "DeltaWeapon"))
+			curAnimType = DeltaWeapon(player.ReadyWeapon).GetAnimType();
+		
+		if (curAnimType != lastAnimType || InAirState() || InAirPainState() || InSpawnState())
+			SetState(A_DeltaGetState("See"));
+		
+		if (!InSeeState())
+			return;
+		
+		switch (curAnimType)
+		{
+			case DELTA_WEAPONANIM_MELEE:
+				A_UseMeleeSprite();
+				break;
+			case DELTA_WEAPONANIM_MAGIC:
+				A_UseMagicSprite();
+				break;
+			default:
+				A_UseGunSprite();
+				break;
+		}
+		
+		if (tics != -1)
+			return;
+		
+		int newTics = 4;
+		
+		if (!(player.cmd.buttons & BT_RUN))
+			newTics *= 2;
+		if (IsCrouching())
+			newTics *= 2;
+		
+		A_SetTics(newTics);
+	}
+	
+	// retooled from definition in uzdoom.pk3
+	override void FireWeapon(State stat)
+	{
+		let weapn = player.ReadyWeapon;
+		if (!weapn || !weapn.CheckAmmo(Weapon.PrimaryFire, true))
+			return;
+		
+		player.WeaponState &= ~WF_WEAPONBOBBING;
+		weapn.bAltFire = false;
+		
+		if (stat == null)
+			stat = weapn.GetAtkState(!!player.refire);
+		
+		player.SetPsprite(PSP_WEAPON, stat);
+		if (!weapn.bNoAlert)
+			SoundAlert(self, false);
+		
+		let deltaWpn = DeltaWeapon(weapn);
+		if (!deltaWpn)
+			return;
+		
+		deltaWpn.A_ResetAtEase();
+	}
+
+	override void FireWeaponAlt(State stat)
+	{
+		let weapn = player.ReadyWeapon;
+		if (!weapn || weapn.FindState('AltFire') == null ||
+			!weapn.CheckAmmo(Weapon.AltFire, true))
+		{
+			return;
+		}
+		
+		player.WeaponState &= ~WF_WEAPONBOBBING;
+		weapn.bAltFire = true;
+		
+		if (stat == null)
+			stat = weapn.GetAltAtkState(!!player.refire);
+		
+		player.SetPsprite(PSP_WEAPON, stat);
+		
+		if (!weapn.bNoAlert)
+			SoundAlert (self, false);
+		
+		let deltaWpn = DeltaWeapon(weapn);
+		if (!deltaWpn)
+			return;
+		
+		deltaWpn.A_ResetAtEase();
+	}
+	
+	override void PlayAttacking()
+	{
+		SetState(A_DeltaGetState("Missile"));
+	}
+	
+	// specifically overriding in the event we don't want a muzzle flash!
+	override void PlayAttacking2()
+	{
+		let dest = A_DeltaGetState("Missile");
+		
+		if (dest.InStateSequence(ResolveState("MissileGun")))
+			dest = ResolveState("MissileGunNoFlash");
+		
+		SetState(dest);
+	}
+	
+	void PlayAir()
+	{
+		let curAnimType = DELTA_WEAPONANIM_GUN;
+		if (player && player.ReadyWeapon && (player.ReadyWeapon is "DeltaWeapon"))
+			curAnimType = DeltaWeapon(player.ReadyWeapon).GetAnimType();
+		
+		if (curAnimType != lastAnimType || InSeeState() || InSpawnState())
+			SetState(A_DeltaGetState("Air"));
+	}
+	
+	action state A_DeltaGetState(string prefix)
+	{
+		return invoker.DeltaGetState(prefix);
+	}
+	
+	virtual state DeltaGetState(string prefix)
+	{
+		string lwr = prefix;
+		lwr.ToLower();
+		
+		if (lwr == "pain" && !(pos.Z <= floorZ || bOnMobj || bMBFBouncer))
+			prefix = "AirPain";
+		
+		let dest = GetStateByAnimType(prefix, lastAnimType);
+		if (!dest)
+			return ResolveState(null);
+		
+		return dest;
+	}
+	
+	virtual void AnimatePlayer()
+	{
+		bool doingMoveInput = player ?
+			(player.buttons & (BT_MOVERIGHT | BT_MOVELEFT | BT_BACK | BT_FORWARD))
+			: false;
+		
+		if (coyoteTimer <= COYOTE_TIME)
+		{
+			if (doingMoveInput && Vel.LengthSquared() > 0)
+				PlayRunning();
+			else
+				PlayIdle();
+		}
+		else
+			PlayAir();
+	}
+	
+	void SetTension(double amount, bool resetTimer = true)
+	{
+		if (amount <= 0)
+			amount = 0;
+		
+		double factor = G_SkillPropertyFloat(SKILLP_AmmoFactor) * sv_ammofactor;
+		tensionPoints = DeltaUtil.Clamp(amount, 0, maxTensionPoints);
+		
+		if (resetTimer)
+			tensionDrainTimer = ceil(DRAIN_TIMER_START * factor);
+	}
+	
+	void AddTension(double amount, bool graze = false, bool resetTimer = true)
+	{
+		double factor = G_SkillPropertyFloat(SKILLP_AmmoFactor) * sv_ammofactor;
+		SetTension(tensionPoints + amount*factor, resetTimer);
+		
+		if (graze)
+			ticLastGrazed = level.Time;
+	}
+	
+	clearscope DeltaTpResult GetTension(double amount)
+	{
+		if (sv_infiniteAmmo || (FindInventory('PowerInfiniteAmmo', true) != null))
+			return TP_INFINITE;
+		
+		if (amount < 0)
+			amount = 0;
+		
+		if (tensionPoints < amount)
+			return TP_FAIL;
+		
+		return TP_USE;
+	}
+	
+	bool TryTakeTension(double amount, bool playSound = true)
+	{
+		let DeltaTpResult = GetTension(amount);
+		
+		if (DeltaTpResult != TP_USE)
+		{
+			if (playSound && DeltaTpResult == TP_FAIL)
+				A_StartSound("delta/tp_fail", CHAN_ITEM, CHANF_LOCAL | CHANF_NOSTOP);
+			
+			return DeltaTpResult == TP_INFINITE; // false if fail, true if infinite
+		}
+		
+		SetTension(tensionPoints - amount);
+		double factor = G_SkillPropertyFloat(SKILLP_AmmoFactor) * sv_ammofactor;
+		
+		if (tensionPoints > 0)
+			tensionDrainTimer = DRAIN_TIMER_START * factor;
+		else
+			tensionDrainTimer = 0;
+		return true;
+	}
+	
+	protected void DrainTension()
+	{
+		if (sv_infiniteAmmo || (FindInventory('PowerInfiniteAmmo', true) != null))
+			return;
+		
+		double factor = G_SkillPropertyFloat(SKILLP_AmmoFactor)*sv_ammofactor;
+		
+		if (tensionDrainTimer > 0)
+			tensionDrainTimer--;
+		else if (tensionPoints > 0)
+			SetTension(tensionPoints - DRAIN_AMOUNT/factor, false);
+	}
+	
+	protected state GetStateByAnimType(string prefix, out DeltaWeaponAnimType animType)
+	{
+		let oldAnimType = animType;
+		animType = DELTA_WEAPONANIM_GUN;
+		if (player && player.ReadyWeapon && player.ReadyWeapon is "DeltaWeapon")
+			animType = DeltaWeapon(player.ReadyWeapon).GetAnimType();
+		
+		string suffix;
+		
+		switch (animType)
+		{
+			case DELTA_WEAPONANIM_MELEE:
+				suffix = "Melee";
+				break;
+			case DELTA_WEAPONANIM_MAGIC:
+				suffix = "Magic";
+				break;
+			case DELTA_WEAPONANIM_GUN:
+			default:
+				suffix = "Gun";
+				break;
+		}
+		
+		state dest = FindStateByString(prefix .. suffix);
+		if (!dest)
+			animType = oldAnimType;
+		
+		return dest;
+	}
+	
+	protected void HandleHeartbeat()
+	{
+		if (IsPredicting())
+			return;
+		if (!heartbeat)
+			heartbeat = LinearValueInterpolator.Create(0, 10);
+		
+		double
+			_maxHealth = GetMaxHealth(),
+			maxForHeartbeat = _maxHealth * 0.4,
+			minForHeartbeat = _maxHealth * 0.2,
+			heartbeatPerc = DeltaUtil.Clamp(
+				(maxForHeartbeat - Health) / (maxForHeartbeat - minForHeartbeat - 1), 0, 1);
+		bool heartbeatCvar = (cl_delta_heartbeatSound == HB_ON
+			|| (cl_delta_heartbeatSound == HB_KRIS_ONLY && self is "KrisPlayer"));
+		
+		// make sure heartbeat only plays if we're below a third of our max
+		// health AND we aren't dead
+		if (Health <= maxForHeartbeat && Health > 0 && heartbeatCvar)
+		{
+			double _targetVol = 100*heartbeatPerc;
+			heartbeat.Update(round(_targetVol));
+		}
+		else if (Health > 0 && heartbeatCvar)
+			heartbeat.Update(0);
+		else if (heartbeat.GetValue() != 0)
+			heartbeat.Reset(0);
+		
+		double vol = heartbeat.GetValue() / 100.;
+		
+		if (!IsActorPlayingSound(7))
+			A_StartSound("delta/heartbeat", 7, CHANF_LOOPING, vol, 120);
+		else
+			A_SoundVolume(7, vol);
+	}
+	
+	protected virtual double GetViewRoll()
+	{
+		let relVelY = (-Vel.x * sin(-Angle) - Vel.y * cos(-Angle)) / 4.;
+		let rollTarget = min(10, max(-10, relVelY)) * cl_delta_leanIntensity;
+		
+		let maxChange = 20. / TICRATE;
+		
+		if (abs(rollTarget - _targetRoll) > 2)
+			maxChange *= 2;
+		if (abs(rollTarget - _targetRoll) > 5)
+			maxChange *= 2;
+		if (abs(rollTarget - _targetRoll) > 10)
+			maxChange *= 2;
+		
+		_targetRoll += min(maxChange, max(-maxChange, rollTarget - _targetRoll));
+		return _targetRoll;
+	}
+	
+	protected virtual Vector3 GetRecoilAngles()
+	{
+		Vector3 recoil;
+		
+		for (int i = 0; i < _recoils.Size(); i++)
+		{
+			int start = _recoils[i].startTime, cur = _recoils[i].curTime,
+				lead = _recoils[i].leadInTime;
+			
+			if (cur <= 0)
+				continue;
+			
+			double factor;
+			
+			if (start - cur < lead)
+				factor = (start - cur) / double(lead);
+			else
+				factor = cur / double(start - lead);
+			
+			factor *= _recoils[i].recoilType == RECOIL_WEAPON ? cl_delta_weaponRecoil : cl_delta_damageRecoil;
+			factor *= factor;
+			recoil += _recoils[i].recoil * factor;
+		}
+		
+		return recoil;
+	}
+	
+	protected void HandleViewAngles()
+	{
+		for (int i = 0; i < _recoils.Size(); i++)
+		{
+			if (_recoils[i].curTime <= 0)
+				continue;
+			
+			_recoils[i].curTime--;
+		}
+		
+		_landPunch += _deltaLandPunch;
+		
+		if (_landPunch > 5)
+		{
+			_landPunch = 5;
+			_deltaLandPunch = 1 / 65536.;
+		}
+		else if (_landPunch < 0)
+		{
+			_landPunch = 0;
+			_deltaLandPunch = 0;
+		}
+		
+		if (_deltaLandPunch)
+		{
+			_deltaLandPunch = max(_deltaLandPunch - 0.175, -0.175 * 7);
+			
+			if (!_deltaLandPunch)
+				_deltaLandPunch = 1 / 65536.;
+		}
+		
+		let recoil = GetRecoilAngles();
+		
+		if (!(player.cheats & CF_CHASECAM))
+		{
+			recoil.x += _landPunch;
+			recoil.z += GetViewRoll();
+		}
+		
+		A_SetViewPitch(recoil.x, SPF_INTERPOLATE);
+		A_SetViewAngle(recoil.y, SPF_INTERPOLATE);
+		A_SetViewRoll(recoil.z, SPF_INTERPOLATE);
+	}
+	
+	protected void HandleTurning()
+	{
+		let diffAngle = DeltaAngle(oldAngle, angle);
+		_oldTurn = _turn;
+		
+		if (abs(_turn) > 0.5)
+			_turn /= 2;
+		else
+			_turn = 0;
+		
+		_turn = DeltaUtil.Clamp(_turn + diffAngle*0.2, -5, 5);
+		oldAngle = angle;
+	}
+	
+	protected void HandleIFrames()
+	{
+		if (damageTics < 0)
+			damageTics = max(1, DAMAGE_IFRAMES) - 1; // minus one because we take a tic to initialize i-frames
+		else if (damageTics > 0)
+			damageTics--;
+	}
+	
+	protected bool RalseiIsHugging()
+	{
+		string hug = "hugging";
+		class<Inventory> hugging = hug;
+		return FindInventory(hugging);
+	}
+	
+	protected virtual void HandleRalseiHugs()
+	{
+		string rals = "FriendsWithRalsei";
+		class<Actor> ralseiCheck = rals;
+		
+		if (ralseiCheck == null)
+			return; // don't bother with this if we don't have the ralsei mod
+		
+		if (RalseiIsHugging() && !beingHugged)
+		{
+			if (++hugTimer == hugReactionTime)
+				beingHugged = true;
+		}
+		else if (!RalseiIsHugging() && beingHugged)
+		{
+			hugTimer = 0;
+			beingHugged = false;
+		}
+	}
+	
+	protected void HandleAirStuff()
+	{
+		if (IsGrounded() && Vel.Z <= 0)
+			coyoteTimer = 0;
+		else
+			coyoteTimer++;
+		
+		if (IsGrounded() && airBobTics)
+			airBobTics--;
+		else if (!IsGrounded() && airBobTics < MAX_AIR_BOB_TICS)
+			airBobTics++;
+	}
+	
+	protected void HandleFlinch()
+	{
+		if (_flinchTics > 0)
+			_flinchTics--;
+		
+		if (!shakiness)
+			shakiness = LinearValueInterpolator.Create(minShakiness * 100, 20);
+		
+		oldShakiness = shakiness.GetValue();
+		
+		double shakeMaxFactor = double(shakinessMaxHealth)/GetMaxHealth();
+		int targetShake = DeltaUtil.Lerp(maxShakiness*100., minShakiness*100.,
+			(Health-1) / (shakeMaxFactor*(GetMaxHealth()-1)));
+		
+		if (Health > 0)
+			shakiness.Update(targetShake);
+		else if (shakiness.GetValue() != 0)
+			shakiness.Reset(0);
+	}
+	
+	protected void HandleHandedness()
+	{
+		if (IsVoodooDoll())
+			return;
+		
+		let weapPsp = player.FindPSprite(PSP_WEAPON),
+			offhandPsp = player.FindPSprite(PSP_OFFHAND),
+			legsPsp = player.FindPSprite(PSP_LEGS);
+		
+		if (weapPsp)
+			weapPsp.bFlip = weapPsp.bMirror = cl_delta_weaponHandedness;
+		if (offhandPsp)
+			offhandPsp.bFlip = offhandPsp.bMirror = cl_delta_weaponHandedness;
+		if (legsPsp)
+			legsPsp.bFlip = legsPsp.bMirror = cl_delta_weaponHandedness;
+	}
+	
+	protected void HandleCrosshair()
+	{
+		if (!cl_delta_crosshairTargetChange)
+		{
+			_crosshairState = DELTA_XHR_NEUTRAL;
+			return;
+		}
+		
+		if (IsVoodooDoll())
+			return;
+		
+		let curWeap = DeltaWeapon(player.ReadyWeapon);
+		
+		FTranslatedLineTarget t;
+		FLineTraceData l;
+		double ang = angle;
+		double distance = curWeap ? curWeap.GetRedCrosshairRange() : DEFAULT_RED_CROSSHAIR_RANGE;
+		double pitch = AimLineAttack(ang, distance, t, 0., ALF_CHECK3D);
+		
+		LineTrace(ang, distance, pitch, TRF_NOSKY,
+			height*0.5 - floorclip + AttackZOffset * crouchFactor, data: l);
+		
+		if (!l.HitActor || l.HitActor.curState.InStateSequence(l.HitActor.ResolveState("Death")))
+		{
+			_crosshairState = DELTA_XHR_NEUTRAL;
+			return;
+		}
+		
+		if (IsFriend(l.HitActor))
+			_crosshairState = DELTA_XHR_FRIENDLY;
+		else if (IsHostile(l.HitActor))
+			_crosshairState = DELTA_XHR_ENEMY;
+		else
+			_crosshairState = DELTA_XHR_NEUTRAL;
+	}
+	
+	protected void CheckGraze()
+	{
+		if (damageTics != 0)
+			return;
+		
+		ThinkerIterator it = ThinkerIterator.Create("Actor", STAT_DEFAULT);
+		Actor mis;
+		bool grazeSound;
+		
+		while (mis = Actor(it.Next()))
+		{
+			if (!mis.bMissile && !mis.bSkullfly)
+			{
+				uint misIndex = grazed.Find(mis);
+				if (misIndex != grazed.Size())
+					grazed.Delete(misIndex);
+				
+				continue;
+			}
+			
+			if (!mis.bSkullfly && mis.target == self) // "target" with projectiles is used to figure out who threw it
+				continue;
+			if (!mis.CanCollideWith(self, false))
+				continue;
+			
+			double blockDist = (radius * 3) + (mis.radius * 3);
+			double blockHeight = (height * 3) + (mis.height * 3);
+			Vector3 diff = level.Vec3Diff(pos, mis.pos);
+			
+			if (abs(diff.x) > blockDist || abs(diff.y) > blockDist)
+				continue;
+			if (abs(diff.z) > blockHeight)
+				continue;
+			
+			int misDmg = mis.GetMissileDamage(0, 1);
+			
+			if (misDmg <= 0)
+				continue;
+			if (!mis.bSkullfly && mis.target && IsFriend(mis.target))
+				continue;
+			
+			bool firstGraze = grazed.Find(mis) == grazed.Size();
+			double grazeAmount = max(5, misDmg);
+			
+			GrazeEvent e;
+			e.thing = self;
+			e.grazeSource = mis;
+			
+			DeltaEvents(EventHandler.Find('DeltaEvents')).PlayerGrazed(e);
+			
+			if (firstGraze)
+			{
+				AddTension(grazeAmount * GetGrazeMultiplier(), true);
+				A_StartSound("delta/graze", 5, 0);
+				grazed.Push(mis);
+			}
+			else
+				AddTension(grazeAmount * GetGrazeMultiplier() / TICRATE, true);
+		}
+	}
+	
+	protected void DamageFlinch(double ang, int dmg, int dmgFlags)
+	{
+		if (dmgFlags & DMG_NO_PAIN)
+			return;
+		
+		double damageMultiplier = min(0.25, dmg / 50.);
+		int damageAddTics = max(0, min(20, dmg / 2.));
+		bool isExplosion = (dmgFlags & DMG_EXPLOSION);
+		
+		_flinchTics = startFlinchTics + damageAddTics/2;
+		_currentFlinch = (sin(ang), cos(ang)) * flinchMultiplier * damageMultiplier/0.25;
+		
+		double yrMult = isExplosion ? -3*sin(ang) : sin(ang),
+			pMult = cos(ang);
+		
+		if (abs(sin(ang)) <= 0.1)
+			yrMult = 0;
+		if (abs(cos(ang)) <= 0.1)
+			pMult = 0;
+		
+		AddRecoil(RECOIL_DAMAGE, 7 + damageAddTics, 2, p: -cos(ang) * flinchMultiplier * damageMultiplier,
+			y: isExplosion ? yrMult * flinchMultiplier * damageMultiplier : 0,
+			r: isExplosion ? 0 : yrMult * flinchMultiplier * damageMultiplier);
+	}
+	
+	void AddRecoil(DeltaRecoilType recoilType, int startTime, int leadInTime = 0, double p = 0, double y = 0, double r = 0)
+	{
+		int targetIndex = -1;
+		int shortestTime = -1;
+		
+		for (int i = 0; i < _recoils.Size(); i++)
+		{
+			if (_recoils[i].curTime <= 0)
+			{
+				targetIndex = i;
+				break;
+			}
+			
+			if (shortestTime < 0 || _recoils[i].curTime < shortestTime)
+			{
+				targetIndex = i;
+				shortestTime = _recoils[i].curTime;
+			}
+		}
+		
+		if (targetIndex < 0)
+			return;
+		
+		_recoils[targetIndex].startTime = _recoils[targetIndex].curTime = startTime;
+		_recoils[targetIndex].leadInTime = leadInTime;
+		_recoils[targetIndex].recoil = (p, y, r);
+		_recoils[targetIndex].recoilType = recoilType;
+	}
+	
+	clearscope Color GetCharacterColor()
+	{
+		return characterColor | 0xff000000;
+	}
+	
+	clearscope Color GetOverhealColor()
+	{
+		return overhealColor | 0xff000000;
+	}
+	
+	clearscope bool IsCrouching(bool fullyOnly = false)
+	{
+		return fullyOnly ? (crouchFactor == 0.5) : (crouchFactor != 1);
+	}
+	
+	clearscope int GetDamageTics()
+	{
+		return damageTics;
+	}
+	
+	clearscope virtual double GetGrazeMultiplier()
+	{
+		return 1;
+	}
+	
+	clearscope bool IsLunging()
+	{
+		return lunging && lungeTarget;
+	}
+	
+	clearscope virtual bool CanLunge()
+	{
+		return !IsCrouching() && !(player.cmd.buttons & BT_BACK);
+	}
+	
+	clearscope bool IsGrounded()
+	{
+		return pos.Z <= floorZ || bOnMobj || bMBFBouncer
+			|| (player && player.cheats & CF_NOCLIP2);
+	}
+	
+	bool IsPredicting()
+	{
+		if (player)
+			return (player.cheats & CF_PREDICTING);
+		
+		return false;
+	}
+	
+	// returns -1 if not dead, otherwise returns how many ticks this character has been dead for
+	clearscope int GetDeathTimer()
+	{
+		return deathTimer;
+	}
+	
+	clearscope TextureID GetCharacterIconID()
+	{
+		return _characterIconId;
+	}
+	
+	clearscope double GetCrouchFactor()
+	{
+		return crouchFactor;
+	}
+	
+	clearscope DeltaCrosshairState GetCrosshairState()
+	{
+		return _crosshairState;
+	}
+	
+	clearscope Vector3 GetViewPos()
+	{
+		return pos.PlusZ(viewHeight * crouchFactor);
+	}
+	
+	clearscope bool IsVoodooDoll()
+	{
+		return !player || !player.mo || player.mo != self;
+	}
+	
+	States
+	{
+		Spawn:
+			TNT1 A 1;
+			Loop;
+		See:
+			TNT1 A 1;
+			Loop;
+	}
+}

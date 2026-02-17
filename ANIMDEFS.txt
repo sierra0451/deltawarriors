@@ -3,6 +3,7 @@ texture SSRDA0
 	pic SSRDA0 tics 5
 	pic SSRDB0 tics 5
 	pic SSRDC0 tics 5
+	pic SSRDB0 tics 5
 
 texture DELTATT1
 	pic DELTATT1 tics 15

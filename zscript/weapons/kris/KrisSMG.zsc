@@ -1,0 +1,188 @@
+class KrisSmg : DeltaWeapon
+{
+	Default
+	{
+		Tag "$TAG_DELTA_SMG";
+		Obituary "$OBIT_DELTA_KSMG";
+		Inventory.RestrictedTo "KrisPlayer";
+		Inventory.PickupMessage "$PICKUP_DELTA_KSMG";
+		
+		Weapon.SlotNumber 4;
+		Weapon.SelectionOrder 800;
+		Weapon.AmmoUse 1;
+		Weapon.AmmoUse2 1;
+		Weapon.AmmoGive 30;
+		Weapon.AmmoType "Clip";
+		Weapon.AmmoType2 "RocketAmmo";
+		DeltaWeapon.Crosshair "DRPSTRET";
+		DeltaWeapon.TensionUse2 75;
+		
+		+SQUAREPIXELS
+		+WEAPON.NOALERT
+	}
+	
+	States
+	{
+		Ready:
+			DKSM A 1 A_DeltaWeaponReady;
+			Loop;
+		Deselect:
+			DKSM O 2 A_StartSound("delta/smg/holster", CHAN_WEAPON,
+				CHANF_OVERLAP);
+			#### PQR 2;
+			TNT1 A 4;
+			#### # 1 A_SwapWeapon;
+			Stop;
+		Select:
+			TNT1 A 1 A_StartRaiseWeapon;
+			DKSM G 2 A_StartSound("delta/smg/deploy1", CHAN_WEAPON,
+				CHANF_OVERLAP);
+			#### HIJ 2;
+			#### K 1 A_DeltaWeaponReady(WRF_NOBOB);
+			#### # 1 A_StartSound("delta/smg/deploy2", CHAN_WEAPON,
+				CHANF_OVERLAP, pitch: 1.2);
+			#### LMN 2 A_DeltaWeaponReady(WRF_NOBOB);
+			#### A 2 A_FinishRaiseWeapon;
+			Stop;
+		Fire:
+			DKSM B 1 A_KrisSmgFire;
+			#### # 1 A_ZoomFactor(1, ZOOM_NOSCALETURNING);
+			#### C 2 A_RemoveDynamicLight("smgMuzzle");
+			#### D 1;
+		Hold: // fallthrough is intentional
+			DKSM B 1 A_KrisSmgFire;
+			#### # 1 A_ZoomFactor(1, ZOOM_NOSCALETURNING);
+			#### C 2 A_RemoveDynamicLight("smgMuzzle");
+			#### D 1;
+			#### EFA 2 A_ReFire;
+			Goto Ready;
+		AltFire:
+			KSMA A 1 A_KrisSmgAltFire;
+			#### B 2;
+			#### C 2 A_ZoomFactor;
+			#### DE 2;
+			#### FGHI 2 A_DeltaWeaponReady(WRF_NOFIRE | WRF_NOBOB);
+			#### J 3 A_DeltaWeaponReady(WRF_NOSECONDARY | WRF_NOBOB);
+			#### K 3 A_DeltaWeaponReady(WRF_NOBOB);
+			Goto Ready;
+		Spawn:
+			DSMG A -1;
+			Stop;
+	}
+	
+	protected action void A_KrisSmgFire()
+	{
+		let spread = min(6, (player.refire/4.) + 0.5);
+		// -1 for bullets fires one hitscan and applies spread immediately,
+		// regardless of player.refire
+		A_FireBullets(spread, spread, -1, random[smgDmg](15, 20), "KrisSmgPuff",
+			FBF_USEAMMO | FBF_NORANDOM, spawnHeight: 32 * invoker.GetCrouchFactor());
+		A_AddRecoil(5, 1, p: -0.5);
+		A_AddDynamicLight("smgMuzzle", "DeltaGenericMuzzle");
+		
+		if (level.IsFreelookAllowed())
+		{
+			invoker.owner.pitch = max(player.MinPitch,
+				invoker.owner.pitch - 1.25);
+		}
+		
+		A_StartSound("delta/smg/fire", CHAN_WEAPON, CHANF_OVERLAP,
+			pitch: cfrandom(0.93, 1.07));
+		A_AlertMonsters();
+		
+		A_OwnerPlayAttack();
+	}
+	
+	protected action state A_KrisSmgAltFire()
+	{
+		if (!invoker.DepleteAmmo(true))
+			return ResolveState("Ready");
+		
+		A_FireProjectile("KrisSmgGrenade", useAmmo: false);
+		A_ZoomFactor(0.99, ZOOM_INSTANT | ZOOM_NOSCALETURNING);
+		A_AddRecoil(15, 3, p: -5);
+		
+		A_StartSound("delta/smg/alt_fire", CHAN_WEAPON, CHANF_OVERLAP,
+			pitch: cfrandom(0.93, 1.07));
+		A_AlertMonsters();
+		
+		A_OwnerPlayAttack(false);
+		return ResolveState(null);
+	}
+}
+
+class KrisSmgPuff : BulletPuff
+{
+	Default
+	{
+		ProjectileKickBack 1;
+		+NOEXTREMEDEATH
+	}
+}
+
+class KrisSmgGrenade : DeltaGrenade
+{
+	Default
+	{
+		Obituary "$OBIT_DELTA_KSMGALT";
+		DeltaGrenade.GrenadeType GRENADE_STICKY;
+		DeltaGrenade.FuseTime 0.75;
+		DeltaGrenade.ArmedSound "delta/smg/grenade_hit_map";
+		DeltaGrenade.StickSound "delta/smg/grenade_hit";
+		DeltaGrenade.ExplosionSound "delta/smg/grenade_explosion";
+		DeltaGrenade.HitboxClass "KrisSmgGrenadeHitbox";
+	}
+	
+	override void Explode()
+	{
+		Super.Explode();
+		
+		double range = 150;
+		RadiusAttack(target, 250, range, 'KrisSmgGrenade', RADF_THRUSTZ,
+			range*0.2);
+		
+		let dist = Distance3D(target);
+		if (dist > range || !CheckSight(target, SF_IGNOREVISIBILITY))
+			return;
+		
+		let damageMult = DeltaUtil.Clamp(1.2 - dist/range, 0, 1),
+			dmg = ceil(25 * damageMult);
+		
+		if (target.DamageMobj(self, self, dmg, 'KrisSmgGrenade', DMG_THRUSTLESS) <= 0)
+			return;
+		
+		let knockbackDmg = dmg * 0.5;
+		let deltaTarget = DeltaPlayer(target);
+		
+		if (deltaTarget && !deltaTarget.IsGrounded())
+			knockbackDmg *= 2;
+		
+		if (knockbackDmg > 20)
+			knockbackDmg = 20;
+		
+		target.Vel += level.Vec3Diff(pos, target.pos).Unit() * knockbackDmg;
+	}
+	
+	States
+	{
+		Spawn:
+			BAL1 AB 4;
+			Loop;
+		XDeath:
+			Goto Spawn;
+		Explode:
+			BAL1 C 3 A_GrenadeExplode;
+			BAL1 DE 3;
+			Stop;
+	}
+}
+
+class KrisSmgGrenadeHitbox : DeltaGrenadeHitbox
+{
+	Default
+	{
+		Radius 30;
+		Height 30;
+		Health 20;
+	}
+}

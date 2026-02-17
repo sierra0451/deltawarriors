@@ -60,13 +60,36 @@ DeltaVeryEasy
 { #006080 #00C0FF 0 256 }
 DeltaEasy
 { #008000 #00FF00 0 256 }
-DeltaNormal
-{ #808000 #FFFF00 0 256 }
 DeltaHard
-{ #800000 #FF0000 0 256 }
+{ #804000 #FF8000 0 256 }
 DeltaVeryHard
-{ #200000 #800000 0 256 }
+{ #800000 #FF0000 0 256 }
 
 // Misc
 DeltaLowHealth
 { #FFFF00 #FFFF00 0 256 }
+KrisPlayer_damage
+{
+	#000000 #000000 0 1
+	#82FFFF #82FFFF 2 256
+}
+SusiePlayer_damage
+{
+	#000000 #000000 0 1
+	#C69BC6 #C69BC6 2 256
+}
+RalseiPlayer_damage
+{
+	#000000 #000000 0 1
+	#80FC82 #80FC82 2 256
+}
+Susie_damage
+{
+	#000000 #000000 0 1
+	#C69BC6 #C69BC6 2 256
+}
+Ralsei_damage
+{
+	#000000 #000000 0 1
+	#80FC82 #80FC82 2 256
+}

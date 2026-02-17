@@ -1,7 +1,14 @@
+// Player settings
+user color 		user_delta_soulColor			= "ff 00 00";
+nosave bool 	cl_delta_changeSoulColor		= true;
+
 // HUD options
 nosave bool 	cl_delta_showHud				= true;
+nosave bool		cl_delta_showGrazeIndicators	= true;
+nosave bool		cl_delta_showDamageIndicators	= true;
 nosave bool 	cl_delta_lowHealthVignette		= true;
 nosave int 		cl_delta_heartbeatSound			= 1;			// enum: 0 = off, 1 = on, 2 = Kris only
+nosave bool		cl_delta_showDeathText			= true;			// "IT APPEARS YOU HAVE REACHED  AN END" text
 nosave bool		cl_delta_showCrosshair			= true;
 nosave color	cl_delta_crosshairColor			= "ff ff ff";
 nosave bool		cl_delta_crosshairTargetChange	= true;

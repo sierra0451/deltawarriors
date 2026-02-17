@@ -9,7 +9,8 @@
 		// Generic weapon sounds
 		delta/generic_attack = "sounds/weapons/generic_attack.wav"
 		delta/generic_hit = "sounds/weapons/generic_hit.wav"
-		delta/generic_pullweapon = "sounds/weapons/generic_pullweapon.wav"
+		delta/generic_pullWeapon = "sounds/weapons/generic_pullWeapon.wav"
+		delta/generic_badExplosion = "sounds/weapons/generic_badExplosion.wav"
 		
 		// Jumping/landing
 		delta/jump1 = "sounds/player/shared/jump/player_jump1.wav"
@@ -46,6 +47,15 @@
 		delta/fall_damage = "sounds/player/shared/damage/player_fallDamage.wav"
 		delta/freeze = "sounds/player/shared/damage/player_freeze.wav"
 		delta/heartbeat = "sounds/player/shared/damage/player_heartbeat.wav"
+		
+		delta/drown1 = "sounds/player/shared/damage/player_drown1.wav"
+		delta/drown2 = "sounds/player/shared/damage/player_drown2.wav"
+		
+		$random delta/drown
+		{
+			delta/drown1
+			delta/drown2
+		}
 		// Miscellaneous sounds
 		delta/graze = "sounds/player/shared/player_graze.wav"
 		delta/use = "sounds/player/shared/player_usefail.wav"
@@ -115,7 +125,7 @@
 		delta/revolver/deploy2 = "sounds/weapons/revolver/revolver_deploy2.wav"
 		$alias delta/revolver/holster1 delta/shotgun/holster
 		delta/revolver/holster2 = "sounds/weapons/revolver/revolver_holster.wav"
-		delta/revolver/fire = "sounds/weapons/revolver/revolver_fire.wav"
+		delta/revolver/fire = "sounds/weapons/revolver/revolver_fire2.wav"
 		delta/revolver/cock1 = "sounds/weapons/revolver/revolver_cock1.wav"
 		delta/revolver/cock2 = "sounds/weapons/revolver/revolver_cock2.wav"
 		
@@ -187,28 +197,28 @@
 	misc/w_pkup 		= 	"sounds/player/shared/player_pickupweapon.wav"
 	misc/k_pkup 		= 	"sounds/player/shared/player_pickupkey.wav"
 	misc/secret			=	"sounds/player/shared/player_findsecret.wav"
-
+	
 	$alias menu/activate	delta/menu_confirm
 	$alias menu/backup 		delta/menu_back
 	$alias menu/prompt		delta/menu_confirm
 	$alias menu/dismiss		delta/menu_back
 	$alias menu/change		delta/menu_change
 	$alias menu/clear		delta/menu_back
-	$alias menu/choose		delta/menu_change
-	$alias menu/cursor		delta/menu_change
+	$alias menu/choose		delta/menu_confirm
+	$alias menu/cursor		dsempty
 	$alias menu/invalid		delta/tp_fail
 	
 	/*
 	menu/activate			dsswtchn	// Activate a new menu
-	menu/backup			dsswtchn	// Backup to previous menu
-	menu/prompt			dsswtchn	// Activate a prompt "menu"
-	menu/cursor			dspstop		// Move cursor up/down
-	menu/change			dsstnmov	// Select new value for option
+	menu/backup				dsswtchn	// Backup to previous menu
+	menu/prompt				dsswtchn	// Activate a prompt "menu"
+	menu/cursor				dspstop		// Move cursor up/down
+	menu/change				dsstnmov	// Select new value for option
 	menu/invalid			dsoof		// Menu not available
 	menu/dismiss			dsswtchx	// Dismiss a prompt message
-	menu/choose			dspistol	// Choose a menu item
-	menu/clear			dsswtchx	// Close top menu
-	$alias menu/advance menu/choose	// Open a submenu
+	menu/choose				dspistol	// Choose a menu item
+	menu/clear				dsswtchx	// Close top menu
+	$alias menu/advance 	menu/choose	// Open a submenu
 	*/
 	
 	$alias menu/quit1_1		delta/hurt

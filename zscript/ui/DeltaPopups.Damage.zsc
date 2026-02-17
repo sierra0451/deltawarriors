@@ -1,0 +1,156 @@
+class DeltaDamagePopup : DeltaPopup
+{
+	Default
+	{
+		+MASTERNOSEE;
+	}
+	
+	States
+	{
+		Spawn:
+			DDAM A 1 A_SetNumber;
+			Wait;
+		Minus:
+			DDAM A -1;
+			Stop;
+		Plus:
+			DDAM B -1;
+			Stop;
+		Digit0:
+			DDAM C -1;
+			Stop;
+		Digit1:
+			DDAM D -1;
+			Stop;
+		Digit2:
+			DDAM E -1;
+			Stop;
+		Digit3:
+			DDAM F -1;
+			Stop;
+		Digit4:
+			DDAM G -1;
+			Stop;
+		Digit5:
+			DDAM H -1;
+			Stop;
+		Digit6:
+			DDAM I -1;
+			Stop;
+		Digit7:
+			DDAM J -1;
+			Stop;
+		Digit8:
+			DDAM K -1;
+			Stop;
+		Digit9:
+			DDAM L -1;
+			Stop;
+	}
+
+	int place, value, totalDigits;
+	Vector3 randomVel;
+	
+	override void BeginPlay()
+	{
+		startVelZ += randomVel.z;
+		vel += (randomVel.x, randomVel.y, 0);
+		Super.BeginPlay();
+	}
+	
+	override void PostBeginPlay()
+	{
+		Super.PostBeginPlay();
+		
+		TextureID texID;
+		texID = curState.GetSpriteTexture(0);
+		int width = TexMan.GetSize(texID);
+		
+		double xOffset = (width+1) * (-(totalDigits/2) + (place-1));
+		A_SpriteOffset(xOffset, 0);
+	}
+	
+	static void SpawnNumbers(Actor thing, Actor source, int dmg)
+	{
+		if (source == thing)
+			source = null;
+		
+		string damageStr = "" .. dmg;
+		string debugStr = "thing " .. thing.GetTag() .. " took " .. dmg
+			.. " damage from " .. (source ? source.GetTag() : "null source");
+		let totalDigits = damageStr.Length()-1;
+		Name trans = '';
+		Vector3 randomVel = (cfrandom(0.3, 0.5), cfrandom(0.3, 0.5), cfrandom(-3, 0));
+		
+		if (source)
+			trans = source.GetClassName() .. '_damage';
+		
+		for (uint i = 0; i <= totalDigits; i++)
+		{
+			let num = DeltaDamagePopup(DeltaDamagePopup.SpawnPopup("DeltaDamagePopup", thing, source));
+			num.place = i;
+			num.totalDigits = totalDigits;
+			num.value = damageStr.ByteAt(i) - 48;
+			num.A_SetTranslation(trans);
+			num.randomVel = randomVel;
+		}
+	}
+	
+	action state A_SetNumber()
+	{
+		switch (invoker.value)
+		{
+			case -3:
+				return ResolveState("Minus");
+			case 0:
+				return ResolveState("Digit0");
+			case 1:
+				return ResolveState("Digit1");
+			case 2:
+				return ResolveState("Digit2");
+			case 3:
+				return ResolveState("Digit3");
+			case 4:
+				return ResolveState("Digit4");
+			case 5:
+				return ResolveState("Digit5");
+			case 6:
+				return ResolveState("Digit6");
+			case 7:
+				return ResolveState("Digit7");
+			case 8:
+				return ResolveState("Digit8");
+			case 9:
+				return ResolveState("Digit9");
+			default:
+				return ResolveState(null);
+		}
+	}
+}
+
+class DeltaDeadPopup : DeltaPopup
+{
+	Default
+	{
+		DeltaPopup.HoldTime TICRATE + 10;
+		DeltaPopup.StartVelZ 9;
+		DeltaPopup.BounceVelZ 2.2;
+	}
+	
+	States
+	{
+		Spawn:
+			DSTS A -1;
+			Stop;
+	}
+}
+
+class DeltaHealMaxPopup : DeltaPopup
+{
+	States
+	{
+		Spawn:
+			DSTS C -1;
+			Stop;
+	}
+}

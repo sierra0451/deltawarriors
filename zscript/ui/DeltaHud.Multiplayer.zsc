@@ -1,0 +1,345 @@
+extend class DeltaHud
+{
+	private TextureID _coopPanelBack, _deathmatchPanelBack,
+		_deathmatchCurrentPlayer;
+	
+	protected void SetUpMultiplayerTextures()
+	{
+		_coopPanelBack 				= TexMan.CheckForTexture("COOPBACK");
+		_deathmatchPanelBack 		= TexMan.CheckForTexture("DTHMBACK");
+		_deathmatchCurrentPlayer 	= TexMan.CheckForTexture("DTHMCPLY");
+	}
+	
+	protected void DrawMultiplayer()
+	{
+		if (deathmatch)
+			DrawDeathmatch();
+		else if (multiplayer)
+			DrawCoop();
+	}
+	
+	protected void DrawCoop()
+	{
+		double curX = _hBorder, curY = _vBorder;
+		
+		for (int i = 0; i < players.Size(); i++)
+		{
+			if (!players[i].mo || players[i] == CPlayer)
+				continue;
+			if (!playerInGame[i])
+				continue;
+			if (!(players[i].mo is "DeltaPlayer"))
+				continue;
+			
+			DrawMultiplayerHealth(DeltaPlayer(players[i].mo), (curX, curY));
+			curY += 24 * _universalScale.y;
+		}
+	}
+	
+	protected void DrawDeathmatch()
+	{
+		if (!CPlayer.mo || !(CPlayer.mo is "DeltaPlayer"))
+			return;
+		
+		/// ---------------------------
+		/// DRAWING TEAMMATE HEALTHBARS
+		/// ---------------------------
+		double curX = _hBorder, curY = _vBorder;
+		let ply = DeltaPlayer(CPlayer.mo);
+		Array<int> teamsFound;
+		
+		if (teamplay)
+		{
+			for (int i = 0; i < players.Size(); i++)
+			{
+				if (!players[i].mo)
+					continue;
+				if (!playerInGame[i])
+					continue;
+				if (!(players[i].mo is "DeltaPlayer"))
+					continue;
+				
+				if (teamsFound.Find(players[i].GetTeam()) == teamsFound.Size())
+					teamsFound.Push(players[i].GetTeam());
+				
+				if (players[i] == CPlayer)
+					continue;
+				if (!CPlayer.mo.IsTeammate(players[i].mo))
+					continue;
+				
+				DrawMultiplayerHealth(DeltaPlayer(players[i].mo), (curX, curY));
+				curY += 24 * _universalScale.y;
+			}
+		}
+		
+		DrawTexture(_deathmatchPanelBack, (0, -_vBorder),
+			DI_SCREEN_CENTER_BOTTOM | DI_ITEM_HCENTER | DI_ITEM_BOTTOM,
+			scale: _universalScale*2);
+		
+		/// ------------
+		/// DRAWING TIME
+		/// ------------
+		if (timelimit)
+		{
+			double timeTics = ceil(timelimit * 60 * TICRATE) - level.maptime;
+			int timeHours = timeTics / TICRATE / 3600;
+			timeTics -= timeHours * TICRATE * 3600;
+			int timeMinutes = timeTics / TICRATE / 60;
+			timeTics -= timeMinutes * TICRATE * 60;
+			int timeSeconds = ceil(timeTics / TICRATE);
+			
+			if (timeMinutes == 60)
+			{
+				timeMinutes = 0;
+				timeHours++;
+			}
+			
+			if (timeSeconds == 60)
+			{
+				timeSeconds = 0;
+				timeMinutes++;
+			}
+			
+			double fontHeight = _consoleFont.mFont.GetHeight();
+			String timeStr;
+			
+			if (timeHours)
+				timeStr = String.Format("%u", timeHours);
+			if (timeHours || timeMinutes)
+				timeStr = String.Format(timeHours ? "%s:%02u" : "%s%u", timeStr, timeMinutes);
+			if (!timeHours)
+				timeStr = String.Format("%s:%02u", timeStr, timeSeconds);
+			
+			DrawString(_consoleFont, timeStr,
+				(-75*_universalScale.x, -_vBorder - (14+fontHeight)*_universalScale.y),
+				DI_SCREEN_CENTER_BOTTOM | DI_TEXT_ALIGN_CENTER, scale: _universalScale);
+		}
+		else
+			DrawTexture(_infiniteText, (-72*_universalScale.x, -_vBorder - 14*_universalScale.y),
+				DI_SCREEN_CENTER_BOTTOM | DI_ITEM_CENTER_BOTTOM, scale: _universalScale*2);
+		
+		/// -------------
+		/// DRAWING FRAGS
+		/// -------------
+		let leaderFrags = -500;
+		let leaderIndex = 0;
+		Color barColor;
+		TextureID characterIcon;
+		double fontHeight = _drHudFont.mFont.GetHeight();
+		string nameShown = "";
+		bool leaderIsUs = false;
+		
+		// Drawing leader bar (may be us)
+		if (teamplay)
+		{
+			for (uint i = 0; i < uint(teams.Size()); i++)
+			{
+				if (teamsFound.Find(i) == teamsFound.Size())
+					continue;
+				
+				int curTeamFrags = GetTeamFrags(i);
+				
+				if (curTeamFrags <= leaderFrags)
+					continue;
+				
+				leaderFrags = curTeamFrags;
+				leaderIndex = i;
+				leaderIsUs = CPlayer.GetTeam() == i;
+				nameShown = teams[i].mName;
+				barColor = teams[i].GetPlayerColor();
+			}
+		}
+		else
+		{
+			for (int i = 0; i < players.Size(); i++)
+			{
+				if (!playerInGame[i])
+					continue;
+				if (!(players[i].mo is "DeltaPlayer"))
+					continue;
+				
+				let deltaPly = DeltaPlayer(players[i].mo);
+				int curPlyFrags = players[i].fragCount;
+				
+				if (curPlyFrags < leaderFrags)
+					continue;
+				if (curPlyFrags == leaderFrags && players[i] != CPlayer && leaderFrags == 0)
+					continue;
+				
+				leaderFrags = curPlyFrags;
+				leaderIndex = i;
+				nameShown = players[i].GetUserName();
+				characterIcon = deltaPly.GetCharacterIconId();
+				barColor = deltaPly.GetCharacterColor();
+				leaderIsUs = CPlayer == players[i];
+			}
+		}
+		
+		barColor |= 0xff000000;
+		nameShown.Truncate(16);
+		Fill(barColor, -32*_universalScale.x, -_vBorder - 36*_universalScale.y,
+			min(1., (max(0., leaderFrags) / max(1., fraglimit))) * 132 * _universalScale.x, -20 * _universalScale.y,
+			DI_SCREEN_CENTER_BOTTOM);
+		DrawTexture(characterIcon, (-33*_universalScale.x, -_vBorder - 36.5*_universalScale.y),
+			DI_SCREEN_CENTER_BOTTOM | DI_ITEM_LEFT_BOTTOM,
+			box: (25*_universalScale.x, 20*_universalScale.y), scale: _universalScale);
+		DrawString(_drHudFont, "" .. leaderFrags,
+			(98*_universalScale.x, -_vBorder - (fontHeight+43.5)*_universalScale.y),
+			DI_SCREEN_CENTER_BOTTOM | DI_TEXT_ALIGN_RIGHT, scale: _universalScale*3);
+		DrawString(_consoleFont, nameShown,
+			((teamplay ? -33 : -12)*_universalScale.x, -_vBorder - (fontHeight/2+45.5)*_universalScale.y),
+			DI_SCREEN_CENTER_BOTTOM | DI_TEXT_ALIGN_LEFT, scale: _universalScale/2);
+		
+		// Bottom bar (second place if we're leader, us otherwise)
+		let bottomFrags = -500, bottomIndex = 0;
+		barColor = 0x0;
+		characterIcon = null;
+		
+		if (leaderIsUs)
+		{
+			if (teamplay)
+			{
+				for (int i = 0; i < teams.Size(); i++)
+				{
+					if (teamsFound.Find(i) == teamsFound.Size())
+						continue;
+					
+					int curTeamFrags = GetTeamFrags(i);
+					
+					if (i == leaderIndex || curTeamFrags <= bottomFrags)
+						continue;
+					
+					bottomFrags = curTeamFrags;
+					bottomIndex = i;
+					nameShown = teams[i].mName;
+					barColor = teams[i].GetPlayerColor();
+				}
+			}
+			else
+			{
+				for (int i = 0; i < players.Size(); i++)
+				{
+					if (i == leaderIndex)
+						continue;
+					if (!playerInGame[i])
+						continue;
+					if (players[i] == CPlayer)
+						continue;
+					if (!(players[i].mo is "DeltaPlayer"))
+						continue;
+					
+					let deltaPly = DeltaPlayer(players[i].mo);
+					int curPlyFrags = players[i].fragCount;
+					
+					if (curPlyFrags < bottomFrags)
+						continue;
+					
+					bottomFrags = curPlyFrags;
+					bottomIndex = i;
+					nameShown = players[i].GetUserName();
+					characterIcon = deltaPly.GetCharacterIconId();
+					barColor = deltaPly.GetCharacterColor();
+				}
+			}
+		}
+		else
+		{
+			if (teamplay)
+			{
+				int teamIndex = CPlayer.GetTeam();
+				nameShown = teams[CPlayer.GetTeam()].mName;
+				barColor = teams[teamIndex].GetPlayerColor();
+				bottomFrags = GetTeamFrags(teamIndex);
+			}
+			else
+			{
+				bottomFrags = CPlayer.fragCount;
+				characterIcon = ply.GetCharacterIconId();
+				barColor = ply.GetCharacterColor();
+				nameShown = CPlayer.GetUserName();
+			}
+		}
+		
+		DrawTexture(_deathmatchCurrentPlayer, (108*_universalScale.x,
+			-_vBorder - (leaderIsUs ? 38 : 6)*_universalScale.y),
+			DI_SCREEN_CENTER_BOTTOM | DI_ITEM_LEFT_BOTTOM,
+			scale: _universalScale*2);
+		
+		if (!characterIcon && (!teamplay || teamsFound.Size() == 1))
+			return;
+		
+		barColor |= 0xff000000;
+		nameShown.Truncate(16);
+		Fill(barColor, -32*_universalScale.x, -_vBorder - 4*_universalScale.y,
+			min(1., (max(0., bottomFrags) / max(1., fraglimit))) * 132 * _universalScale.x, -20 * _universalScale.y,
+			DI_SCREEN_CENTER_BOTTOM);
+		DrawTexture(characterIcon, (-33*_universalScale.x,
+			-_vBorder - 4.5*_universalScale.y), DI_SCREEN_CENTER_BOTTOM
+			| DI_ITEM_LEFT_BOTTOM, box: (25*_universalScale.x,
+			20*_universalScale.y), scale: _universalScale);
+		DrawString(_drHudFont, "" ..  bottomFrags, (98*_universalScale.x,
+			-_vBorder - (fontHeight+11.5)*_universalScale.y),
+			DI_SCREEN_CENTER_BOTTOM | DI_TEXT_ALIGN_RIGHT,
+			scale: _universalScale*3);
+		DrawString(_consoleFont, nameShown,
+			((teamplay ? -33 : -12)*_universalScale.x, -_vBorder - (fontHeight/2+13.5)*_universalScale.y),
+			DI_SCREEN_CENTER_BOTTOM | DI_TEXT_ALIGN_LEFT, scale: _universalScale/2);
+	}
+	
+	protected void DrawMultiplayerHealth(DeltaPlayer ply, Vector2 pos)
+	{
+		double barWidth = _universalScale.x * 100,
+		barHeight = _universalScale.y * 8;
+		Color iconColor = ply.health > 0 ? 0xffffffff : 0x80ff4040;
+		let userStr = ply.player.GetUserName();
+		
+		// this only works because _consoleFont is monospace
+		int charWidth = _consoleFont.mFont.GetCharWidth("0") / 2;
+		int panelW, panelH;
+		[panelW, panelH] = TexMan.GetSize(_coopPanelBack);
+		uint allowedLength = 19;
+		
+		if (ply.health <= 0)
+			allowedLength -= 7;
+		
+		if (userStr.Length() > allowedLength)
+		{
+			userStr.Truncate(allowedLength);
+			userStr = userStr .. "-";
+		}
+		
+		if (ply.health <= 0)
+			userStr = userStr .. " (DEAD)";
+		
+		DrawTexture(_coopPanelBack, (pos.X, pos.Y), DI_SCREEN_LEFT_TOP | DI_ITEM_LEFT_TOP, scale: _universalScale);
+		DrawTexture(ply.GetCharacterIconID(), (pos.X, pos.Y) + _universalScale,
+			DI_SCREEN_LEFT_TOP | DI_ITEM_LEFT_TOP, box: (25*_universalScale.x, 20*_universalScale.y),
+			col: iconColor);
+		DrawString(_consoleFont, userStr, (pos.X + 26*_universalScale.x, pos.Y + 2*_universalScale.y),
+			scale: _universalScale/2);
+		double healthPerc = DeltaUtil.Clamp(float(ply.Health) / ply.GetMaxHealth(), 0, 2);
+		Fill(ply.GetCharacterColor(), pos.X + (28.3*_universalScale.x), pos.Y + 13*_universalScale.y,
+			barWidth * min(1, healthPerc), barHeight, DI_SCREEN_LEFT_TOP);
+		Fill(ply.GetOverhealColor(), pos.X + (28.3*_universalScale.x), pos.Y + 13*_universalScale.y,
+			barWidth * max(0, healthPerc - 1), barHeight, DI_SCREEN_LEFT_TOP);
+		DrawString(_drHudFont, "" .. max(0, ply.Health), (pos.X + 126*_universalScale.x, pos.Y + 14.5*_universalScale.y),
+			DI_SCREEN_LEFT_TOP | DI_TEXT_ALIGN_RIGHT, scale: _universalScale);
+	}
+	
+	protected int GetTeamFrags(int teamIndex)
+	{
+		let frags = 0;
+		
+		for (int i = 0; i < players.Size(); i++)
+		{
+			if (!playerInGame[i])
+				continue;
+			if (players[i].GetTeam() != teamIndex)
+				continue;
+			
+			frags += players[i].fragCount;
+		}
+		
+		return frags;
+	}
+}

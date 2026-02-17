@@ -1,0 +1,120 @@
+class DeltaPopup : Actor abstract
+{
+	int timer, scaleUpTime, popUpTime, bounceTime, holdTime, fadeTime;
+	double startVelZ, bounceVelZ;
+	
+	property ScaleUpTime: scaleUpTime;
+	property PopUpTime: popUpTime;
+	property BounceTime: bounceTime;
+	property HoldTime: holdTime;
+	property FadeTime: fadeTime;
+	property StartVelZ: startVelZ;
+	property BounceVelZ: bounceVelZ;
+	
+	Default
+	{
+		DeltaPopup.ScaleUpTime 3;
+		DeltaPopup.PopUpTime 13;
+		DeltaPopup.BounceTime 8;
+		DeltaPopup.HoldTime TICRATE;
+		DeltaPopup.FadeTime floor(TICRATE * 0.5);
+		DeltaPopup.StartVelZ 5.;
+		DeltaPopup.BounceVelZ 1.2; // 5/4
+		
+		+NOINTERACTION;
+		+SQUAREPIXELS;
+		+BRIGHT;
+		+INVISIBLEINMIRRORS;
+		+FORCEXYBILLBOARD;
+	}
+	
+	States
+	{
+		Spawn:
+			DDAM L -1;
+			Stop;
+	}
+	
+	override void BeginPlay()
+	{
+		Super.BeginPlay();
+		vel.z = StartVelZ;
+	}
+	
+	override void Tick()
+	{
+		Super.Tick();
+		if (IsFrozen())
+			return;
+		
+		timer++;
+		int tempTime = timer; // using this to make code easier to debug and read
+		
+		if (tempTime < popUpTime)
+		{
+			if (tempTime <= scaleUpTime)
+				A_SetScale(4 - 3*((float(tempTime)/scaleUpTime)**2), (float(tempTime) / scaleUpTime)**2);
+			
+			vel.z -= 2. * startVelZ / popUpTime;
+			return;
+		}
+		
+		if (tempTime == popUpTime)
+			vel = (0, 0, 0);
+		
+		tempTime -= popUpTime;
+		
+		if (!tempTime)
+		{
+			vel.z = bounceVelZ;
+			return;
+		}
+		else if (tempTime < bounceTime)
+		{
+			double reduceAmount = 2 * bounceVelZ / bounceTime;
+			vel.z -= reduceAmount;
+			return;
+		}
+		else if (tempTime == bounceTime)
+		{
+			vel.z = 0;
+		}
+		
+		tempTime -= bounceTime;
+		
+		if (tempTime <= holdTime)
+			return;
+		
+		tempTime -= holdTime;
+		
+		vel.z = 1;
+		A_SetScale(1, 0.9 + (tempTime)*2./TICRATE);
+		A_FadeOut(1. / fadeTime);
+	}
+	
+	static DeltaPopup SpawnPopup(Class<DeltaPopup> cls, Actor thing,
+		Actor source = null, float zOffset = 0)
+	{
+		if (source == thing)
+			source = null;
+		
+		let posDiff = source ? level.Vec3Diff(thing.pos, source.pos)
+			: DeltaUtil.GetActorForward(thing, false);
+		posDiff.z = 0;
+		posDiff = posDiff.Unit();
+		let position = thing.pos + (posDiff * (thing.radius+5));
+		
+		let targetZ = thing.height/2. + thing.pos.z;
+		
+		if (thing.health <= 0)
+			targetZ = source ? (-thing.height/2. + source.height + thing.pos.z) : (thing.height/2. + thing.pos.z);
+		
+		position.z = targetZ + zOffset;
+		
+		let popup = DeltaPopup(Spawn(cls, position));
+		popup.vel = (posDiff.x * thing.radius/20., posDiff.y * thing.radius/20.,
+			popup.vel.z);
+		popup.master = thing;
+		return popup;
+	}
+}

@@ -10,10 +10,12 @@ class DeltaWeapon : Weapon
 	protected int _easeTics;
 	
 	protected double _tensionUse, _tensionUse2;
+	protected sound _dryFireSound;
+	
+	protected state _AtEaseLoopState;
 	
 	private bool _lungeReadyToStop;
 	private TextureID _altFireIconId, _crosshairId;
-	protected sound _dryFireSound;
 	
 	const EASE_TICS_SET_ATTACK = -25;
 	const TP_FAIL_SOUND = "delta/tp_fail";
@@ -31,7 +33,7 @@ class DeltaWeapon : Weapon
 	Default
 	{
 		Weapon.BobStyle "Smooth";
-		Weapon.BobSpeed 2.5;
+		Weapon.BobSpeed 2.75;
 		DeltaWeapon.AnimType DELTA_WEAPONANIM_GUN;
 		DeltaWeapon.RedCrosshairRange PLAYERMISSILERANGE / 2.;
 		DeltaWeapon.MaxLungeDistance -1;
@@ -43,6 +45,9 @@ class DeltaWeapon : Weapon
 	
 	States
 	{
+		AtEaseLoop:
+			TNT1 A 1 A_DeltaWeaponReady(0, true);
+			Loop;
 		OffhandStart:
 			TNT1 A 1 A_StartOffhand;
 		OffhandLoop:
@@ -55,18 +60,20 @@ class DeltaWeapon : Weapon
 		Super.BeginPlay();
 		_altFireIconId = TexMan.CheckForTexture(_altFireIcon);
 		_crosshairId = TexMan.CheckForTexture(_crosshair);
+		
+		_AtEaseLoopState = ResolveState("AtEaseLoop");
 	}
 	
 	override bool CheckAmmo(int fireMode, bool autoSwitch, bool requireAmmo,
 		int ammoCount)
 	{
-		if (sv_infiniteammo || (Owner.FindInventory('PowerInfiniteAmmo', true) != null))
+		if (sv_infiniteammo || (owner.FindInventory('PowerInfiniteAmmo', true) != null))
 			return true;
 		
 		if (!(owner is "DeltaPlayer"))
 		{
 			if (autoSwitch)
-				PlayerPawn(Owner).PickNewWeapon(null);
+				PlayerPawn(owner).PickNewWeapon(null);
 			
 			return false;
 		}
@@ -163,6 +170,25 @@ class DeltaWeapon : Weapon
 		return deltaOwner.TryTakeTension(amount);
 	}
 	
+	action void A_ResetAtEase()
+	{
+		invoker._atEase = false;
+		invoker._easeTics = invoker.EASE_TICS_SET_ATTACK;
+	}
+	
+	action void A_OwnerPlayAttack(bool muzzleFlash = true)
+	{
+		let ply = PlayerPawn(invoker.owner);
+		
+		if (!ply)
+			return;
+		
+		if (muzzleFlash)
+			ply.PlayAttacking();
+		else
+			ply.PlayAttacking2();
+	}
+	
 	action void A_StartRaiseWeapon()
 	{
 		// some code taken from A_Raise code: https://github.com/UZDoom/UZDoom/blob/41ca20c1c30decbe70da21505785fbec6bb83cd6/wadsrc/static/zscript/actors/inventory/weapons.zs#L307
@@ -181,6 +207,7 @@ class DeltaWeapon : Weapon
 		if (!psp)
 			return;
 		
+		invoker._atEase = false;
 		A_SetCrosshair(-1);
 		
 		// set weapon sprite upfront immediately, we want to do our own deploy animations
@@ -199,29 +226,42 @@ class DeltaWeapon : Weapon
 	
 	action state A_DeltaWeaponReady(int flags = 0, bool atEase = false)
 	{
-        if (!(flags & WRF_NOFIRE) && (player.cmd.buttons & BT_USER1))
+		let ply = DeltaPlayer(invoker.owner);
+		
+        if (!(flags & WRF_NOFIRE) && (player.cmd.buttons & BT_USER1) &&
+			ply.StartOffhand())
 		{
-			invoker._atEase = false;
-			invoker._easeTics = invoker.EASE_TICS_SET_ATTACK;
-			if (DeltaPlayer(invoker.owner).StartOffhand())
-				return ResolveState("OffhandStart");
+			A_ResetAtEase();
+			return ResolveState("OffhandStart");
 		}
         
 		A_WeaponReady(flags);
 		
-        if (flags & WRF_NOBOB || atEase)
+        if (flags & WRF_NOBOB || (ply && ply.GetIsUsingOffhand()))
 			return ResolveState(null);
 		
 		let iter = ThinkerIterator.Create("DeltaWeaponsAtEase");
-        if (iter.Next())
+		invoker._atEase = iter.Next();
+		
+		// if our at ease state is not changing, don't do anything
+		if (invoker._atEase == atEase)
 		{
-			invoker._atEase = true;
+			if (invoker._easeTics < 0)
+				invoker._easeTics++;
+			
+			return ResolveState(null);
+		}
+		
+        if (invoker._atEase)
+		{
 			invoker._easeTics++;
 			
 			if (invoker._easeTics > 0)
 				return ResolveState("AtEase");
 		}
-        
+		else
+			return ResolveState("Select");
+		
         return ResolveState(null);
 	}
 	
@@ -251,6 +291,8 @@ class DeltaWeapon : Weapon
 			|| invoker._lungeReadyToStop || (player.cmd.buttons & BT_BACK))
 		{
 			invoker._lungeReadyToStop = false;
+			
+			A_OwnerPlayAttack();
 			return attackState;
 		}
 		
@@ -275,11 +317,9 @@ class DeltaWeapon : Weapon
 				double targetPitch = asin(diffNorm.z);
 				double distance = diff.Length();
 				let forward = DeltaUtil.GetActorForward(deltaOwner, false);
-				
-				if ((diff.x, diff.y).Unit() dot (forward.x, forward.y) < 0.75)
+				let diffDot = (diff.x, diff.y).Unit() dot (forward.x, forward.y);
+				if (diffDot < 0.9)
 					continue;
-				
-				//A_Log("target: " .. targetPitch .. ", pitch: " .. deltaOwner.pitch .. ", abs diff: " .. abs(targetPitch - deltaOwner.pitch));
 				
 				if (abs(targetPitch) > 80)
 					continue;
@@ -316,7 +356,7 @@ class DeltaWeapon : Weapon
 	
 	action void A_StartOffhand()
 	{
-		invoker.owner.A_Overlay(PSP_OFFHAND, "Offhand");
+		invoker.owner.A_Overlay(PSP_OFFHAND, "OffhandOverlay");
 		invoker.owner.A_OverlayFlags(PSP_OFFHAND, PSPF_ADDBOB, true);
 	}
 	
@@ -328,10 +368,6 @@ class DeltaWeapon : Weapon
 		
 		if (deltaOwner.GetIsUsingOffhand())
 			return ResolveState(null);
-		
-		if (invoker._atEase)
-			return ResolveState("AtEaseLoop");
-		
 		if (deltaOwner.player.PendingWeapon == WP_NOCHANGE)
 			return ResolveState(dest);
 		
@@ -382,6 +418,28 @@ class DeltaWeapon : Weapon
 	clearscope DeltaWeaponAnimType GetAnimType()
 	{
 		return _animType;
+	}
+	
+	clearscope bool GetAtEase()
+	{
+		if (!owner || !owner.player)
+			return false;
+		
+		let psp = owner.player.FindPSprite(PSP_WEAPON);
+		if (!psp)
+			return false;
+		
+		return InStateSequence(psp.curState, _AtEaseLoopState);
+	}
+	
+	clearscope double GetCrouchFactor()
+	{
+		if (!player || !player.mo)
+			return -1;
+		if (player.mo is "DeltaPlayer")
+			return DeltaPlayer(player.mo).GetCrouchFactor();
+		
+		return -1;
 	}
 	
 	ui TextureID GetAltFireIcon()

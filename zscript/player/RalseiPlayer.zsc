@@ -47,52 +47,16 @@ class RalseiPlayer : DeltaPlayer
 			}
 			Loop;
 		See:
-			DRAL AAAABBBBAAAACCCC 1
-			{
-				let speedLerp = 1 - (invoker.Vel.Length() / (GetDefaultSpeed(invoker.GetClass()) * TICRATE));
-				self.tics = max(1, round(1 + speedLerp * 0.75));
-				
-				if (!IsGrounded())
-					return ResolveState("Airborne");
-				if (invoker.krisNearby)
-					return ResolveState("BlushWalk");
-				
-				return ResolveState(null);
-			}
+			DRAL BACA -1;
 			Loop;
 		Blush:
-			DRAL I 1
-			{
-				if (!IsGrounded())
-					return ResolveState("Airborne");
-				if (!invoker.krisNearby)
-					return ResolveState("Spawn");
-				
-				return ResolveState(null);
-			}
+			DRAL I 1;
 			Loop;
 		BlushWalk:
-			DRAL IIIIJJJJIIIIKKKK 1
-			{
-				let speedLerp = 1 - (invoker.Vel.Length() / (GetDefaultSpeed(invoker.GetClass()) * TICRATE));
-				self.tics = max(1, round(1 + speedLerp * 0.75));
-				
-				if (!IsGrounded())
-					return ResolveState("Airborne");
-				if (!invoker.krisNearby)
-					return ResolveState("See");
-				
-				return ResolveState(null);
-			}
+			DRAL JIKI -1;
 			Loop;
 		Airborne:
-			DRAL DDDDEEEEFFFF 1
-			{
-				if (IsGrounded())
-					return ResolveState("Spawn");
-				
-				return ResolveState(null);
-			}
+			DRAL DEF 4;
 			Loop;
 		Pain:
 			Goto Spawn;

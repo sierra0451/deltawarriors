@@ -1,4 +1,4 @@
-enum TpResult
+enum DeltaTpResult
 {
 	TP_FAIL,
 	TP_USE,
@@ -20,6 +20,7 @@ enum HeartbeatSetting
 
 enum DeltaRecoilType
 {
+	RECOIL_LAND,
 	RECOIL_WEAPON,
 	RECOIL_DAMAGE
 }

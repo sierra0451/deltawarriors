@@ -1,0 +1,66 @@
+class DeltaOptionMenu : OptionMenu
+{
+	protected Font consoleFont;
+	protected string debugString;
+	protected int oldSelect;
+	protected int selectSoundTimer;
+	
+	const SOUND_TIMER_SET = 2;
+	
+	override void Init(Menu parent, OptionMenuDescriptor desc)
+	{
+		Super.Init(parent, desc);
+		oldSelect = desc.mSelectedItem;
+		consoleFont = Font.FindFont("drconfont");
+	}
+	
+	override void Ticker()
+	{
+		Super.Ticker();
+		
+		int index = mDesc.mSelectedItem;
+		
+		if (index == -1 || selectSoundTimer)
+		{
+			if (selectSoundTimer)
+				selectSoundTimer--;
+			
+			oldSelect = index;
+			return;
+		}
+		if (index == oldSelect)
+			return;
+		
+		MenuSound("delta/menu_change");
+		selectSoundTimer = SOUND_TIMER_SET;
+		oldSelect = index;
+	}
+	
+	override bool MenuEvent(int mKey, bool fromController)
+	{
+		if (!Super.MenuEvent(mKey, fromController))
+			return false;
+		
+		debugString = "key: " .. mKey .. ", fc: " .. fromController;
+		return true;
+	}
+	
+	override bool MouseEvent(int type, int mX, int mY)
+	{
+		if (!Super.MouseEvent(type, mX, mY))
+			return false;
+		
+		debugString = "type: " .. type .. ", pos: " .. (mX, mY);
+		return true;
+	}
+	
+	override void Drawer()
+	{
+		Super.Drawer();
+		
+		/*
+		if (debugString.CodePointCount())
+			Screen.DrawText(consoleFont, Font.CR_UNTRANSLATED, 0, 0, debugString);
+		*/
+	}
+}

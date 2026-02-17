@@ -1,0 +1,179 @@
+struct DeltaHudDamagePopup
+{
+	int value, timer, scaleUpTime, popUpTime, bounceTime, holdTime, fadeTime;
+	string trans;
+	double startVelY, bounceVelY, oldAlpha, alpha;
+	Vector2 vel, pos, oldPopUpScale, popUpScale;
+}
+
+extend class DeltaHud
+{
+	private DeltaHudDamagePopup[10] _damagePopups;
+	int totalTimeRef;
+	
+	const POPUP_IS_INACTIVE = -1;
+	
+	protected void SetUpDamagePopups()
+	{
+		let ref = GetDefaultByType("DeltaDamagePopup");
+		totalTimeRef = ref.scaleUpTime + ref.popUpTime + ref.bounceTime +
+			ref.holdTime + ref.fadeTime;
+		
+		for (int i = 0; i < _damagePopups.Size(); i++)
+		{
+			_damagePopups[i].timer = POPUP_IS_INACTIVE;
+		}
+	}
+	
+	protected void TickDamagePopups()
+	{
+		for (int i = 0; i < _damagePopups.Size(); i++)
+		{
+			if (_damagePopups[i].timer == POPUP_IS_INACTIVE)
+				continue;
+			
+			_damagePopups[i].pos += _damagePopups[i].vel;
+			_damagePopups[i].timer++;
+			_damagePopups[i].oldPopUpScale = _damagePopups[i].popUpScale;
+			_damagePopups[i].oldAlpha = _damagePopups[i].alpha;
+			_damagePopups[i].popUpScale = CalculatePopupStats(i);
+		}
+	}
+	
+	protected Vector2 CalculatePopupStats(int i)
+	{
+		int tempTime = _damagePopups[i].timer,
+			scaleUpTime = _damagePopups[i].scaleUpTime,
+			popUpTime = _damagePopups[i].popUpTime,
+			bounceTime = _damagePopups[i].bounceTime,
+			holdTime = _damagePopups[i].holdTime,
+			fadeTime = _damagePopups[i].fadeTime;
+		double startVelY = _damagePopups[i].startVelY,
+			bounceVelY = _damagePopups[i].bounceVelY;
+		Vector2 popUpScale = _universalScale;
+		double alpha = _damagePopups[i].alpha;
+		
+		_damagePopups[i].oldAlpha = _damagePopups[i].alpha;
+		if (tempTime < popUpTime)
+		{
+			if (tempTime <= scaleUpTime)
+				popUpScale = (4 - 3*((tempTime/scaleUpTime)**2), (tempTime / scaleUpTime)**2);
+			if (!tempTime)
+				_damagePopups[i].oldPopUpScale = popUpScale;
+			
+			_damagePopups[i].vel.y -= 2 * startVelY / popUpTime;
+			return popUpScale;
+		}
+		
+		if (tempTime == popUpTime)
+			_damagePopups[i].vel = (0, 0);
+		
+		tempTime -= popUpTime;
+		
+		if (!tempTime)
+		{
+			_damagePopups[i].vel.y = bounceVelY;
+			return popUpScale;
+		}
+		else if (tempTime < bounceTime)
+		{
+			_damagePopups[i].vel.y -= 2 * bounceVelY / popUpTime;
+			return popUpScale;
+		}
+		else if (tempTime == bounceTime)
+			_damagePopups[i].vel.y = 0;
+		
+		tempTime -= bounceTime;
+		
+		if (tempTime <= holdTime)
+			return popUpScale;
+		
+		tempTime -= holdTime;
+		
+		_damagePopups[i].vel.y = -.5;
+		popUpScale.y *= 0.9 + (tempTime)*2./TICRATE;
+		_damagePopups[i].alpha = double(fadeTime - tempTime) / fadeTime;
+		
+		if (_damagePopups[i].alpha <= 0)
+			_damagePopups[i].timer = POPUP_IS_INACTIVE;
+		return popUpScale;
+	}
+	
+	protected void DrawDamagePopups(Vector2 pos, double ticFrac)
+	{
+		if (!CPlayer.camera || CPlayer.camera != CPlayer.mo)
+			return;
+		
+		for (int i = 0; i < _damagePopups.Size(); i++)
+		{
+			if (_damagePopups[i].timer == POPUP_IS_INACTIVE)
+				continue;
+			
+			DrawDamagePopup(i, pos, ticFrac);
+		}
+	}
+	
+	protected void DrawDamagePopup(int i, Vector2 pos, double ticFrac)
+	{
+		Vector2 vel = _damagePopups[i].vel;
+		double alpha = DeltaUtil.Lerp(_damagePopups[i].oldAlpha,
+			_damagePopups[i].alpha, ticFrac);
+		Vector2 dmgPos = _damagePopups[i].pos,
+			oldScale = _damagePopups[i].oldPopUpScale,
+			scale = _damagePopups[i].popUpScale,
+			popUpScale = DeltaUtil.Vector2Lerp(oldScale, scale, ticFrac);
+		dmgPos += (DeltaUtil.Lerp(0, vel.x, ticFrac),
+			DeltaUtil.Lerp(0, vel.y, ticFrac));
+		
+		int value = _damagePopups[i].value;
+		string str = String.Format("%d", value);
+		int total = str.CodePointCount();
+		
+		for (int j = 0; j < total; j++)
+		{
+			let img = String.Format("DDAM%c0", floor(value/(10**j) % 10) + 67);
+			Vector2 digitOffset = (10 * ((total-1)/2. - j) * _universalScale.x, 0);
+			DrawImage(img, pos + dmgPos + digitOffset,
+				DI_ITEM_BOTTOM | DI_ITEM_HCENTER, alpha, scale: popUpScale,
+				translation: int(Translation.GetID(_damagePopups[i].trans)));
+		}
+	}
+	
+	void CreateDamagePopup(Actor source, int amount)
+	{
+		let ref = GetDefaultByType("DeltaDamagePopup");
+		int smallestTimer = totalTimeRef, i = 0;
+		
+		for (int j = 0; j < _damagePopups.Size(); j++)
+		{
+			if (_damagePopups[j].timer >= smallestTimer)
+				continue;
+			
+			i = j;
+			if (_damagePopups[j].timer <= 0)
+				break;
+			
+			smallestTimer = _damagePopups[j].timer;
+		}
+		
+		_damagePopups[i].timer = 0; // we're active now :D
+		_damagePopups[i].value = amount;
+		_damagePopups[i].trans = '';
+		
+		if (source)
+			_damagePopups[i].trans = source.GetClassName() .. '_damage';
+		
+		_damagePopups[i].scaleUpTime = ref.scaleUpTime;
+		_damagePopups[i].popUpTime = ref.popUpTime;
+		_damagePopups[i].bounceTime = ref.bounceTime;
+		_damagePopups[i].holdTime = ref.holdTime;
+		_damagePopups[i].fadeTime = ref.fadeTime;
+		_damagePopups[i].startVelY = -ref.startVelZ*0.2 + cfrandom(-0.2, 0);
+		_damagePopups[i].bounceVelY = ref.bounceVelZ*0.2;
+		_damagePopups[i].vel = (ref.vel.x + cfrandom(-0.75, 0.75),
+			_damagePopups[i].startVelY - 0.7);
+		_damagePopups[i].pos = (cfrandom(-3, 3), cfrandom(-3, 3));
+		_damagePopups[i].oldAlpha = 1.;
+		_damagePopups[i].alpha = 1.;
+	}
+}

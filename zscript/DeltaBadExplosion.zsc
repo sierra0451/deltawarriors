@@ -1,0 +1,20 @@
+class DeltaBadExplosion : Actor
+{
+	Default
+	{
+		+NOINTERACTION;
+		+SQUAREPIXELS;
+		+BRIGHT;
+		+FORCEXYBILLBOARD;
+	}
+	
+	States
+	{
+		Spawn:
+			TNT1 A 3;
+			BDEX A 3 A_StartSound("delta/generic_badExplosion",
+				flags: CHANF_OVERLAP, attenuation: ATTN_NONE);
+			BDEX BCDEFGHIJKLMNOPQ 3;
+			Stop;
+	}
+}

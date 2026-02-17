@@ -1,0 +1,637 @@
+class DeltaHud : BaseStatusBar
+{
+	private double _hBorder, _vBorder, _oldAngle, _currAngle;
+	private Vector3 _oldPos, _currPos;
+	private Vector2 _universalScale, _inverseUniversalScale;
+	private HUDFont _consoleFont, _drHudFont;
+	private TextureID _hpText, _tpText, _tpMaxText, _tpHighlight,
+		_leftPanelBack, _vignette, _infiniteText, _defaultCrosshair,
+		_offhandCrosshair, _reticleBarOverlay, _reticleBar;
+	
+	private double _oldTp, _oldHealth, _oldTicFrac, _deltaTime;
+	private DynamicValueInterpolator _tpInterp, _healthInterp;
+	
+	private Array<class<Ammo> > _ammos;
+	
+	const WEAPON_SLOTS_WRAPAROUND = 9;
+	
+	enum CONTROL_ICON_IDS
+	{
+		DELTA_CONTROLICON_TEXT = 0xff, // use text for this key and keys below it!
+		
+		DELTA_CONTROLICON_MOUSE1, DELTA_CONTROLICON_MOUSE2, DELTA_CONTROLICON_MOUSE3,
+		DELTA_CONTROLICON_MOUSE4, DELTA_CONTROLICON_MOUSE5, DELTA_CONTROLICON_MOUSE6,
+		DELTA_CONTROLICON_MOUSE7, DELTA_CONTROLICON_MOUSE8,
+		
+		DELTA_CONTROLICON_MAX
+	}
+	
+	Map<int, TextureID> controlIcons;
+	Map<name, TextureID> ammoIcons;
+	
+	override void Init()
+	{
+		Super.Init();
+		
+		_drHudFont = HUDFont.Create("DRHUDFONT");
+		_consoleFont = HUDFont.Create("DRCONFONT");
+		
+		_hpText 					= TexMan.CheckForTexture("DRHPTEXT");
+		_tpText 					= TexMan.CheckForTexture("DRTPTEXT");
+		_tpMaxText 					= TexMan.CheckForTexture("DRHUDMAX");
+		_tpHighlight 				= TexMan.CheckForTexture("DRTPHLGT");
+		_leftPanelBack 				= TexMan.CheckForTexture("DRLPBACK");
+		_vignette 					= TexMan.CheckForTexture("sprites/hud/vignette.png");
+		_infiniteText 				= TexMan.CheckForTexture("DRINFTXT");
+		_defaultCrosshair 			= TexMan.CheckForTexture("DRMTYRET");
+		_offhandCrosshair 			= TexMan.CheckForTexture("DROFHRET");
+		_reticleBarOverlay 			= TexMan.CheckForTexture("DRRTBOVR");
+		_reticleBar 				= TexMan.CheckForTexture("DRRETBAR");
+		
+		SetUpMultiplayerTextures();
+		SetUpIndicatorTextures();
+		SetUpDamagePopups();
+		SetUpBossBars();
+		
+		controlIcons.Insert(DELTA_CONTROLICON_MOUSE1, TexMan.CheckForTexture("DRMSELCL"));
+		controlIcons.Insert(DELTA_CONTROLICON_MOUSE2, TexMan.CheckForTexture("DRMSERCL"));
+		controlIcons.Insert(DELTA_CONTROLICON_MOUSE3, TexMan.CheckForTexture("DRMSEMCL"));
+		controlIcons.Insert(DELTA_CONTROLICON_MOUSE4, TexMan.CheckForTexture("DRMSEBT4"));
+		controlIcons.Insert(DELTA_CONTROLICON_MOUSE5, TexMan.CheckForTexture("DRMSEBT5"));
+		controlIcons.Insert(DELTA_CONTROLICON_MOUSE6, TexMan.CheckForTexture("DRMSEBT6"));
+		controlIcons.Insert(DELTA_CONTROLICON_MOUSE7, TexMan.CheckForTexture("DRMSEBT7"));
+		controlIcons.Insert(DELTA_CONTROLICON_MOUSE8, TexMan.CheckForTexture("DRMSEBT8"));
+		
+		ammoIcons.Insert('Clip', 		TexMan.CheckForTexture("DRAMBULL"));
+		ammoIcons.Insert('Shell', 		TexMan.CheckForTexture("DRAMSHEL"));
+		ammoIcons.Insert('RocketAmmo', 	TexMan.CheckForTexture("DRAMROCK"));
+		ammoIcons.Insert('Cell', 		TexMan.CheckForTexture("DRAMPLAS"));
+		ammoIcons.Insert('ID24Fuel', 	TexMan.CheckForTexture("DRAMFUEL"));
+		
+		_tpInterp = DynamicValueInterpolator.Create(0, 0.2, 1, 30);
+		_healthInterp = DynamicValueInterpolator.Create(0, 0.2, 1, 30);
+	}
+	
+	override void Tick()
+	{
+		Super.Tick();
+		
+		if (!CPlayer.mo)
+			return;
+		
+		bool infiniteAmmo = sv_infiniteAmmo || (CPlayer.mo.FindInventory('PowerInfiniteAmmo', true) != null);
+		DeltaPlayer ply = DeltaPlayer(CPlayer.mo);
+		
+		if (!ply)
+			return;
+		
+		_oldTp = _tpInterp.GetValue();
+		_tpInterp.Update(infiniteAmmo ? ply.maxTensionPoints : ply.tensionPoints);
+		
+		_oldHealth = _healthInterp.GetValue();
+		_healthInterp.Update(floor(GetHealthPerc() * 100));
+		
+		TickIndicators();
+		TickMessages();
+		TickDamagePopups();
+		TickBossBars();
+		
+		let weaps = CPlayer.weapons;
+		if (!weaps)
+			return;
+		
+		_ammos.Clear();
+		
+		for (int i = 1;; i++)
+		{
+			int weapCount = weaps.SlotSize(i);
+			
+			if (i > WEAPON_SLOTS_WRAPAROUND)
+			{
+				i = -1;
+				continue;
+			}
+			if (i == 0)
+				break;
+			
+			if (!weapCount)
+				continue;
+			
+			for (int j = 0; j < weapCount; j++)
+			{
+				if (!CPlayer.mo.CountInv(weaps.GetWeapon(i, j)))
+					continue;
+				
+				Weapon inv = Weapon(CPlayer.mo.FindInventory(weaps.GetWeapon(i, j)));
+				
+				if (!inv)
+					continue;
+				if (inv.AmmoType1 && _ammos.Find(inv.AmmoType1) == _ammos.Size())
+					_ammos.Push(inv.AmmoType1);
+				if (inv.AmmoType2 && _ammos.Find(inv.AmmoType2) == _ammos.Size())
+					_ammos.Push(inv.AmmoType2);
+			}
+		}
+	}
+	
+	protected float GetHealthPerc()
+	{
+		return CPlayer.mo.GetMaxHealth() == 0 ? 0 : min(2, CPlayer.Health / float(CPlayer.mo.GetMaxHealth()));
+	}
+	
+	override void Draw(int state, double ticFrac)
+	{
+		Super.Draw(state, ticFrac);
+		_deltaTime = abs(ticFrac - _oldTicFrac);
+		_oldTicFrac = ticFrac;
+		
+		if (state == HUD_None || !cl_delta_showHud)
+			return;
+		
+		//fullscreenOffsets = true;
+		_universalScale = GetHudScale() * 0.5;
+		_universalScale = (1 / _universalScale.x, 1 / _universalScale.y);
+		
+		_hBorder = 30 * _universalScale.x;
+		_vBorder = 30 * _universalScale.y;
+		
+		if (CPlayer.Health <= 40 && cl_delta_lowHealthVignette && !automapActive)
+		{
+			double alpha = 1 - CPlayer.Health / 40.;
+			Screen.DrawTexture(_vignette, false, 0, 0, DTA_Fullscreen, true,
+				DTA_FullScreenScale, FSMode_ScaleToScreen, DTA_Alpha, alpha,
+				DTA_Color, CPlayer.mo.GetPainFlash());
+		}
+		
+		BeginHUD(1, false);
+		//DrawString(_consoleFont, "offset: " .. drawOffset, (0, 0), scale: _universalScale);
+		DrawMessages(ticFrac);
+		DrawIndicators(ticFrac);
+		DrawMultiplayer();
+		DrawBossBars();
+		
+		if (CPlayer.Health > 0)
+		{
+			bool infAmmo = sv_infiniteAmmo || (CPlayer.mo.FindInventory('PowerInfiniteAmmo', true) != null);
+			DrawLeftPanel(infAmmo, ticFrac);
+			DrawRightPanel(infAmmo);
+			DrawReticle(infAmmo, ticFrac);
+			
+			// note to self: getting remaining air time for being underwater is
+			// this formula: player.air_finished - level.mapTime
+		}
+		else
+			DrawDeathStuff();
+	}
+	
+	void ResetHUD()
+	{
+		_tpInterp.Reset(0);
+		_healthInterp.Reset(GetHealthPerc() * 100);
+		ClearIndicators();
+	}
+	
+	protected TextureID GetMainBindingIcon(string cmd)
+	{
+		int k = Bindings.GetKeysForCommand(cmd);
+		
+		// not a mouse button!
+		if (k <= DELTA_CONTROLICON_TEXT || k >= DELTA_CONTROLICON_MAX)
+			return null;
+		
+		return controlIcons.GetIfExists(k);
+	}
+	
+	protected void DisplayBinding(string cmd, Vector2 pos, int flags, Vector2 scale)
+	{
+		let tex = GetMainBindingIcon(cmd);
+		
+		if (tex)
+			DrawTexture(tex, pos, flags, scale: scale);
+		else
+		{
+			int k = Bindings.GetKeysForCommand(cmd);
+			string keys = Keybindings.NameKeys(k, 0);
+			double newY = pos.y;
+			
+			if (flags & DI_ITEM_VCENTER)
+				newY -= _consoleFont.mFont.GetHeight() / 2 * _universalScale.y;
+			
+			DrawString(_consoleFont, keys, (pos.x, newY), flags, scale: scale);
+		}
+	}
+	
+	protected void DrawLeftPanel(bool infiniteAmmo, double ticFrac)
+	{
+		double
+			panelXSpacing = 4 * _universalScale.x,
+			panelYSpacing = 4 * _universalScale.y,
+			barWidth = 144 * _universalScale.x,
+			barHeight = 16 * _universalScale.y,
+			labelXOffset = 50 * _universalScale.x,
+			barXOffset = 14 * _universalScale.x + labelXOffset + panelXSpacing,
+			curY = -_vBorder,
+			panelY = curY;
+		
+		DrawTexture(_leftPanelBack, (_hBorder, panelY), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM, scale: _universalScale);
+		
+		double
+			smallFontHeight = _drHudFont.mFont.GetGlyphHeight("0") * _universalScale.y,
+			halfDifference = (barHeight * _universalScale.y - smallFontHeight) / 2,
+			textYOffset = halfDifference + 0.5;
+		
+		DeltaPlayer ply = DeltaPlayer(CPlayer.mo);
+		
+		if (!ply)
+			return;
+		
+		TextureID currentFace = GetMugshot(4, Mugshot.DISABLEOUCH | Mugshot.DISABLERAMPAGE);
+		
+		int temp, panelYSize, faceXSize, faceYSize;
+		[temp, panelYSize] = TexMan.GetSize(_leftPanelBack);
+		[faceXSize, faceYSize] = TexMan.GetSize(currentFace);
+		
+		faceXSize *= _universalScale.x;
+		faceYSize *= _universalScale.y;
+		
+		DrawTexture(currentFace, (_hBorder + panelXSpacing*2, panelY - panelYSize*_universalScale.y + 18*_universalScale.y),
+			DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_TOP, scale: _universalScale);
+		
+		curY -= 19*_universalScale.y;
+		
+		if (!deathmatch)
+			DrawKeys(_hBorder + panelXSpacing + barXOffset, curY);
+		
+		/// ---- DRAWING TENSION POINTS ----
+		// draw TP timer and bar
+		curY -= 2*_universalScale.y + panelYSpacing;
+		
+		double tpTimer = float(ply.tensionDrainTimer) /
+			(ply.DRAIN_TIMER_START * G_SkillPropertyFloat(SKILLP_AmmoFactor) * sv_ammofactor);
+		Fill(0xffffffff, _hBorder + panelXSpacing + barXOffset, curY, tpTimer * barWidth, 3*_universalScale.y, DI_SCREEN_LEFT_BOTTOM);
+		
+		curY -= 3*_universalScale.y + barHeight;
+		
+		double tp = infiniteAmmo ? ply.maxTensionPoints : ply.tensionPoints;
+		double maxTp = ply.maxTensionPoints;
+		
+		if (ply.ticLastGrazed >= 0)
+		{
+			int timePassed = level.Time - ply.ticLastGrazed;
+			int alpha = 255 * (1 - (timePassed / 5.));
+			
+			DrawTexture(_tpHighlight, (_hBorder + panelXSpacing + labelXOffset - _universalScale.x, curY - _universalScale.y),
+				DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_TOP, scale: _universalScale,
+				col: Color(alpha, 255, 255, 255));
+		}
+		
+		Fill(Color(255, 255, 0, 0), _hBorder + panelXSpacing + barXOffset, curY,
+			DeltaUtil.Lerp(_oldTp, _tpInterp.GetValue(), ticFrac) / maxTp * barWidth,
+			barHeight, DI_SCREEN_LEFT_BOTTOM);
+		Fill(Color(255, 255, 160, 64), _hBorder + panelXSpacing + barXOffset, curY,
+			tp / maxTp * barWidth, barHeight, DI_SCREEN_LEFT_BOTTOM);
+		
+		if (tp >= 1 && tp <= maxTp - 1)
+			Fill(Color(255, 255, 255, 255), _hBorder + panelXSpacing + barXOffset
+			+ barWidth * (tp / maxTp) - _universalScale.x, curY, _universalScale.x,
+			barHeight, DI_SCREEN_LEFT_BOTTOM);
+		
+		// draw TP text
+		if (!infiniteAmmo)
+		{
+			if (tp < maxTp)
+				DrawString(_drHudFont, String.Format("%d", tp * 100 / maxTp),
+					(_hBorder + barWidth + barXOffset + _universalScale.x,
+						curY + textYOffset/2 + _universalScale.y),
+					DI_SCREEN_LEFT_BOTTOM | DI_TEXT_ALIGN_RIGHT,
+					scale: _universalScale * 2);
+			else
+				DrawTexture(_tpMaxText,
+					(_hBorder + barWidth + barXOffset, curY + textYOffset/2 + _universalScale.y),
+					DI_SCREEN_LEFT_BOTTOM | DI_ITEM_RIGHT_TOP, scale: _universalScale * 2);
+		}
+		else
+			DrawTexture(_infiniteText,
+				(_hBorder + barWidth + barXOffset + _universalScale.x, curY + panelYSpacing + barHeight/2 + _universalScale.y),
+				DI_SCREEN_LEFT_BOTTOM | DI_ITEM_RIGHT, scale: _universalScale * 1.25);
+		
+		// ================
+		//  DRAWING HEALTH
+		// ================
+		double healthInterpValue = DeltaUtil.Lerp(_oldHealth,
+			_healthInterp.GetValue(), ticFrac) / 100.;
+		
+		curY -= panelYSpacing + barHeight;
+		Fill(Color(255, 255, 0, 0), _hBorder + panelXSpacing + barXOffset,
+			curY, min(1, healthInterpValue) * barWidth, barHeight, DI_SCREEN_LEFT_BOTTOM);
+		Fill(ply.GetCharacterColor(), _hBorder + panelXSpacing + barXOffset,
+			curY, min(1, GetHealthPerc()) * barWidth, barHeight, DI_SCREEN_LEFT_BOTTOM);
+		
+		if (_healthInterp.GetValue() > 100)
+			Fill(Color(255, 255, 0, 0),  _hBorder + panelXSpacing + barXOffset,
+				curY, (healthInterpValue - 1) * barWidth, barHeight, DI_SCREEN_LEFT_BOTTOM);
+		if (GetHealthPerc() > 1)
+			Fill(ply.GetOverhealColor(), _hBorder + panelXSpacing + barXOffset,
+				curY, (GetHealthPerc() - 1) * barWidth, barHeight, DI_SCREEN_LEFT_BOTTOM);
+		
+		string format = GetHealthPerc() <= 0.33 ? "\c[DeltaLowHealth]%s" : "%s";
+		string maxHp = String.Format(format, "" .. ply.GetMaxHealth());
+		double maxHpWidth = _drHudFont.mFont.StringWidth(maxHp) * _universalScale.x;
+		double slashWidth = _drHudFont.mFont.GetCharWidth("/") * _universalScale.x;
+		DrawString(_drHudFont, String.Format(format, "" .. CPlayer.Health),
+			(_hBorder + barWidth + barXOffset - maxHpWidth - ceil(2*slashWidth), curY + textYOffset/2 + _universalScale.y),
+			DI_SCREEN_LEFT_BOTTOM | DI_TEXT_ALIGN_RIGHT, scale: _universalScale * 2);
+		DrawString(_drHudFont, String.Format(format, "/"),
+			(_hBorder + barWidth + barXOffset - maxHpWidth - ceil(slashWidth), curY + textYOffset/2 + _universalScale.y),
+			DI_SCREEN_LEFT_BOTTOM | DI_TEXT_ALIGN_RIGHT, scale: _universalScale);
+		DrawString(_drHudFont, maxHp,
+			(_hBorder + barWidth + barXOffset + _universalScale.x, curY + textYOffset/2 + _universalScale.y),
+			DI_SCREEN_LEFT_BOTTOM | DI_TEXT_ALIGN_RIGHT, scale: _universalScale * 2);
+		DrawTexture(_hpText,
+			(_hBorder + labelXOffset + panelXSpacing, curY + panelYSpacing + barHeight/2),
+			DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT, scale: (_universalScale.x, _universalScale.y),
+			col: GetHealthPerc() <= 0.33 ? 0xffffff00 : 0xffffffff);
+		
+		// =============================
+		//  DRAWING OFFHAND INFORMATION
+		// =============================
+		double offhandPanelHeight = 36 * _universalScale.y;
+		bool canUse = ply.CanUseOffhand();
+		curY -= offhandPanelHeight + panelYSpacing*2;
+		Fill(0x80000000, _hBorder, curY, panelXSpacing*3 + 48*_universalScale.x,
+			offhandPanelHeight);
+		// control icons should all be 16px x 16px (or equivalent if scaled)
+		DisplayBinding("+offhand", (_hBorder + panelXSpacing, curY + offhandPanelHeight/2),
+			DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT | DI_ITEM_VCENTER, _universalScale);
+		// offhand icons should all be 32px x 32px (or equivalent if scaled)
+		DrawTexture(ply.GetOffhandIconID(), (_hBorder + panelXSpacing*2 + 16*_universalScale.x,
+			curY + 2*_universalScale.y), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_TOP,
+			scale: _universalScale, col: canUse ? (ply.GetIsUsingOffhand() ?
+			Color(255, 255, 160, 64) : 0xffffffff) : 0x80606060);
+		
+		DrawDamagePopups((_hBorder + faceXSize/2 + panelXSpacing*2, panelY + faceYSize/2 - (panelYSize - 24)*_universalScale.y), ticFrac);
+	}
+	
+	protected void DrawRightPanel(bool infiniteAmmo)
+	{
+		if (!_ammos.Size())
+			return;
+		
+		double widgetWidth = 70 * _universalScale.x,
+			hPerAmmo = 22 * _universalScale.y,
+			h = _ammos.Size() * hPerAmmo + (5*_universalScale.y);
+		Fill(Color(128, 0, 0, 0), -_hBorder - widgetWidth, -_vBorder - h,
+			widgetWidth, h, DI_SCREEN_RIGHT_BOTTOM);
+		
+		for (int i = 0; i < _ammos.Size(); i++)
+		{
+			let am = _ammos[_ammos.Size() - 1 - i];
+			let amCount = CPlayer.mo.CountInv(am);
+			let ammoIcon = ammoIcons.GetIfExists(am.GetClassName());
+			double curAlpha = 0.2;
+			let weap = CPlayer.ReadyWeapon;
+			
+			if (weap && (am == weap.AmmoType1 || am == weap.AmmoType2))
+				curAlpha = 1;
+			
+			DrawTexture(ammoIcon, (-_hBorder - widgetWidth + 5*_universalScale.x,
+				-_vBorder - 5*_universalScale.y - hPerAmmo*i),
+				DI_ITEM_LEFT_BOTTOM | DI_SCREEN_RIGHT_BOTTOM,
+				alpha: curAlpha,
+				box: _universalScale * 16, scale: _universalScale);
+			DrawString(_drHudFont, "" .. amCount,
+				(-_hBorder - (5*_universalScale.x), -_vBorder - (i+1)*(hPerAmmo)
+					+ 1*_universalScale.y),
+				DI_SCREEN_RIGHT_BOTTOM | DI_TEXT_ALIGN_RIGHT,
+				alpha: curAlpha,
+				scale: _universalScale*3);
+		}
+	}
+	
+	protected void DrawKeys(double x, double y)
+	{
+		int count = Key.GetKeyTypeCount();
+		double newX = x;
+		Key inv;
+		
+		for (int i = 0; i <= count - 1; i++)
+		{
+			if (inv = Key(CPlayer.mo.FindInventory(Key.GetKeyType(i))))
+			{
+				TextureID icon;
+				
+				if (inv.SpawnState && inv.SpawnState.sprite != 0)
+				{
+					let state = inv.SpawnState;
+					
+					if (state != null)
+						icon = state.GetSpriteTexture(0);
+					else
+						icon.SetNull();
+				}
+				
+				if (icon.IsNull())
+					icon = inv.Icon;
+				
+				if (icon.IsValid())
+				{
+					DrawTexture(icon, (newX, y), DI_SCREEN_LEFT_BOTTOM
+						| DI_ITEM_LEFT_TOP, box: 16 * _universalScale,
+						scale: _universalScale);
+					newX += 18*_universalScale.x;
+				}
+			}
+		}
+	}
+	
+	protected void DrawReticle(bool infiniteAmmo, double ticFrac)
+	{
+		if (CPlayer.cheats & CF_CHASECAM || automapActive
+			|| !(CPlayer.mo is "DeltaPlayer") || !cl_delta_showCrosshair)
+			return;
+		
+		DeltaPlayer ply = DeltaPlayer(CPlayer.mo);
+		DrawQuickInfo(infiniteAmmo, ticFrac);
+		
+		if (ply.GetIsUsingOffhand())
+			return;
+		
+		let crosshair = _defaultCrosshair,
+			weap = DeltaWeapon(CPlayer.ReadyWeapon),
+			xhairState = ply.GetCrosshairState();
+		
+		if (weap && !weap.GetAtEase())
+			crosshair = weap.GetCrosshair();
+		
+		Color xhairColor = xhairState == DELTA_XHR_NEUTRAL ?
+			cl_delta_crosshairColor : (xhairState == DELTA_XHR_FRIENDLY ?
+			cl_delta_crosshairFriendlyColor : cl_delta_crosshairEnemyColor);
+		xhairColor |= 0xff000000;
+		DrawTexture(crosshair, (0, 0), DI_SCREEN_CENTER | DI_ITEM_CENTER,
+			scale: _universalScale * 0.5, col: xhairColor);
+		
+		if (!ply.CanUseOffhand() || !cl_delta_showOffhandIndicator)
+			return;
+		
+		DrawTexture(_offhandCrosshair, (0, 0), DI_SCREEN_CENTER | DI_ITEM_CENTER,
+			scale: _universalScale * 0.5, col: 0xff000000 | cl_delta_offhandIndicatorColor);
+	}
+	
+	protected void DrawQuickInfo(bool infiniteAmmo, double ticFrac)
+	{
+		if (!cl_delta_showQuickInfo)
+			return;
+		
+		DeltaPlayer ply = DeltaPlayer(CPlayer.mo);
+		let reticleBarOffset = (-75 * _universalScale.x, 0);
+		
+		Screen.EnableStencil(true);
+		Screen.SetStencil(0, SOP_Increment, SF_ColorMaskOff);
+		
+		// defining stencil mask
+		DrawTexture(_reticleBar, reticleBarOffset, 
+			DI_SCREEN_CENTER | DI_ITEM_VCENTER | DI_ITEM_RIGHT,
+			scale: _universalScale * 0.5);
+		
+		if (!infiniteAmmo)
+		{
+			reticleBarOffset.x *= -1;
+			DrawTextureRotated(_reticleBar, reticleBarOffset,
+				DI_SCREEN_CENTER | DI_ITEM_VCENTER | DI_ITEM_RIGHT, 180,
+				scale: (1/_universalScale.x, 1/_universalScale.y) * 2);
+			reticleBarOffset.x *= -1;
+		}
+		
+		Screen.SetStencil(1, SOP_Keep, SF_AllOn);
+		
+		// using stencil mask
+		int width, height;
+		[width, height] = TexMan.GetSize(_reticleBar);
+		double
+			realWidth = width * _universalScale.x * 0.5,
+			realHeight = height * _universalScale.y * 0.5,
+			curX = reticleBarOffset.x - realWidth,
+			curY = reticleBarOffset.y + realHeight*0.5;
+		
+		Fill(0xc0550000, curX, curY, realWidth, -realHeight, DI_SCREEN_CENTER);
+		
+		double healthInterpValue = DeltaUtil.Lerp(_oldHealth,
+			_healthInterp.GetValue(), ticFrac) / 100.;
+		
+		Fill(Color(255, 255, 0, 0), curX, curY, realWidth,
+			-realHeight * healthInterpValue, DI_SCREEN_CENTER);
+		Fill(ply.GetCharacterColor(), curX, curY, realWidth,
+			-realHeight * DeltaUtil.Clamp(GetHealthPerc(), 0, 1),
+			DI_SCREEN_CENTER);
+		
+		if (GetHealthPerc() > 1)
+		{
+			Fill(Color(255, 255, 0, 0), curX, curY, realWidth,
+				-realHeight * max(0, healthInterpValue-1), DI_SCREEN_CENTER);
+			Fill(ply.GetOverhealColor(), curX, curY, realWidth,
+				-realHeight * max(0, GetHealthPerc()-1), DI_SCREEN_CENTER);
+		}
+		
+		if (!infiniteAmmo)
+		{
+			double tp = ply.tensionPoints, maxTp = ply.maxTensionPoints,
+				tpLerp = DeltaUtil.Lerp(_oldTp, _tpInterp.GetValue(), ticFrac);
+			curX = -reticleBarOffset.x - realWidth*0.5;
+			Fill(0xc0550000, curX, curY, realWidth, -realHeight,
+				DI_SCREEN_CENTER);
+			Fill(Color(255, 255, 0, 0), curX, curY, realWidth,
+				-realHeight * DeltaUtil.Clamp(tpLerp / maxTp, 0, 1),
+				DI_SCREEN_CENTER);
+			Fill(0xffffa040, curX, curY, realWidth,
+				-realHeight * DeltaUtil.Clamp(tp/maxTp, 0, 1),
+				DI_SCREEN_CENTER);
+			Fill(0xffffffff, curX,
+				curY - realHeight * DeltaUtil.Clamp(tp/maxTp, 0, 1),
+				realWidth, _universalScale.y * 0.5, DI_SCREEN_CENTER);
+		}
+		
+		Screen.EnableStencil(false);
+		Screen.ClearStencil();
+		
+		DrawTexture(_reticleBarOverlay, reticleBarOffset,
+			DI_SCREEN_CENTER | DI_ITEM_VCENTER | DI_ITEM_RIGHT,
+			scale: _universalScale * 0.5);
+		
+		if (!infiniteAmmo)
+		{
+			reticleBarOffset.x *= -1;
+			DrawTextureRotated(_reticleBarOverlay, reticleBarOffset,
+				DI_SCREEN_CENTER | DI_ITEM_VCENTER | DI_ITEM_RIGHT, 180,
+				scale: (1/_universalScale.x, 1/_universalScale.y) * 2);
+		}
+	}
+	
+	protected void DrawDeathStuff()
+	{
+		DeltaPlayer ply = DeltaPlayer(CPlayer.mo);
+		if (!ply)
+			return;
+		
+		int reminderTimer = ply.GetDeathTimer() - TICRATE * 20;
+		double textSpeed = 1/2.;
+		
+		if (multiplayer && !deathmatch) // we can respawn whenever in deathmatch
+			return;
+		if (reminderTimer < 0)
+			return;
+		if (!cl_delta_showDeathText)
+			return;
+		
+		String respawnReminder = StringTable.Localize("$TXT_DELTA_RESPAWNMSG1"),
+			reminderThisFrame = respawnReminder;
+		reminderThisFrame.Truncate(reminderTimer * textSpeed);
+		
+		int xOffset = -_consoleFont.mFont.StringWidth(respawnReminder) / 2 * _universalScale.x;
+		int yOffset = -50 * _universalScale.y;
+		DrawString(_consoleFont, reminderThisFrame, (xOffset, yOffset),
+			DI_SCREEN_CENTER, scale: _universalScale);
+		
+		reminderTimer -= respawnReminder.Length() / textSpeed + (TICRATE/2);
+		if (reminderTimer < 0)
+			return;
+		
+		respawnReminder = StringTable.Localize("$TXT_DELTA_RESPAWNMSG2");
+		reminderThisFrame = respawnReminder;
+		reminderThisFrame.Truncate(reminderTimer * textSpeed);
+		xOffset = -_consoleFont.mFont.StringWidth(respawnReminder) / 2 * _universalScale.x;
+		yOffset += _consoleFont.mFont.GetHeight() * _universalScale.y * 2;
+		
+		DrawString(_consoleFont, reminderThisFrame, (xOffset, yOffset),
+			DI_SCREEN_CENTER, scale: _universalScale);
+		
+		reminderTimer -= respawnReminder.Length() / textSpeed + (TICRATE);
+		if (reminderTimer < 0)
+			return;
+		
+		int useBind, useless;
+		[useBind, useless] = Bindings.GetKeysForCommand("+use");
+		String keyNames = KeyBindings.NameKeys(useBind, 0);
+		keyNames.ToUpper();
+		
+		string targetFormat = (deathmatch || (dmflags2 & LEVEL2_ALLOWRESPAWN)
+			|| sv_singleplayerrespawn
+			|| G_SkillPropertyInt(SKILLP_PlayerRespawn))
+			? "$TXT_DELTA_RESPAWNREMINDDM" : "$TXT_DELTA_RESPAWNREMIND";
+		respawnReminder = String.Format(StringTable.Localize(targetFormat), keyNames);
+		reminderThisFrame = respawnReminder;
+		reminderThisFrame.Truncate(reminderTimer * textSpeed);
+		xOffset = -_consoleFont.mFont.StringWidth(respawnReminder) / 2 * _universalScale.x;
+		yOffset += _consoleFont.mFont.GetHeight() * _universalScale.y * 3;
+		
+		DrawString(_consoleFont, reminderThisFrame, (xOffset, yOffset),
+			DI_SCREEN_CENTER, scale: _universalScale);
+	}
+}
+
+class DeltaAltHUD : AltHUD
+{
+	override void DrawInGame(PlayerInfo CPlayer)
+	{
+		// kept blank so we don't draw an alt hud at all
+	}
+}

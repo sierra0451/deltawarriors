@@ -1,0 +1,97 @@
+extend class DeltaHud
+{
+	private Array<Actor> _bosses;
+	private TextureID _bossBarBack;
+	
+	const MAX_BOSS_BARS = 3;
+	
+	protected void SetUpBossBars()
+	{
+		_bossBarBack = TexMan.CheckForTexture("DRBOSBAK");
+	}
+	
+	protected void TickBossBars()
+	{
+		let iter = ThinkerIterator.Create("Actor");
+		Actor curr;
+		
+		while (curr = Actor(iter.Next()))
+		{
+			if (_bosses.Find(curr) != _bosses.Size())
+				continue;
+			if (!curr.bShootable)
+				continue;
+			
+			if (curr is "BossBrain")
+			{
+				let eyeIter = ThinkerIterator.Create("BossEye");
+				let eye = BossEye(eyeIter.Next());
+				if (!eye || eye.curState.InStateSequence(eye.SpawnState))
+					continue;
+				
+				_bosses.Push(curr);
+				continue;
+			}
+			
+			if (curr.curState.InStateSequence(curr.SpawnState)
+				|| curr.health <= 0)
+				continue;
+			
+			let flags3 = level.info.flags3;
+			
+			if (curr.bBoss || (curr.bE1M8Boss && (flags3 & LEVEL3_E1M8SPECIAL))
+				|| (curr.bE2M8Boss && (flags3 & LEVEL3_E2M8SPECIAL))
+				|| (curr.bE3M8Boss && (flags3 & LEVEL3_E3M8SPECIAL))
+				|| (curr.bE4M6Boss && (flags3 & LEVEL3_E4M6SPECIAL))
+				|| (curr.bE4M8Boss && (flags3 & LEVEL3_E4M8SPECIAL)))
+			{
+				_bosses.Push(curr);
+			}
+		}
+		
+		for (int i = _bosses.Size() - 1; i >= 0; i--)
+		{
+			if (!_bosses[i] || (_bosses[i].health <= 0 && _bosses[i].tics == -1))
+			{
+				_bosses.Delete(i);
+				continue;
+			}
+		}
+	}
+	
+	protected void DrawBossBars()
+	{
+		for (int i = 0; i < _bosses.Size(); i++)
+		{
+			Actor curr = _bosses[i];
+			double w, h;
+			[w, h] = TexMan.GetSize(_bossBarBack);
+			w *= _universalScale.x;
+			h *= _universalScale.y;
+			
+			double curX = -w - _hBorder,
+				curY = i*(h + 5*_universalScale.y) + _vBorder,
+				perc = double(curr.Health) / curr.GetMaxHealth();
+			perc = DeltaUtil.Clamp(perc, 0, 1);
+			
+			DrawTexture(_bossBarBack, (curX, curY),
+				DI_ITEM_LEFT_TOP | DI_SCREEN_RIGHT_TOP, scale: _universalScale);
+			Fill(0xff9000a0, curX+4*_universalScale.x, curY+4*_universalScale.y,
+				perc*212*_universalScale.x, 16*_universalScale.y);
+			
+			string _name = curr.GetTag();
+			if (curr is "BossBrain")
+				_name = "Icon of Sin";
+			
+			double fontH = (_consoleFont.mFont.GetHeight() + 3) * _universalScale.y;
+			DrawString(_consoleFont, _name,
+				(-_hBorder - 8*_universalScale.x, curY + h - fontH/2.),
+				DI_TEXT_ALIGN_RIGHT | DI_SCREEN_RIGHT_TOP,
+				scale: _universalScale/2);
+			DrawString(_drHudFont, String.Format("%.0d", perc*100),
+				(-_hBorder - 8*_universalScale.x, curY + 7*_universalScale.y),
+				DI_TEXT_ALIGN_RIGHT | DI_SCREEN_RIGHT_TOP,
+				scale: _universalScale*2);
+		}
+	}
+}

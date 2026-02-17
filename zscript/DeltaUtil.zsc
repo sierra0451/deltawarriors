@@ -65,5 +65,30 @@ class DeltaUtil
 		
 		return GetActorForward(a) cross GetActorRight(a, countRoll);
 	}
+	
+	play static void ForceActorPain(Actor a)
+	{
+		if (a.Health <= 0 || a.bNoPain)
+			return;
+		
+		state pain = a.ResolveState("Pain.Parry");
+		
+		if (!pain)
+			pain = a.ResolveState("Pain");
+		if (!pain)
+			return;
+		
+		a.SetState(pain);
+	}
 }
 
+class DeltaSpriteCacher : Actor abstract
+{
+	States
+	{
+		Cache:
+			KCGN A 1;
+			KCSW A 1;
+			Stop;
+	}
+}

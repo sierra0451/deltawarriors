@@ -1,0 +1,86 @@
+class DeltaSkillMenu : DeltaListMenu
+{
+	BrokenLines lines;
+	const FONT_SCALE = 2;
+	const CLIP_W = 300;
+	const CLIP_H = 100;
+	
+	override void Init(Menu parent, ListMenuDescriptor desc)
+	{
+		Super.Init(parent, desc);
+		UpdateDescription();
+	}
+	
+	override bool MenuEvent(int mKey, bool fromController)
+	{
+		if (!Super.MenuEvent(mKey, fromController))
+			return false;
+		
+		UpdateDescription();
+		return true;
+	}
+	
+	override bool MouseEvent(int type, int mX, int mY)
+	{
+		if (!Super.MouseEvent(type, mX, mY))
+			return false;
+		
+		UpdateDescription();
+		return true;
+	}
+	
+	override void Drawer()
+	{
+		Super.Drawer();
+		
+		if (!lines.Count())
+			return;
+		
+		int fontH = consoleFont.GetHeight();
+		let strPos = (CLIP_W,
+			Screen.GetHeight() - CLIP_H - (fontH*FONT_SCALE*lines.Count()));
+		Screen.Dim(0xff000000, 0.5, strPos.x - 10, strPos.y - 10,
+			Screen.GetWidth() - CLIP_W*2,
+			(fontH*FONT_SCALE*lines.Count()) + 20);
+		
+		for (int i = 0; i < lines.Count(); i++)
+		{
+			Screen.DrawText(consoleFont, Font.CR_UNTRANSLATED, strPos.x,
+				strPos.y, lines.StringAt(i), DTA_ScaleX, FONT_SCALE,
+				DTA_ScaleY, FONT_SCALE);
+			strPos.y += fontH * FONT_SCALE;
+		}
+	}
+	
+	void UpdateDescription()
+	{
+		int index = mDesc.mSelectedItem;
+		if (index < 1 || index >= mDesc.mItems.Size())
+			return;
+		
+		string localize;
+		switch (index)
+		{
+			case 1: // very easy
+				localize = "$DELTA_SKILLDESC_VERYEASY";
+				break;
+			case 2: // easy
+				localize = "$DELTA_SKILLDESC_EASY";
+				break;
+			case 3: // normal
+				localize = "$DELTA_SKILLDESC_NORMAL";
+				break;
+			case 4: // hard
+				localize = "$DELTA_SKILLDESC_HARD";
+				break;
+			case 5: // very hard
+				localize = "$DELTA_SKILLDESC_VERYHARD";
+				break;
+			default:
+				break;
+		}
+		
+		let descString = StringTable.Localize(localize);
+		lines = consoleFont.BreakLines(descString, floor((Screen.GetWidth() - CLIP_W * 2.) / FONT_SCALE));
+	}
+}

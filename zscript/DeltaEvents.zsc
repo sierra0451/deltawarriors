@@ -1,0 +1,279 @@
+struct GrazeEvent play version("2.4")
+{
+	DeltaPlayer thing;
+	Actor grazeSource;
+}
+
+struct DeltaDamageEvent
+{
+	Actor victim, source, inflictor;
+	int amount;
+	double height; // used for if victim is killed, and thus immediately reduces height
+}
+
+class DeltaEvents : EventHandler
+{
+	DeltaDamageEvent[300] damageEvents;
+	Actor[100] reviving;
+	
+	override void WorldLoaded(WorldEvent e)
+	{
+		EnableNetworking(true);
+	}
+	
+	override void WorldTick()
+	{
+		ReviveTick();
+		DamageEventTick();
+	}
+	
+	protected void DamageEventTick()
+	{
+		if (!damageEvents.Size())
+			return;
+		
+		for (int i = 0; i < damageEvents.Size(); i++)
+		{
+			if (!damageEvents[i].victim)
+				continue;
+			if (damageEvents[i].amount <= 0)
+				continue;
+			
+			if (damageEvents[i].victim is "DeltaPlayer")
+			{
+				if (damageEvents[i].victim.health <= 0)
+				{
+					let ded = DeltaDeadPopup.SpawnPopup("DeltaDeadPopup",
+						damageEvents[i].victim, damageEvents[i].source, 5);
+				}
+				else
+					DeltaDamagePopup.SpawnNumbers(damageEvents[i].victim,
+						damageEvents[i].source, damageEvents[i].amount);
+				
+				EventHandler.SendInterfaceEvent(
+					playerNum: damageEvents[i].victim.PlayerNumber(),
+					name: "DeltaPlayerDamage",
+					arg1 : damageEvents[i].source ?
+						damageEvents[i].source.GetNetworkID() : 0,
+					arg2 : damageEvents[i].inflictor ?
+						damageEvents[i].inflictor.GetNetworkID() : 0,
+					arg3: damageEvents[i].amount
+				);
+			}
+			else
+				DeltaDamagePopup.SpawnNumbers(damageEvents[i].victim,
+					damageEvents[i].source, damageEvents[i].amount);
+			
+			damageEvents[i].victim = null;
+			damageEvents[i].source = null;
+			damageEvents[i].amount = 0;
+		}
+	}
+	
+	protected void ReviveTick()
+	{
+		if (!reviving.Size())
+			return;
+		
+		for (int i = reviving.Size() - 1; i >= 0; i--)
+		{
+			Actor revivee = reviving[i];
+			
+			if (!revivee)
+				continue;
+			if (revivee.InStateSequence(revivee.curState, revivee.FindState("Raise")))
+				continue;
+			if (revivee.Health <= 0)
+				continue;
+			
+			DeltaPopup.SpawnPopup("DeltaHealMaxPopup", revivee);
+			revivee.A_StartSound("delta/heal", CHAN_AUTO);
+			reviving[i] = null;
+		}
+	}
+	
+	override void WorldThingRevived(WorldEvent e)
+	{
+		if (!e.thing)
+			return;
+		
+		for (int i = 0; i < reviving.Size(); i++)
+		{
+			if (reviving[i])
+				continue;
+			
+			reviving[i] = e.thing;
+			return;
+		}
+		
+		reviving[0] = e.thing;
+	}
+	
+	override void WorldThingDamaged(WorldEvent e)
+	{
+		if (!e.thing || e.damage <= 0)
+			return;
+		
+		for (int i = 0; i < damageEvents.Size(); i++)
+		{
+			if (damageEvents[i].victim == e.thing && damageEvents[i].source == e.damageSource)
+			{
+				damageEvents[i].amount += e.damage;
+				break;
+			}
+			
+			if (!damageEvents[i].victim)
+			{
+				damageEvents[i].victim = e.thing;
+				damageEvents[i].source = e.damageSource;
+				damageEvents[i].inflictor = e.inflictor;
+				damageEvents[i].amount = e.damage;
+				break;
+			}
+		}
+		
+		if (e.damageSource is "DeltaPlayer" && e.damageSource != e.thing
+            && !e.damageSource.IsFriend(e.thing) && !(e.thing is "DeltaGrenade" || e.thing is "DeltaGrenadeHitbox"))
+		{
+			DeltaPlayer ply = DeltaPlayer(e.damageSource);
+			
+			if (!ply.GetDamageTics())
+				ply.AddTension(e.damage / 8);
+		}
+	}
+	
+	/*
+	override void WorldThingDestroyed(WorldEvent e)
+	{
+		if (!e.thing)
+			return;
+		
+		if (e.thing is "Health")
+		{
+			let hlth = Health(e.thing);
+			
+			if (hlth.owner)
+				hlth.A_Log(hlth.GetClassName() .. " destroyed by " .. hlth.owner.GetClassName());
+			else
+				hlth.A_Log("destroyed " .. hlth.GetClassName());
+		}
+	}
+	*/
+	
+	override void PlayerEntered(PlayerEvent e)
+	{
+		EventHandler.SendInterfaceEvent(e.playerNumber, "ResetHUD");
+	}
+	
+	override void PlayerRespawned(PlayerEvent e)
+	{
+		EventHandler.SendInterfaceEvent(e.playerNumber, "ResetHUD");
+	}
+	
+	override void InterfaceProcess(ConsoleEvent e)
+	{
+		if (e.IsManual) return;
+		
+		if (e.name ~== "ResetHUD")
+		{
+			if (!(statusBar is "DeltaHud"))
+				return;
+			
+			let hud = DeltaHud(statusBar);
+			hud.ResetHUD();
+		}
+		else if (e.name ~== "DeltaPlayerDamage")
+		{
+			if (!(statusBar is "DeltaHud"))
+				return;
+			
+			let hud = DeltaHud(statusBar);
+			Actor source = Actor(GetNetworkEntity(e.Args[0])),
+				inflictor = Actor(GetNetworkEntity(e.Args[1]));
+			let amount = e.Args[2];
+			
+			hud.CreateDamageIndicator(source, inflictor);
+			hud.CreateDamagePopup(source, amount);
+		}
+		else if (e.name ~== "DeltaPlayerGraze")
+		{
+			if (!(statusBar is "DeltaHud"))
+				return;
+			
+			let hud = DeltaHud(statusBar);
+			let source = Actor(GetNetworkEntity(e.Args[0]));
+			
+			hud.CreateGrazeIndicator(source);
+		}
+	}
+	
+	virtual void PlayerGrazed(GrazeEvent e)
+	{
+		if (e.thing != e.grazeSource)
+		{
+			EventHandler.SendInterfaceEvent(e.thing.PlayerNumber(),
+				"DeltaPlayerGraze",
+				e.grazeSource ? e.grazeSource.GetNetworkID() : 0);
+		}
+	}
+}
+
+class DeltaTitleEvents : EventHandler
+{
+	protected Array<TextureID> _titleBackgrounds;
+	private int _curTick, _curFrame, _frameDuration, _fadeDuration;
+	
+	virtual void SetUpTitles()
+	{
+		for (int i = 1; i <= 5; i++)
+		{
+			_titleBackgrounds.Push(TexMan.CheckForTexture("DELTATT" .. i));
+		}
+	}
+	
+	override void WorldLoaded(WorldEvent e)
+	{
+		_frameDuration = 15; // ticks per frame including fade duration
+		_fadeDuration = _frameDuration; // ticks to fade between frames
+		_curFrame = 0;
+		SetUpTitles();
+	}
+	
+	override void WorldTick()
+	{
+		if (!_titleBackgrounds.Size())
+			return;
+		
+		_curTick++;
+		
+		if (_curTick != _frameDuration)
+			return;
+		
+		_curTick = 0;
+		_curFrame++;
+		
+		if (_curFrame == _titleBackgrounds.Size())
+			_curFrame = 0;
+	}
+	
+	override void RenderOverlay(RenderEvent e)
+	{
+		if (!_titleBackgrounds.Size())
+			return;
+		
+		Screen.DrawTexture(_titleBackgrounds[_curFrame], false, 0, 0,
+			DTA_Fullscreen, true, DTA_FullScreenScale, FSMode_ScaleToFill);
+		
+		if (!_fadeDuration) // make sure we're not dividing by zero
+			return;
+		
+		int nextFrame = _curFrame == _titleBackgrounds.Size()-1 ? 0
+			: _curFrame+1;
+		double targetAlpha = max(0,
+			(_fadeDuration - _frameDuration + _curTick + 1.) / _fadeDuration);
+	
+		Screen.DrawTexture(_titleBackgrounds[nextFrame], false, 0, 0,
+			DTA_Fullscreen, true, DTA_FullScreenScale, FSMode_ScaleToFill,
+			DTA_Alpha, targetAlpha);
+	}
+}

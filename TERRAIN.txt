@@ -1,20 +1,4 @@
-Terrain DeltaGenericTerrain
-{
-	StepSounds			delta/step_generic
-	WalkStepTics		14
-	RunStepTics			10
-	StepVolume			1
-}
-
-Terrain DeltaLiquidTerrain
-{
-	StepSounds			delta/step_liquid
-	WalkStepTics		14
-	RunStepTics			10
-	StepVolume			1
-	Liquid
-}
-
+/*
 DefaultTerrain DeltaGenericTerrain
 
 Floor optional BFALL1 DeltaLiquidTerrain
@@ -73,3 +57,4 @@ Floor optional SWATER4 DeltaLiquidTerrain
 Floor optional BLOOD1 DeltaLiquidTerrain
 Floor optional BLOOD2 DeltaLiquidTerrain
 Floor optional BLOOD3 DeltaLiquidTerrain
+*/

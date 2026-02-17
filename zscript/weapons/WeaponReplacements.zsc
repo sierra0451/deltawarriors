@@ -81,13 +81,10 @@ class TempChainsaw : DeltaTempReplacer replaces Chainsaw
 			Stop;
 	}
 	
-	override void AttachToOwner(Actor other)
+	override string PickupMessage()
 	{
-		let replacee = Spawn(_replacedClass);
-		string str = StringTable.Localize("$PICKUP_DELTA_CHAINSAW");
-		other.A_Print(String.Format(str, replacee.GetTag().MakeLower()), 4);
-		replacee.Destroy();
-		Super.AttachToOwner(other);
+		return String.Format(StringTable.Localize("$PICKUP_DELTA_CHAINSAW"),
+			GetDefaultByType(_replacedClass).GetTag().MakeLower());
 	}
 }
 
@@ -108,14 +105,12 @@ class TempRocketLauncher : DeltaTempReplacer replaces RocketLauncher
 			Stop;
 	}
 	
-	override void AttachToOwner(Actor other)
+	override string PickupMessage()
 	{
-		let replacee = Spawn(_replacedClass);
-		other.A_Print("You picked up a " .. replacee.GetTag().MakeLower()
-			.. ", but it doesn't seem to do anything yet.\nYou get the feeling "
-			.. "some cat out there is working on fixing that...", 4);
-		replacee.Destroy();
-		Super.AttachToOwner(other);
+		return "(You picked up a \c[DeltaHighlight]" ..
+			GetDefaultByType(_replacedClass).GetTag().MakeLower() .. "\c-, but "
+			.. "it doesn't seem to do anything yet. You get the feeling some "
+			.. "cat out there is working on fixing that...)";
 	}
 }
 
@@ -136,12 +131,10 @@ class TempPlasmaRifle : DeltaTempReplacer replaces PlasmaRifle
 			Stop;
 	}
 	
-	override void AttachToOwner(Actor other)
+	override string PickupMessage()
 	{
-		other.A_Print("You picked up some sort of strange device. You can't "
-			.. "seem to figure out\nhow it works. Someone should teach you how "
-			.. "to use it at some point...", 4);
-		Super.AttachToOwner(other);
+		return "(You picked up some sort of \c[DeltaHighlight]strange device\c-. "
+			.. "You can't seem to figure out how it works.)";
 	}
 }
 
@@ -162,11 +155,9 @@ class TempBFG9000 : DeltaTempReplacer replaces BFG9000
 			Stop;
 	}
 	
-	override void AttachToOwner(Actor other)
+	override string PickupMessage()
 	{
-		other.A_Print("You picked up some sort of strange, fucking HUGE "
-			.. "device. It feels powerful,\nbut doesn't seem to work. Perhaps "
-			.. "one day, you can use something like it.", 4);
-		Super.AttachToOwner(other);
+		return "(You picked up some sort of \c[DeltaHighlight]strange, fucking "
+			.. "HUGE device\c-. It feels powerful, but doesn't seem to work.)";
 	}
 }

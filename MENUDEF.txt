@@ -1,5 +1,6 @@
 DefaultListMenu
 {
+	Class "DeltaListMenu"
 	Position 110, 64
 	Font "DRCONFONT", "DeltaMenuText", "DeltaMenuHighlight"
 	Selector "DRSELECT", -14, 4
@@ -67,6 +68,11 @@ OptionValue "OnOff"
 	1, "On"
 }
 
+DefaultOptionMenu
+{
+	Class "DeltaOptionMenu"
+}
+
 AddOptionMenu "OptionsMenu"
 {
 	Title "$MENU_UZDOOM_OPTIONS"
@@ -79,15 +85,19 @@ AddOptionMenu "SoundOptions"
 
 OptionMenu "DeltaOptions"
 {
-	Title "Options"
+	Title "$MENU_OPTIONS_HEADER"
 	
-	StaticText "Configure Deltawarriors.", "DeltaMenuHeader"
+	StaticText "$MENU_OPTIONS_DESC", "DeltaMenuHeader"
 	StaticText ""
 	
-	SubMenu "$MENU_CTRLHEADER", "DeltaControls"
-	SubMenu "$MENU_HUD_HEADER", "DeltaHudOptions"
-	SubMenu "$MENU_CAMERA_HEADER", "DeltaCameraOptions"
+	SubMenu "$MENU_CTRL_HEADER", "DeltaControls"
 	SubMenu "$MENU_AUDIO_HEADER", "SoundOptions"
+	SubMenu "$MENU_DISPLAY_HEADER", "DeltaDisplayOptions"
+	SubMenu "$MENU_CAMERA_HEADER", "DeltaCameraOptions"
+	SubMenu "$MENU_HUD_HEADER", "DeltaHudOptions"
+	
+	StaticText ""
+	SubMenu "$MENU_PLAYER_HEADER", "DeltaPlayerOptions"
 	
 	StaticText ""
 	Slider "$MENU_FOV", "fov", 75, 120, 0.1, 0
@@ -99,12 +109,12 @@ OptionMenu "DeltaOptions"
 
 OptionMenu "DeltaControls"
 {
-	Title "$MENU_CTRLHEADER"
+	Title "$MENU_CTRL_HEADER"
 	
-	StaticText "$MENU_CTRLCONFIG", "DeltaMenuHeader"
+	StaticText "$MENU_CTRL_CONFIG", "DeltaMenuHeader"
 	StaticText ""
 	
-    SubMenu "$MENU_MOUSEOPTIONS", "MouseOptions"
+    SubMenu "$MENU_MOUSE_OPTIONS", "MouseOptions"
     StaticText ""
     
 	StaticText "$MENU_MOVEMENT", "DeltaMenuHeader"
@@ -115,7 +125,7 @@ OptionMenu "DeltaControls"
 	Control "$MENU_JUMP", "+jump"
 	Control "$MENU_CROUCH", "+crouch"
 	StaticText ""
-	StaticText "$MENU_CTRLACTION", "DeltaMenuHeader"
+	StaticText "$MENU_CTRL_ACTION", "DeltaMenuHeader"
 	Control "$MENU_FIRE", "+attack"
 	Control "$MENU_ALTFIRE", "+altattack"
 	Control "$MENU_INTERACT", "+use"
@@ -138,47 +148,71 @@ OptionMenu "DeltaHudOptions"
 {
 	Title "$MENU_HUD_HEADER"
 	
-	StaticText "$MENU_HUD_CONFIG", "DeltaMenuHeader"
+	StaticText "$MENU_HUD_DESC", "DeltaMenuHeader"
 	StaticText ""
 	
-	Option "$MENU_HIDEHUD", "cl_delta_showHud", "ShowHide"
-	Option "$MENU_LOWHEALTHVIG", "cl_delta_lowHealthVignette", "ShowHide"
+	Option "$MENU_HIDE_HUD", "cl_delta_showHud", "ShowHide"
+	Option "$MENU_LOW_HEALTH_VIG", "cl_delta_lowHealthVignette", "ShowHide"
 	Option "$MENU_HEARTBEAT", "cl_delta_heartbeatSound", "Heartbeat"
-	Option "$MENU_WEAPHANDEDNESS", "cl_delta_weaponHandedness", "RightLeft"
+	Option "$MENU_WEAP_HANDEDNESS", "cl_delta_weaponHandedness", "RightLeft"
 	
 	StaticText ""
-	StaticText "$MENU_XHAIROPTIONS", "DeltaMenuHeader"
-	Option "$MENU_SHOWXHAIR", "cl_delta_showCrosshair", "ShowHide"
-	ColorPicker "$MENU_XHAIRCOLOR", "cl_delta_crosshairColor", "cl_delta_showCrosshair", 0
-	Option "$MENU_XHAIRTARGETCHANGE", "cl_delta_crosshairTargetChange", "YesNo", "cl_delta_showCrosshair", 0, 0
-	ColorPicker "$MENU_XHAIRENEMY", "cl_delta_crosshairEnemyColor", "cl_delta_showCrosshair", 0
-	ColorPicker "$MENU_XHAIRFRIEND", "cl_delta_crosshairFriendlyColor", "cl_delta_showCrosshair", 0
+	StaticText "$MENU_XHAIR_OPTIONS", "DeltaMenuHeader"
+	Option "$MENU_SHOW_XHAIR", "cl_delta_showCrosshair", "ShowHide"
+	ColorPicker "$MENU_XHAIR_COLOR", "cl_delta_crosshairColor", "cl_delta_showCrosshair", 0
+	Option "$MENU_XHAIR_TARGET_CHANGE", "cl_delta_crosshairTargetChange", "YesNo", "cl_delta_showCrosshair", 0, 0
+	ColorPicker "$MENU_XHAIR_ENEMY", "cl_delta_crosshairEnemyColor", "cl_delta_showCrosshair", 0
+	ColorPicker "$MENU_XHAIR_FRIEND", "cl_delta_crosshairFriendlyColor", "cl_delta_showCrosshair", 0
     
     StaticText ""
-    Option "$MENU_SHOWOFFHAND", "cl_delta_showOffhandIndicator", "ShowHide", "cl_delta_showCrosshair", 0, 0
-    ColorPicker "$MENU_OFFHANDCOLOR", "cl_delta_offhandIndicatorColor", "cl_delta_showCrosshair", 0
+    Option "$MENU_SHOW_OFFHAND", "cl_delta_showOffhandIndicator", "ShowHide", "cl_delta_showCrosshair", 0, 0
+    ColorPicker "$MENU_OFFHAND_COLOR", "cl_delta_offhandIndicatorColor", "cl_delta_showCrosshair", 0
 	
 	StaticText ""
-	Option "$MENU_SHOWQUICKINFO", "cl_delta_showQuickInfo", "ShowHide", "cl_delta_showCrosshair", 0, 0
+	Option "$MENU_SHOW_QUICK_INFO", "cl_delta_showQuickInfo", "ShowHide", "cl_delta_showCrosshair", 0, 0
 }
 
-OptionMenu "DeltaCameraOptions"
+OptionMenu "DeltaDisplayOptions"
 {
-	Title "$MENU_CAMERA_HEADER"
+	Title "$MENU_DISPLAY_HEADER"
 	
-	StaticText "$MENU_CAMERA_CONFIG", "DeltaMenuHeader"
+	StaticText "$MENU_DISPLAY_DESC", "DeltaMenuHeader"
 	StaticText ""
 	
 	Slider "$MENU_GAMMA", "vid_gamma", 0.75, 3.0, 0.05, 2
 	Slider "$MENU_BRIGHTNESS", "vid_brightness", -0.8, 0.8, 0.05, 2
 	Slider "$MENU_CONTRAST", "vid_contrast", 0.1, 3.0, 0.1, 1
 	Slider "$MENU_SATURATION", "vid_saturation", -3.0, 3.0, 0.25, 2
+}
+
+OptionMenu "DeltaCameraOptions"
+{
+	Title "$MENU_CAMERA_HEADER"
+	
+	StaticText "$MENU_CAMERA_DESC", "DeltaMenuHeader"
 	StaticText ""
-    Slider "$MENU_MOVEBOB", "movebob", 0, 1, 0.1, 2
-    Slider "$MENU_STILLBOB", "stillbob", 0, 1, 0.1, 2
-    StaticText ""
-	Slider "$MENU_LEANINT", "cl_delta_leanIntensity", 0, 1, 0.1, 2
+	
+	Slider "$MENU_FOV", "fov", 75, 120, 0.1, 0
 	StaticText ""
-	Slider "$MENU_WEAPRECOIL", "cl_delta_weaponRecoil", 0, 1, 0.1, 2
-	Slider "$MENU_DMGRECOIL", "cl_delta_damageRecoil", 0, 1, 0.1, 2
+    Slider "$MENU_MOVE_BOB", "movebob", 0, 1, 0.1, 2
+    Slider "$MENU_STILL_BOB", "stillbob", 0, 1, 0.1, 2
+	Slider "$MENU_LEAN_INTENSITY", "cl_delta_leanIntensity", 0, 1, 0.1, 2
+	StaticText ""
+	Slider "$MENU_WEAP_RECOIL", "cl_delta_weaponRecoil", 0, 1, 0.1, 2
+	Slider "$MENU_DMG_RECOIL", "cl_delta_damageRecoil", 0, 1, 0.1, 2
+}
+
+OptionMenu "DeltaPlayerOptions"
+{
+	Title "$MENU_PLAYER_HEADER"
+	
+	StaticText "$MENU_PLAYER_DESC", "DeltaMenuHeader"
+	StaticText ""
+	
+	Option "$MENU_CHANGE_SOUL_COLOR", "cl_delta_changeSoulColor", "YesNo"
+	ColorPicker "$MENU_SOUL_COLOR", "user_delta_soulColor"
+	
+	StaticText ""
+	StaticText "$MENU_RECOMMENDED_ON", "DeltaMenuHeader"
+	Option "$PLYRMNU_ALWAYSRUN", "cl_run", "OnOff"
 }

@@ -1,0 +1,211 @@
+struct DamageIndicatorInfo
+{
+	int timer;
+	Vector3 sourcePos;
+}
+
+struct GrazeIndicatorInfo
+{
+	int timer;
+	Actor grazing;
+	Vector3 sourcePos;
+}
+
+extend class DeltaHud
+{
+	private TextureID _damageIndicator, _grazeIndicator;
+	
+	private DamageIndicatorInfo[10] _damageIndicators;
+	private GrazeIndicatorInfo[10] _grazeIndicators;
+	
+	const DAMAGE_INDICATOR_TIME = floor(TICRATE * 2);
+	const DAMAGE_INDICATOR_FADE_TIME = floor(TICRATE * 0.75);
+	const GRAZE_INDICATOR_TIME = floor(TICRATE * 0.25);
+	
+	protected void SetUpIndicatorTextures()
+	{
+		_damageIndicator 	= TexMan.CheckForTexture("DRDMGIND");
+		_grazeIndicator 	= TexMan.CheckForTexture("DRGRZIND");
+	}
+	
+	protected void TickIndicators()
+	{
+		if (!CPlayer || !CPlayer.camera)
+			return;
+		
+		_oldAngle = _currAngle;
+		_currAngle = CPlayer.camera.Angle;
+		_oldPos = _currPos;
+		_currPos = CPlayer.camera.Pos;
+		
+		for (int i = 0; i < _damageIndicators.Size(); i++)
+		{
+			if (_damageIndicators[i].timer)
+				_damageIndicators[i].timer--;
+		}
+		
+		for (int i = 0; i < _grazeIndicators.Size(); i++)
+		{
+			if (_grazeIndicators[i].timer)
+				_grazeIndicators[i].timer--;
+		}
+	}
+	
+	protected void DrawIndicators(double ticFrac)
+	{
+		DrawDamageIndicators(ticFrac);
+		DrawGrazeIndicators(ticFrac);
+	}
+	
+	protected void DrawDamageIndicators(double ticFrac)
+	{
+		if (!cl_delta_showDamageIndicators)
+			return;
+		
+		float distance = 100;
+		Vector2 indicatorScale = (1.5, 1.5);
+		
+		for (int i = 0; i < _damageIndicators.Size(); i++)
+		{
+			if (_damageIndicators[i].timer <= 0)
+				continue;
+			
+			Vector3 targetPos = _damageIndicators[i].sourcePos;
+			let player = CPlayer.mo;
+			Vector3 playerPos = DeltaUtil.Vector3Lerp(_oldPos, _currPos, ticFrac);
+			float refAng = DeltaUtil.Lerp(_oldAngle, _currAngle, ticFrac);
+			Vector3 diff = level.Vec3Diff(playerPos, targetPos);
+			float ang = player.DeltaAngle(refAng, VectorAngle(diff.x, diff.y));
+			float alpha = min(1, (_damageIndicators[i].timer - ticFrac) / DAMAGE_INDICATOR_FADE_TIME);
+			
+			DrawTextureRotated (
+				_damageIndicator,
+				(distance * sin(-ang) / indicatorScale.x, -distance * cos(ang) / indicatorScale.y),
+				DI_SCREEN_CENTER | DI_ITEM_OFFSETS,
+				ang,
+				alpha,
+				indicatorScale,
+				col: 0xff000000 | player.GetPainFlash()
+			);
+			//DrawString(_consoleFont, "Angle: " .. ang, (0, 0));
+		}
+	}
+	
+	protected void DrawGrazeIndicators(double ticFrac)
+	{
+		if (!cl_delta_showGrazeIndicators)
+			return;
+		
+		float distance = 80;
+		Vector2 indicatorScale = (1.5, 1.5);
+		
+		for (int i = 0; i < _grazeIndicators.Size(); i++)
+		{
+			if (_grazeIndicators[i].timer <= 0 || !_grazeIndicators[i].grazing)
+				continue;
+			
+			Vector3 targetPos = _grazeIndicators[i].sourcePos;
+			let player = CPlayer.mo;
+			Vector3 playerPos = DeltaUtil.Vector3Lerp(_oldPos, _currPos, ticFrac);
+			float refAng = DeltaUtil.Lerp(_oldAngle, _currAngle, ticFrac);
+			Vector3 diff = level.Vec3Diff(playerPos, targetPos);
+			float ang = player.DeltaAngle(refAng, VectorAngle(diff.x, diff.y));
+			float alpha = min(1, (_grazeIndicators[i].timer - ticFrac) / GRAZE_INDICATOR_TIME);
+			
+			DrawTextureRotated(
+				_grazeIndicator,
+				(distance * sin(-ang) / indicatorScale.x, -distance * cos(ang) / indicatorScale.y),
+				DI_SCREEN_CENTER | DI_ITEM_OFFSETS,
+				ang,
+				alpha,
+				indicatorScale,
+				col: 0xffffffff
+			);
+		}
+	}
+	
+	void CreateDamageIndicator(Actor source, Actor inflictor)
+	{
+		if (!source)
+			return;
+		if (inflictor && source == inflictor && source == CPlayer.mo)
+			return;
+		
+		int smallestTimer = -1;
+		int smallestTimerIndex;
+		
+		for (int i = 0; i < _grazeIndicators.Size(); i++)
+		{
+			let grz = _grazeIndicators[i].grazing;
+			if (!grz || !grz.target || (grz.target.bMissile && grz.target != source))
+				continue;
+			
+			_grazeIndicators[i].timer = 0;
+		}
+		
+		for (int i = 0; i < _damageIndicators.Size(); i++)
+		{
+			if (_damageIndicators[i].timer <= 0)
+			{
+				_damageIndicators[i].timer = DAMAGE_INDICATOR_TIME;
+				_damageIndicators[i].sourcePos = (source == CPlayer.mo) ?
+					inflictor.pos : source.pos;
+				return;
+			}
+			
+			if (smallestTimer > 0 && _damageIndicators[i].timer > smallestTimer)
+				continue;
+			
+			smallestTimer = _damageIndicators[i].timer;
+			smallestTimerIndex = i;
+		}
+		
+		_damageIndicators[smallestTimerIndex].timer = DAMAGE_INDICATOR_TIME;
+		_damageIndicators[smallestTimerIndex].sourcePos =
+			(source == CPlayer.mo) ? inflictor.pos : source.pos;
+	}
+	
+	void CreateGrazeIndicator(Actor source)
+	{
+		if (!source)
+			return;
+		
+		int smallestTimer = -1;
+		int smallestTimerIndex;
+		
+		for (int i = 0; i < _grazeIndicators.Size(); i++)
+		{
+			if (_grazeIndicators[i].timer <= 0 || !_grazeIndicators[i].grazing
+				|| _grazeIndicators[i].grazing == source)
+			{
+				_grazeIndicators[i].timer = GRAZE_INDICATOR_TIME;
+				_grazeIndicators[i].grazing = source;
+				_grazeIndicators[i].sourcePos = source.Pos;
+				return;
+			}
+			
+			if (smallestTimer > 0 && _grazeIndicators[i].timer > smallestTimer)
+				continue;
+			
+			smallestTimer = _grazeIndicators[i].timer;
+			smallestTimerIndex = i;
+		}
+		
+		_grazeIndicators[smallestTimerIndex].timer = GRAZE_INDICATOR_TIME;
+		_grazeIndicators[smallestTimerIndex].grazing = source;
+		_grazeIndicators[smallestTimerIndex].sourcePos = source.Pos;
+	}
+	
+	void ClearIndicators()
+	{
+		for (int i = 0; i < _grazeIndicators.Size(); i++)
+		{
+			_grazeIndicators[i].timer = 0;
+		}
+		
+		for (int i = 0; i < _damageIndicators.Size(); i++)
+		{
+			_damageIndicators[i].timer = 0;
+		}
+	}
+}

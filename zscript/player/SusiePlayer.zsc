@@ -32,40 +32,20 @@ class SusiePlayer : DeltaPlayer
 	
 	override void DeltaExtraDeathStuff()
 	{
+		Super.DeltaExtraDeathStuff();
 		A_StartSound("delta/susie/gasp", CHAN_VOICE, CHANF_OVERLAP, attenuation: 0.2);
 	}
 	
 	States
 	{
 		Spawn:
-			DSUS A 1
-			{
-				if (!IsGrounded())
-					return ResolveState("Airborne");
-				
-				return ResolveState(null);
-			}
+			DSUS A 1;
 			Loop;
 		See:
-			DSUS AAAABBBBAAAACCCC 1
-			{
-				let speedLerp = 1 - (invoker.Vel.Length() / (GetDefaultSpeed(invoker.GetClass()) * TICRATE));
-				self.tics = max(1, round(1 + speedLerp * 0.75));
-				
-				if (!IsGrounded())
-					return ResolveState("Airborne");
-				
-				return ResolveState(null);
-			}
+			DSUS BACA -1;
 			Loop;
 		Airborne:
-			DSUS HHHHIIIIJJJJ 1
-			{
-				if (IsGrounded())
-					return ResolveState("Spawn");
-				
-				return ResolveState(null);
-			}
+			DSUS HIJ 4;
 			Loop;
 		Pain:
 			Goto Spawn;

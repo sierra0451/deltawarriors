@@ -1,0 +1,216 @@
+extend class DeltaPlayer
+{
+	virtual bool InAirState()
+	{
+		return InStateSequence(CurState, AirGunState) ||
+			InStateSequence(CurState, AirMeleeState) ||
+			InStateSequence(CurState, AirMagicState);
+	}
+	
+	virtual bool InSeeState()
+	{
+		return InStateSequence(CurState, SeeGunState) ||
+			InStateSequence(CurState, SeeMeleeState) ||
+			InStateSequence(CurState, SeeMagicState);
+	}
+	
+	virtual bool InSpawnState()
+	{
+		return InStateSequence(CurState, SpawnState) ||
+			InStateSequence(CurState, SpawnGunState) ||
+			InStateSequence(CurState, SpawnMeleeState) ||
+			InStateSequence(CurState, SpawnMagicState);
+	}
+	
+	virtual bool InPainState()
+	{
+		return InStateSequence(CurState, PainGunState) ||
+			InStateSequence(CurState, PainMeleeState) ||
+			InStateSequence(CurState, PainMagicState);
+	}
+	
+	virtual bool InAirPainState()
+	{
+		return InStateSequence(CurState, AirPainGunState) ||
+			InStateSequence(CurState, AirPainMeleeState) ||
+			InStateSequence(CurState, AirPainMagicState);
+	}
+	
+	virtual bool InAirDeathState()
+	{
+		return InStateSequence(CurState, ResolveState("AirDeath"));
+	}
+	
+	// exists purely to be overridden with any clean-up, or any events that
+	// should trigger, or anything else that needs to be done once this player
+	// class dies.
+	virtual void DeltaExtraDeathStuff() {}
+	
+	void DefineDeltaSprite(int standSpr, int crouchSpr)
+	{
+		if (standSpr < 0)
+			return;
+		if (!player)
+		{
+			sprite = standSpr;
+			return;
+		}
+		
+		sprite = ((player.cmd.buttons & BT_CROUCH) && crouchSpr >= 0)
+			? crouchSpr : standSpr;
+	}
+	
+	protected action state A_JumpIfAirborne(state airborneDest)
+	{
+		if (!invoker.IsGrounded())
+			return airborneDest;
+		return ResolveState(null);
+	}
+	
+	protected action state A_JumpIfGrounded(state groundedDest)
+	{
+		if (invoker.IsGrounded())
+			return groundedDest;
+		return ResolveState(null);
+	}
+	
+	action state A_Sync(state baseState, state newState)
+	{
+		if (curState.InStateSequence(newState))
+			return ResolveState(null);
+		return newState + baseState.DistanceTo(curState);
+	}
+	
+	action state A_SyncIf(bool expression, state baseState, state trueState)
+	{
+		if (!expression)
+			return ResolveState(null);
+		return A_Sync(baseState, trueState);
+	}
+	
+	// retooling zdoom's implementation of freeze death for our own freeze death!
+	protected action void A_DeltaFreezeDeath()
+	{
+		A_StartDeath(true);
+		
+		invoker._frozenDeath = bSolid = bShootable = bNoBlood = bPushable
+			= bTelestomp = bCanPass = bSlidesOnWalls = true;
+		Height = Default.Height;
+		A_StartSound("delta/freeze", CHAN_BODY);
+		
+		if (!player)
+			return;
+		
+		player.damagecount = 0;
+		player.poisoncount = 0;
+		player.bonuscount = 0;
+	}
+	
+	protected action void A_StartDeath(bool freeze = false)
+	{
+		invoker.coyoteTimer = 0;
+		invoker.isUsingOffhand = false;
+		
+		A_NoBlocking();
+		A_ClearDynamicLights();
+		
+		invoker.DeltaExtraDeathStuff(); // can't be an action cuz we need to be able to override it
+		
+		// if we have partial invisibility or anything like that, turn it off
+		A_SetRenderStyle(1, STYLE_Normal);
+		
+		// hide our weapon sprites IMMEDIATELY. classic doom and default zdoom
+		// use deselect state, which would look weird since it's actually
+		// animated
+		if (player)
+		{
+			player.SetPSprite(PSP_FLASH, null);
+			player.SetPSprite(PSP_WEAPON, null);
+			player.SetPSprite(PSP_OFFHAND, null);
+			
+			if (player.FindPSprite(PSP_LEGS))
+				player.SetPSprite(PSP_LEGS, null);
+		}
+		A_StopSound(CHAN_WEAPON);
+		
+		if (!freeze)
+			invoker.bCanPass = false;		// make sure our corpse doesn't get
+											// stuck on decorations or monsters
+	}
+	
+	protected action state A_CheckDeathLand(statelabel targetState = "FinishDeath")
+	{
+		if (pos.Z ~== floorZ && Vel.Z <= 0)
+			return ResolveState(targetState);
+		
+		invoker.coyoteTimer++;
+		return ResolveState(null);
+	}
+	
+	protected action void A_DeathImpact()
+	{
+		A_StartSound("delta/impact", CHAN_BODY, 0, 0.75);
+	}
+	
+	// See if we're holding offhand or not
+	action state A_CheckOffhand(statelabel failDest)
+	{
+		if (!player)
+			return ResolveState(failDest);
+		
+		if (player.cmd.buttons & BT_USER1)
+			return ResolveState(null);
+		
+		return ResolveState(failDest);
+	}
+	
+	action void A_AddDynamicLight(Name lightId, Name lightDef)
+	{
+		if (invoker._dynamicLights.Find(lightId) == invoker._dynamicLights.Size())
+			invoker._dynamicLights.Push(lightId);
+		
+		A_AttachLightDef(lightId, lightDef);
+	}
+	
+	action void A_RemoveDynamicLight(Name lightId)
+	{
+		int lightIndex = invoker._dynamicLights.Find(lightId);
+		if (lightIndex == invoker._dynamicLights.Size())
+			return;
+		
+		if (A_RemoveLight(lightId))
+		{
+			invoker._dynamicLights.Delete(lightIndex);
+			return;
+		}
+	}
+	
+	action void A_ClearDynamicLights()
+	{
+		if (!invoker._dynamicLights.Size())
+			return;
+		
+		for (int i = invoker._dynamicLights.Size() - 1; i >= 0; i--)
+		{
+			A_RemoveDynamicLight(invoker._dynamicLights[i]);
+		}
+	}
+	
+	action void A_UseGunSprite()
+	{
+		invoker.DefineDeltaSprite(GetSpriteIndex(invoker.gunStandSprite),
+			GetSpriteIndex(invoker.gunCrouchSprite));
+	}
+	
+	action void A_UseMeleeSprite()
+	{
+		invoker.DefineDeltaSprite(GetSpriteIndex(invoker.meleeStandSprite),
+			GetSpriteIndex(invoker.meleeCrouchSprite));
+	}
+	
+	action void A_UseMagicSprite()
+	{
+		invoker.DefineDeltaSprite(GetSpriteIndex(invoker.magicStandSprite),
+			GetSpriteIndex(invoker.magicCrouchSprite));
+	}
+}

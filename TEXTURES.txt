@@ -232,6 +232,13 @@ Sprite "DKWDH0", 640, 240
 	Patch "DKWDH0", 0, 0
 }
 
+Sprite "DKWDI0", 640, 240
+{
+	YScale 1.200
+	Offset 160, 38
+	Patch "DKWDI0", 0, 0
+}
+
 Sprite "DKWHA0", 640, 240
 {
 	YScale 1.200
@@ -258,6 +265,13 @@ Sprite "DKWHD0", 640, 240
 	YScale 1.200
 	Offset 160, 38
 	Patch "DKWHD0", 0, 0
+}
+
+Sprite "DKWHE0", 640, 240
+{
+	YScale 1.200
+	Offset 160, 38
+	Patch "DKWHE0", 0, 0
 }
 
 Sprite "DKRDA0", 640, 240
@@ -610,6 +624,20 @@ Sprite "DKSGR0", 640, 240
 	Patch "DKSGR0", 0, 0
 }
 
+Sprite "DKSGS0", 640, 240
+{
+	YScale 1.200
+	Offset 160, 38
+	Patch "DKSGS0", 0, 0
+}
+
+Sprite "DKSGT0", 640, 240
+{
+	YScale 1.200
+	Offset 160, 38
+	Patch "DKSGT0", 0, 0
+}
+
 Sprite "DKSDA0", 640, 240
 {
 	YScale 1.200
@@ -783,6 +811,13 @@ Sprite "DKSAL0", 640, 240
 	YScale 1.200
 	Offset 160, 38
 	Patch "DKSAL0", 0, 0
+}
+
+Sprite "DKSAM0", 640, 240
+{
+	YScale 1.200
+	Offset 160, 38
+	Patch "DKSAM0", 0, 0
 }
 
 Sprite "DSHGA0", 95, 20
