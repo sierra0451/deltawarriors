@@ -189,6 +189,7 @@ class DeltaHud : BaseStatusBar
 		_tpInterp.Reset(0);
 		_healthInterp.Reset(GetHealthPerc() * 100);
 		ClearIndicators();
+		ClearDamagePopups();
 	}
 	
 	protected TextureID GetMainBindingIcon(string cmd)

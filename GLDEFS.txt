@@ -2,6 +2,10 @@
 pointlight DeltaGenericMuzzle
 {
 	color 1 0.4 0
+	size 32
+	offset 0 24 0
+	dontlightself 1
+}
 	size 48
 	offset 0 24 0
 	dontlightself 1

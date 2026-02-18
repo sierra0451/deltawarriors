@@ -137,7 +137,7 @@ class KrisSmgGrenade : DeltaGrenade
 	{
 		Super.Explode();
 		
-		double range = 150;
+		double range = 110;
 		RadiusAttack(target, 250, range, 'KrisSmgGrenade', RADF_THRUSTZ,
 			range*0.2);
 		

@@ -8,7 +8,10 @@ extend class DeltaPlayer
 	action state A_StartOffhand()
 	{
 		if (!invoker.StartOffhand())
+		{
+			A_EndOffhand();
 			return ResolveState("Null");
+		}
 		
 		return ResolveState(null);
 	}

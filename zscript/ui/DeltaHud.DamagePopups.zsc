@@ -176,4 +176,12 @@ extend class DeltaHud
 		_damagePopups[i].oldAlpha = 1.;
 		_damagePopups[i].alpha = 1.;
 	}
+	
+	void ClearDamagePopups()
+	{
+		for (int i = 0; i < _damagePopups.Size(); i++)
+		{
+			_damagePopups[i].timer = POPUP_IS_INACTIVE;
+		}
+	}
 }

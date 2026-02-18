@@ -46,3 +46,7 @@ And, of course, credits go to:
 - That fucking little white Pomeranian, Toby Fox, for creating [Deltarune](https://deltarune.com/), the first video game that's ever made me cry <3
 
 None of this would have been possible without y'all. <3
+
+## Links
+- Discord: https://discord.gg/FV5H38tZFx
+- 

@@ -227,6 +227,7 @@ class KrisPlayer : DeltaPlayer
 			KDTH B 9;
 			KDTH C 3 A_JumpIfAirborne(ResolveState("AirDeath"));
 		Death.Falling:
+		Death.Crush:
 		FinishDeath:
 			KDTH D 3;
 			KDTH E 3 A_DeathImpact;

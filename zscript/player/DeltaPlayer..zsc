@@ -395,6 +395,7 @@ class DeltaPlayer : PlayerPawn abstract
 		if (damageTics > 0 && !ignoreIFrames)
 			return 0;
 		
+		int oldHealth = health;
 		int finalDamage = Super.DamageMobj(inflictor, source, damage, mod, flags, angle);
 		
 		if (finalDamage > 0 && Health > 0)
@@ -413,7 +414,7 @@ class DeltaPlayer : PlayerPawn abstract
 				DeltaAngle(self.angle, AngleTo(inflictor)) + cfrandom(-15, 15) : 0;
 			DamageFlinch(ang, finalDamage, flags);
 		}
-		else if (mod == 'Suicide')
+		else if (mod == 'Suicide' && oldHealth > 0)
 		{
 			let exp = Spawn("DeltaBadExplosion");
 			exp.SetOrigin(pos.PlusZ((exp.height - fullHeight)/2.), false);

@@ -224,12 +224,13 @@ class DeltaWeapon : Weapon
 		psp.SetState(player.ReadyWeapon.GetReadyState());
 	}
 	
-	action state A_DeltaWeaponReady(int flags = 0, bool atEase = false)
+	action state A_DeltaWeaponReady(int flags = 0, bool atEase = false,
+		bool allowOffhand = true)
 	{
 		let ply = DeltaPlayer(invoker.owner);
 		
-        if (!(flags & WRF_NOFIRE) && (player.cmd.buttons & BT_USER1) &&
-			ply.StartOffhand())
+        if (allowOffhand && (player.cmd.buttons & BT_USER1)
+			&& ply.StartOffhand())
 		{
 			A_ResetAtEase();
 			return ResolveState("OffhandStart");

@@ -111,7 +111,7 @@ OptionMenu "DeltaControls"
 {
 	Title "$MENU_CTRL_HEADER"
 	
-	StaticText "$MENU_CTRL_CONFIG", "DeltaMenuHeader"
+	StaticText "$MENU_CTRL_DESC", "DeltaMenuHeader"
 	StaticText ""
 	
     SubMenu "$MENU_MOUSE_OPTIONS", "MouseOptions"
