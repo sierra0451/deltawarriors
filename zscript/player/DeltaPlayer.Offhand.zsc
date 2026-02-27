@@ -2,18 +2,27 @@ extend class DeltaPlayer
 {
 	protected bool isUsingOffhand;
 	protected string offhandIcon;
+	protected double offhandTpCost;
 	
 	private TextureID _offhandIconId;
 	
-	action state A_StartOffhand()
+	action void A_StartOffhand()
 	{
 		invoker.StartOffhand();
-		return ResolveState(null);
 	}
 	
 	virtual void StartOffhand()
 	{
 		isUsingOffhand = true;
+	}
+	
+	virtual bool TryStartOffhand()
+	{
+		if (!CanUseOffhand() || !TryTakeTension(offhandTpCost))
+			return false;
+		
+		StartOffhand();
+		return true;
 	}
 	
 	// Wrap up
@@ -24,7 +33,7 @@ extend class DeltaPlayer
 	
 	clearscope virtual bool CanUseOffhand()
 	{
-		return false;
+		return true;
 	}
 	
 	clearscope bool GetIsUsingOffhand()

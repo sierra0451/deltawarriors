@@ -68,8 +68,8 @@ class DeltaWeaponPickup : Weapon
 			return false;
 		
 		GoAwayAndDie();
-		Spawn(weap, pos);
-		return false;
+		toucher.GiveInventory(weap, 1);
+		return true;
 	}
 	
 	override bool CanPickup(Actor toucher)

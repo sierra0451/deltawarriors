@@ -91,6 +91,7 @@ class DeltaPlayer : PlayerPawn abstract
 	property StartFlinchTics: startFlinchTics;
 	property LungeSpeed: lungeSpeed;
 	property OffhandIcon: offhandIcon;
+	property OffhandTpCost: offhandTpCost;
 	property CharacterIcon: characterIcon;
 	property GunStandSprite: gunStandSprite;
 	property MeleeStandSprite: meleeStandSprite;
@@ -137,6 +138,8 @@ class DeltaPlayer : PlayerPawn abstract
 		DeltaPlayer.LungeSpeed 45;
 		
 		DeltaPlayer.OffhandIcon "";
+		DeltaPlayer.OffhandTpCost 0;
+		
 		DeltaPlayer.CharacterIcon "";
 		DeltaPlayer.GunCrouchSprite "";
 		DeltaPlayer.MeleeCrouchSprite "";
@@ -1522,6 +1525,11 @@ class DeltaPlayer : PlayerPawn abstract
 	clearscope Color GetOverhealColor()
 	{
 		return overhealColor | 0xff000000;
+	}
+	
+	clearscope double GetOffhandTpCost()
+	{
+		return offhandTpCost;
 	}
 	
 	clearscope bool IsCrouching(bool fullyOnly = false)

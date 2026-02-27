@@ -230,7 +230,7 @@ class DeltaWeapon : Weapon
 		let ply = DeltaPlayer(invoker.owner);
 		
         if (allowOffhand && (player.cmd.buttons & BT_USER1)
-			&& ply.CanUseOffhand() && !ply.GetIsUsingOffhand())
+			&& !ply.GetIsUsingOffhand() && ply.TryStartOffhand())
 		{
 			A_ResetAtEase();
 			return ResolveState("OffhandStart");
@@ -363,8 +363,6 @@ class DeltaWeapon : Weapon
 	
 	action state A_CheckOffHand(bool bob = false, statelabel dest = "Select")
 	{
-		A_DeltaWeaponReady(WRF_NOFIRE | WRF_NOSWITCH);
-		
 		let deltaOwner = DeltaPlayer(invoker.owner);
 		
 		if (deltaOwner.GetIsUsingOffhand())

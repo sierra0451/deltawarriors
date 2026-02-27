@@ -479,8 +479,12 @@ class DeltaHud : BaseStatusBar
 		DrawTexture(crosshair, (0, 0), DI_SCREEN_CENTER | DI_ITEM_CENTER,
 			scale: _universalScale * 0.5, col: xhairColor);
 		
-		if (!ply.CanUseOffhand() || !cl_delta_showOffhandIndicator)
+		if (!ply.CanUseOffhand()
+			|| ply.GetTension(ply.GetOffhandTpCost()) == TP_FAIL
+			|| !cl_delta_showOffhandIndicator)
+		{
 			return;
+		}
 		
 		DrawTexture(_offhandCrosshair, (0, 0), DI_SCREEN_CENTER | DI_ITEM_CENTER,
 			scale: _universalScale * 0.5, col: 0xff000000 | cl_delta_offhandIndicatorColor);
