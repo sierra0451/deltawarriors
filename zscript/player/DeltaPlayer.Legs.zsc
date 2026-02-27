@@ -1,0 +1,165 @@
+extend class DeltaPlayer
+{
+	virtual void SetUpLegs()
+	{
+		A_Overlay(PSP_LEGS, "IdleLegs");
+		let off = GetLegsOffset();
+		A_OverlayOffset(PSP_LEGS, off.x, off.y);
+	}
+	
+	virtual void AnimateLegs()
+	{
+		if (!player || player.health <= 0 || IsPredicting())
+			return;
+		
+		let psp = player.FindPSprite(PSP_LEGS);
+		
+		if (!cl_delta_showLegs)
+		{
+			if (psp)
+				psp.SetState(null);
+			
+			return;
+		}
+		
+		let offset = GetLegsOffset();
+		
+		if (!psp)
+		{
+			SetUpLegs();
+			psp = player.FindPSprite(PSP_LEGS);
+		}
+		
+		psp.bAddBob = false;
+		psp.bAddWeapon = false;
+		A_OverlayOffset(PSP_LEGS, offset.x, offset.y, WOF_INTERPOLATE);
+		
+		bool inIdle = LegsInIdleState(),
+			inWalk = LegsInWalkState(),
+			inRun = LegsInRunState(),
+			inAir = LegsInAirState();
+		
+		if ((coyoteTimer >= COYOTE_TIME && pos.z != floorz) && (inAir || inIdle || inWalk || inRun))
+			AnimateLegsAir();
+		else
+		{
+			bool doingMoveInput = player ?
+					(player.buttons & (BT_MOVERIGHT | BT_MOVELEFT | BT_BACK | BT_FORWARD))
+					: false,
+				running = player ? (player.buttons & BT_RUN) : false;
+			
+			if (doingMoveInput && (inAir || inIdle || inWalk || inRun))
+				AnimateLegsWalking();
+			else if (!doingMoveInput && (inAir || inWalk || inRun))
+				AnimateLegsIdle();
+		}
+	}
+	
+	virtual Vector2 CalculateLegsOffset(double realPitch)
+	{
+		double
+			fovFactor = (1/90.),
+			x = M_PI * fovFactor * sin(viewAngle) * cos(realPitch),
+			y = (-realPitch) * fovFactor * 200;
+		
+		//A_Log("pitch: " .. realPitch .. ", offset y: " .. y);
+		if (y < 0)
+			y = 0;
+		return (x, y);
+	}
+	
+	virtual Vector2 GetLegsOffset()
+	{
+		return CalculateLegsOffset(pitch + viewPitch - 90);
+	}
+	
+	virtual void AnimateLegsIdle()
+	{
+		player.FindPSprite(PSP_LEGS).SetState(ResolveState("IdleLegs"));
+	}
+	
+	virtual void AnimateLegsWalking()
+	{
+		bool inIdle = LegsInIdleState(),
+			inWalk = LegsInWalkState(),
+			inRun = LegsInRunState(),
+			inAir = LegsInAirState(),
+			running = player ? (player.buttons & BT_RUN) : false;
+		
+		let psp = player.FindPSprite(PSP_LEGS);
+		state targetState;
+		
+		if (running && (inWalk || inAir || inIdle))
+			targetState = ResolveState("RunLegs");
+		else if (!running && (inRun || inAir || inIdle))
+			targetState = ResolveState("WalkLegs");
+		
+		if (targetState)
+			psp.SetState(targetState);
+		
+		if ((inWalk || inRun) && psp.tics == -1)
+		{
+			int targetTics = running ? 2 : 4;
+			psp.tics = targetTics;
+		}
+	}
+	
+	virtual void AnimateLegsAir()
+	{
+		let psp = player.FindPSprite(PSP_LEGS);
+		
+		if (LegsInIdleState() || LegsInWalkState() || LegsInRunState())
+			psp.SetState(ResolveState("AirLegs"));
+		
+		let stoppedThreshold = 1.,
+			slowThreshold = 8.,
+			targetFrame = 4;
+		
+		if (vel.z > slowThreshold)
+			targetFrame = 0;
+		else if (vel.z > stoppedThreshold)
+			targetFrame = 1;
+		else if (vel.z >= -stoppedThreshold)
+			targetFrame = 2;
+		else if (vel.z > -slowThreshold)
+			targetFrame = 3;
+		
+		psp.frame = targetFrame;
+	}
+	
+	bool LegsInIdleState()
+	{
+		let psp = player.FindPSprite(PSP_LEGS);
+		if (!psp || !psp.curState)
+			return false;
+		
+		return psp.curState.InStateSequence(ResolveState("IdleLegs"));
+	}
+	
+	bool LegsInWalkState()
+	{
+		let psp = player.FindPSprite(PSP_LEGS);
+		if (!psp || !psp.curState)
+			return false;
+		
+		return psp.curState.InStateSequence(ResolveState("WalkLegs"));
+	}
+	
+	bool LegsInRunState()
+	{
+		let psp = player.FindPSprite(PSP_LEGS);
+		if (!psp || !psp.curState)
+			return false;
+		
+		return psp.curState.InStateSequence(ResolveState("RunLegs"));
+	}
+	
+	bool LegsInAirState()
+	{
+		let psp = player.FindPSprite(PSP_LEGS);
+		if (!psp || !psp.curState)
+			return false;
+		
+		return psp.curState.InStateSequence(ResolveState("AirLegs"));
+	}
+}

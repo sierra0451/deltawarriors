@@ -13,6 +13,8 @@ extend class DeltaHud
 	const MESSAGE_TOTAL_TIME = MESSAGE_REMAIN_TIME + MESSAGE_FADE_TIME;
 	
 	protected bool hasToDoWithCommands;
+	protected int midMessageTimer;
+	protected string midMessage;
 	
 	private Array<string> _messageContents;
 	private Array<int> _messageTimers;
@@ -43,9 +45,21 @@ extend class DeltaHud
 		return true; // don't show base message!
 	}
 	
+	override bool ProcessMidPrint(Font fnt, String msg, bool bold)
+	{
+		midMessage = msg;
+		midMessageTimer = MESSAGE_TOTAL_TIME;
+		return true;
+	}
+	
 	protected void TickMessages()
 	{
 		hasToDoWithCommands = false;
+		
+		if (midMessageTimer)
+			midMessageTimer--;
+		if (!midMessageTimer)
+			midMessage = "";
 		
 		if (!_messageContents.Size())
 			return;
@@ -67,6 +81,39 @@ extend class DeltaHud
 	}
 	
 	protected void DrawMessages(double ticFrac)
+	{
+		DrawMidMessage(ticFrac);
+		DrawConsoleMessages(ticFrac);
+	}
+	
+	protected void DrawMidMessage(double ticFrac)
+	{
+		if (!midMessageTimer)
+			return;
+		
+		int lineIndex = 0;
+		Vector2 msgScale = _universalScale * 2;
+		double fadePerc = min(1, double(midMessageTimer - ticFrac) / MESSAGE_FADE_TIME);
+		
+		let lines = _consoleFont.mFont.BreakLines(midMessage,
+			(Screen.GetWidth() - _hBorder*4) * msgScale.x/2);
+		
+		for (int i = 0; i < lines.Count(); i++)
+		{
+			let str = lines.StringAt(i);
+			str.StripLeftRight();
+			let width = _consoleFont.mFont.StringWidth(str);
+			
+			DrawString(_consoleFont, str,
+				((-width / 2 - _hBorder) * msgScale.x / 2,
+					20 * msgScale.y / 2 * lineIndex - (50 * msgScale.y)),
+				DI_SCREEN_CENTER, alpha: fadePerc,
+				scale: msgScale / 2);
+			lineIndex++;
+		}
+	}
+	
+	protected void DrawConsoleMessages(double ticFrac)
 	{
 		if (!_messageContents.Size())
 			return;
@@ -112,6 +159,25 @@ extend class DeltaHud
 					scale: msgScale / 2);
 				lineIndex++;
 			}
+		}
+	}
+	
+	override void FlushNotify()
+	{
+		Super.FlushNotify();
+		ClearMessages();
+	}
+	
+	void ClearMessages()
+	{
+		midMessageTimer = 0;
+		midMessage = "";
+		
+		for (int i = _messageContents.Size() - 1; i >= 0; i--)
+		{
+			_messageContents.Delete(i);
+			_messageTimers.Delete(i);
+			_messageLevels.Delete(i);
 		}
 	}
 }

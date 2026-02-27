@@ -1,5 +1,6 @@
+$pitchshiftrange 0
+
 // Delta menu sounds
-	$pitchshiftrange 0
 	delta/menu_back 	=	"sounds/menu/menu_back.wav"
 	delta/menu_change 	= 	"sounds/menu/menu_change.wav"
 	delta/menu_confirm 	= 	"sounds/menu/menu_confirm.wav"
@@ -128,6 +129,8 @@
 		delta/revolver/fire = "sounds/weapons/revolver/revolver_fire2.wav"
 		delta/revolver/cock1 = "sounds/weapons/revolver/revolver_cock1.wav"
 		delta/revolver/cock2 = "sounds/weapons/revolver/revolver_cock2.wav"
+		delta/revolver/charge = "sounds/weapons/revolver/revolver_charge.wav"
+		delta/revolver/charge_shot = "sounds/weapons/revolver/revolver_chargeShot.wav"
 		
 		// Shotgun
 		delta/shotgun/deploy1 = "sounds/weapons/shotgun/shotgun_deploy1.wav"
@@ -158,6 +161,7 @@
 		delta/smg/grenade_hit1 = "sounds/weapons/smg/smg_grenadeHit1.wav"
 		delta/smg/grenade_hit2 = "sounds/weapons/smg/smg_grenadeHit2.wav"
 		delta/smg/grenade_hit3 = "sounds/weapons/smg/smg_grenadeHit3.wav"
+		$limit delta/smg/grenade_explosion 4
 		
 		$random delta/smg/grenade_hit
 		{

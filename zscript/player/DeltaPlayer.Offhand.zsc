@@ -7,19 +7,13 @@ extend class DeltaPlayer
 	
 	action state A_StartOffhand()
 	{
-		if (!invoker.StartOffhand())
-		{
-			A_EndOffhand();
-			return ResolveState("Null");
-		}
-		
+		invoker.StartOffhand();
 		return ResolveState(null);
 	}
 	
-	virtual bool StartOffhand()
+	virtual void StartOffhand()
 	{
 		isUsingOffhand = true;
-		return true;
 	}
 	
 	// Wrap up
@@ -58,7 +52,7 @@ class DeltaParryDamage : Inventory
 		if (passive || !inflictor || !inflictor.CountInv("DeltaParried"))
 			return;
 		
-		newDamage = random[parryDamage](15, 20) * max(5, inflictor.GetMissileDamage(0, 1))
+		newDamage = random[parryDamage](22, 24) * max(5, inflictor.GetMissileDamage(0, 1))
             * max(1, G_SkillPropertyFloat(SKILLP_MonsterHealth));
 	}
 }

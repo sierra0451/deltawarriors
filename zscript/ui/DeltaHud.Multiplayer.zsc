@@ -10,7 +10,12 @@ extend class DeltaHud
 		_deathmatchCurrentPlayer 	= TexMan.CheckForTexture("DTHMCPLY");
 	}
 	
-	protected void DrawMultiplayer()
+	protected void DrawMultiplayerUnderlay()
+	{
+		
+	}
+	
+	protected void DrawMultiplayerOverlay()
 	{
 		if (deathmatch)
 			DrawDeathmatch();

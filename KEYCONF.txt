@@ -1,2 +1,7 @@
+addkeysection "$DELTAWARRIORS_NAME" DeltaWarriorsKeys
+addmenukey "$MENU_OFFHAND" +offhand
+addmenukey "$MENU_CROUCH" +crouch
 alias +offhand +user1
 alias -offhand -user1
+defaultbind Q +offhand
+defaultbind ctrl +crouch

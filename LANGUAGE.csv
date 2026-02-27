@@ -1,5 +1,6 @@
 identifier,default,remarks
 DELTAWARRIORS_VERSION,Development Build,Version display
+DELTAWARRIORS_NAME,DeltaWarriors,
 ,,Doom endings
 ,,E1TEXT
 ,,E2TEXT

@@ -67,7 +67,7 @@ class DeltaWeapon : Weapon
 	override bool CheckAmmo(int fireMode, bool autoSwitch, bool requireAmmo,
 		int ammoCount)
 	{
-		if (sv_infiniteammo || (owner.FindInventory('PowerInfiniteAmmo', true) != null))
+		if (!owner || sv_infiniteammo || (owner.FindInventory('PowerInfiniteAmmo', true) != null))
 			return true;
 		
 		if (!(owner is "DeltaPlayer"))
@@ -230,7 +230,7 @@ class DeltaWeapon : Weapon
 		let ply = DeltaPlayer(invoker.owner);
 		
         if (allowOffhand && (player.cmd.buttons & BT_USER1)
-			&& ply.StartOffhand())
+			&& ply.CanUseOffhand() && !ply.GetIsUsingOffhand())
 		{
 			A_ResetAtEase();
 			return ResolveState("OffhandStart");

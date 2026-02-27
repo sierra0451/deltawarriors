@@ -18,6 +18,16 @@ decal KrisSwordSlash2
 	randomflipy
 }
 
+decal ChargeShotScorch
+{
+	pic SCORCH1
+	shade "00 00 00"
+	x-scale 0.2
+	y-scale 0.2
+	randomflipx
+	randomflipy
+}
+
 decalgroup KrisSwordSlash
 {
 	KrisSwordSlash1	1
@@ -26,5 +36,6 @@ decalgroup KrisSwordSlash
 
 generator KrisSword KrisSwordSlash
 generator KrisRevolver BulletChip
+generator KrisRevolverChargeShot ChargeShotScorch
 generator KrisShotgun BulletChip
 generator KrisSmg BulletChip

@@ -1,0 +1,67 @@
+class KrisRevolverChargeShot : FastProjectile
+{
+	private Array<Actor> _hitActors;
+	
+	Default
+	{
+		Radius 13;
+		Height 8;
+		Projectile;
+		Speed 150;
+		DamageFunction random[revolverChargeDamage](100, 120);
+		RenderStyle "Translucent";
+		Alpha 0.9;
+		MissileType "KrisRevolverChargeShotTrail";
+		MissileHeight 8;
+		
+		+BLOODSPLATTER
+		+RIPPER
+		+NOEXTREMEDEATH
+		+BRIGHT
+		+ZDOOMTRANS
+		+SQUAREPIXELS
+		+FORCEXYBILLBOARD
+	}
+	
+	States
+	{
+		Spawn:
+			RVCS A 4;
+			Loop;
+		Death:
+			RVCS BCD 3;
+			Stop;
+	}
+	
+	override int SpecialMissileHit(Actor victim)
+	{
+		if (victim.bNonshootable)
+			return Super.SpecialMissileHit(victim);
+		if (_hitActors.Find(victim) != _hitActors.Size())
+			return MHIT_PASS;
+		
+		_hitActors.Push(victim);
+		return MHIT_DEFAULT;
+	}
+}
+
+class KrisRevolverChargeShotTrail : Actor
+{
+	Default
+	{
+		Scale 0.5;
+		+NOINTERACTION
+		+BRIGHT
+		+ZDOOMTRANS
+		+SQUAREPIXELS
+		+FORCEXYBILLBOARD
+	}
+	
+	States
+	{
+		Spawn:
+			RVCT A 1;
+			RVCT AAABBBBCCCCDDDD 1 A_FadeOut(1. / 12);
+			Stop;
+	}
+}

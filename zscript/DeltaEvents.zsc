@@ -1,6 +1,6 @@
 struct GrazeEvent play version("2.4")
 {
-	DeltaPlayer thing;
+	PlayerPawn thing;
 	Actor grazeSource;
 }
 

@@ -5,7 +5,6 @@ class KrisShotgun : DeltaWeapon
 	Default
 	{
 		Tag "$TAG_DELTA_SHOTGUN";
-		Inventory.RestrictedTo "KrisPlayer";
 		Inventory.PickupMessage "$PICKUP_DELTA_KSHOTGUN";
 		
 		Weapon.SlotNumber 3;

@@ -30,8 +30,9 @@ class KrisPlayer : DeltaPlayer
 		Player.WeaponSlot 2, "KrisRevolver";
 		Player.WeaponSlot 3, "KrisShotgun";
 		Player.WeaponSlot 4, "KrisSMG";
-		// Player.WeaponSlot 5, "KrisGrenadeLauncher";
-		// Player.WeaponSlot 6, "KrisCrossbow";
+		Player.WeaponSlot 5, "TempRocketLauncher";//"KrisGrenadeLauncher";
+		Player.WeaponSlot 6, "TempIncinerator", "TempPlasmaRifle";//"KrisCrossbow";
+		Player.WeaponSlot 7, "TempCalamityBlade", "TempBFG9000";
 		
 		Player.StartItem "KrisSword";
 		Player.StartItem "KrisRevolver";
@@ -249,10 +250,13 @@ class KrisPlayer : DeltaPlayer
 			#### # -1;
 			Stop;
 		*/
-		
-		// ============
-		//   OVERLAYS  
-		// ============
+	}
+	
+	States (Overlay)
+	{
+		// ====================
+		//   OFFHAND OVERLAYS  
+		// ====================
 		OffhandOverlay:
 			TNT1 A 0 A_StartOffhand;
 		ParryOverlay:
@@ -265,19 +269,42 @@ class KrisPlayer : DeltaPlayer
 			TNT1 A 1 A_EndOffhand;
 			Stop;
 		
-		SlideOverlay:
-			KRSL ABC 1;
-			KRSL D -1;
-			Stop;
-		StopSlideOverlay:
+		// ================
+		//   LEG OVERLAYS
+		// ================
+		IdleLegs:
+			KLEG A 1;
+			Loop;
+		WalkLegs:
+			KLEG A 2;
+			KLGW A 2;
+		WalkLoopLegs:
+			KLGW BCDEFGHI -1;
+			Loop;
+		RunLegs:
+			KLEG A 2;
+			KLGR A 2;
+		RunLoopLegs:
+			KLGR BCDEFGHIJK -1;
+			Loop;
+		SlideLegs:
+			KRSL ABCD 1;
+			Wait;
+		StopSlideLegs:
 			KRSL EFGH 1;
-			Stop;
+			Goto IdleLegs;
+		AirLegs:
+			KLGA # 1;
+			Loop;
 	}
 	
 	override void AnimateDeath()
 	{
 		if (!InAirDeathState())
+		{
+			Super.AnimateDeath();
 			return;
+		}
 		
 		int minTics = 3,
 			maxTics = 15,
@@ -447,7 +474,7 @@ class KrisPlayer : DeltaPlayer
 	override double GetViewRoll()
 	{
 		double _roll = Super.GetViewRoll();
-		_roll += 3 * (double(_slideTics) / MAX_SLIDE_TICS);
+		_roll += 5 * (double(_slideTics) / MAX_SLIDE_TICS);
 		
 		return _roll;
 	}
@@ -465,7 +492,14 @@ class KrisPlayer : DeltaPlayer
 	
 	override double GetGrazeMultiplier()
 	{
-		return GetIsUsingOffhand() ? 0.25 : 1;
+		let grazeMult = 1;
+		
+		if (GetIsUsingOffhand())
+			grazeMult *= 0.25;
+		else if (isSliding)
+			grazeMult *= 0.5;
+		
+		return grazeMult;
 	}
 	
 	protected void HandleSlide()
@@ -474,13 +508,8 @@ class KrisPlayer : DeltaPlayer
 			slideX = cos(slideAngle) * _currentSlideSpeed,
 			slideY = -sin(slideAngle) * _currentSlideSpeed,
 			actorX = cos(Angle),
-			actorY = sin(Angle),
-			legsOffsetX = 3 * viewAngle*cos(pitch+viewPitch) / (player.fov/90),
-			legsOffsetY = 80 - 3 * (pitch+viewPitch) / (player.fov/90);
+			actorY = sin(Angle);
 		
-		// 2.35 px every degree up to 34.1 looking down. 0 deg should be 48
-		A_OverlayOffset(PSP_LEGS, legsOffsetX, max(38, legsOffsetY), WOF_INTERPOLATE);
-			
 		if (isSliding)
 		{
 			if (_slideTics < MAX_SLIDE_TICS)
@@ -567,14 +596,11 @@ class KrisPlayer : DeltaPlayer
 			return;
 		
 		A_StartSound("delta/kris/slide_start", CHAN_AUTO);
-		A_Overlay(PSP_LEGS, "SlideOverlay");
-		
-		let overlay = player.FindPSprite(PSP_LEGS);
-		if (!overlay)
+		let psp = player.FindPSprite(PSP_LEGS);
+		if (!psp)
 			return;
 		
-		overlay.bAddWeapon = false;
-		overlay.bAddBob = false;
+		psp.SetState(ResolveState("SlideLegs"));
 	}
 	
 	protected void EndSlide()
@@ -589,7 +615,7 @@ class KrisPlayer : DeltaPlayer
 		if (!psp)
 			return;
 		
-		psp.SetState(ResolveState("StopSlideOverlay"), true);
+		psp.SetState(ResolveState("StopSlideLegs"));
 	}
 	
 	protected action void A_SpawnDeathSoul(double zOffset = 36)
@@ -619,8 +645,6 @@ class KrisPlayer : DeltaPlayer
 			if (!mis.GetMissileDamage(0, 1) && !mis.bIsMonster)
 				continue;
 			
-			if (mis.bRipper) // rippers can't be parried
-				continue;
 			if (!mis.bIsMonster && mis.target && IsFriend(mis.target)) // friendly projectiles shouldn't be parried
 				continue;
 			if (!mis.bMissile && !mis.bSkullfly)
@@ -697,20 +721,24 @@ class KrisPlayer : DeltaPlayer
 		damageTics = 12;
 		
 		double parryPitch = AimLineAttack(Angle, PLAYERMISSILERANGE,
-			flags: ALF_CHECK3D | ALF_NOFRIENDS);
+			flags: ALF_CHECK3D | ALF_NOFRIENDS | ALF_NOWEAPONCHECK);
 		double newSpeed = parried.bMissile ? 70 : 50;
 		Vector2 vecToAng = AngleToVector(angle, 1);
 		Vector2 vecToPitch = AngleToVector(parryPitch, 1);
-		Vector3 newVel = (vecToAng.x, vecToAng.y, -vecToPitch.y) * newSpeed;
+		Vector3 newVel = (vecToAng.x * vecToPitch.x, vecToAng.y * vecToPitch.x,
+			-vecToPitch.y);
+		/*
+		A_Log("angVec: " .. vecToAng .. ", pitchVec: " .. vecToPitch ..
+			", newVel: " .. newVel .. ", length " .. newVel.Length());
+		*/
+		newVel *= newSpeed;
 		
 		if (parriable)
 			parriable.OnParry(self);
 		
 		if (parried.bMissile)
 		{
-			int dam = parried.GetMissileDamage(0, bStrifeDamage ? 6 : 12);
 			parried.SetOrigin(pos + (0, 0, viewHeight), false);
-			
 			let inv = DeltaParried(parried.GiveInventoryType("DeltaParried"));
 			inv.oldTarget = parried.target;	// mostly for checking if we
 											// knocked a player's own
@@ -722,23 +750,29 @@ class KrisPlayer : DeltaPlayer
 			parried.Vel = newVel;
 			parried.Angle = Angle;
 			parried.Pitch = parryPitch;
-			parried.bForceRadiusDmg = true;
 			parried.bForcePain = true;
 			return;
 		}
 		
-		let parryDamage = random[parryDmg](60, 90) * max(1,
+		let parryDamage = random[parryDmg](200, 250) * max(1,
 			G_SkillPropertyFloat(SKILLP_MonsterHealth));
 		
 		if (parried.bSkullfly)
 		{
+			parried.DamageMobj(self, self, parryDamage, 'Parry', DMG_THRUSTLESS);
 			parried.Vel = newVel;
-			parried.DamageMobj(self, self, parryDamage, 'Parry');
 		}
 		else if (parried.bIsMonster)
 		{
-			parried.DamageMobj(self, self, parryDamage, 'Parry');
+			parried.DamageMobj(self, self, parryDamage, 'Parry', DMG_THRUSTLESS);
 			DeltaUtil.ForceActorPain(parried);
+			double explodeChance = 0.3;
+			
+			if (frandom[explodeChance](0, 1) <= explodeChance && 
+				parried.curState.InStateSequence(parried.ResolveState("XDeath")))
+			{
+				Spawn("DeltaBadExplosion", parried.pos);
+			}
 		}
 	}
 	
@@ -755,15 +789,15 @@ class KrisPlayer : DeltaPlayer
 			EndSlide();
 	}
 	
-	override bool StartOffhand()
+	override void StartOffhand()
 	{
-		if (!GetTension(PARRY_TP_COST))
+		if (!CanUseOffhand())
 		{
 			A_StartSound("delta/tp_fail", CHAN_ITEM, CHANF_LOCAL | CHANF_NOSTOP);
-			return false;
+			return;
 		}
 		
-		return Super.StartOffhand();
+		Super.StartOffhand();
 	}
 	
 	void PlaySliding()
@@ -787,6 +821,8 @@ class KrisPlayer : DeltaPlayer
 				SetState(A_DeltaGetState("SlidePain"));
 			else
 				PlaySliding();
+			
+			AnimateLegs();
 		}
 		else
 		{
@@ -795,6 +831,14 @@ class KrisPlayer : DeltaPlayer
 			
 			Super.AnimatePlayer();
 		}
+	}
+	
+	override Vector2 GetLegsOffset()
+	{
+		if (!isSliding)
+			return Super.GetLegsOffset();
+		
+		return CalculateLegsOffset(pitch + viewPitch - 29);
 	}
 	
 	override bool CanUseOffhand()

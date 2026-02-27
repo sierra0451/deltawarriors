@@ -274,6 +274,90 @@ Sprite "DKWHE0", 640, 240
 	Patch "DKWHE0", 0, 0
 }
 
+Sprite "DKRCA0", 640, 240
+{
+	YScale 1.200
+	Offset 160, 38
+	Patch "DKRCA0", 0, 0
+}
+
+Sprite "DKRCB0", 640, 240
+{
+	YScale 1.200
+	Offset 160, 38
+	Patch "DKRCB0", 0, 0
+}
+
+Sprite "DKRCC0", 640, 240
+{
+	YScale 1.200
+	Offset 160, 38
+	Patch "DKRCC0", 0, 0
+}
+
+Sprite "DKRCD0", 640, 240
+{
+	YScale 1.200
+	Offset 160, 38
+	Patch "DKRCD0", 0, 0
+}
+
+Sprite "DKRCE0", 640, 240
+{
+	YScale 1.200
+	Offset 160, 38
+	Patch "DKRCE0", 0, 0
+}
+
+Sprite "DKRCF0", 640, 240
+{
+	YScale 1.200
+	Offset 160, 38
+	Patch "DKRCF0", 0, 0
+}
+
+Sprite "DKRCG0", 640, 240
+{
+	YScale 1.200
+	Offset 160, 38
+	Patch "DKRCG0", 0, 0
+}
+
+Sprite "DKRCH0", 640, 240
+{
+	YScale 1.200
+	Offset 160, 38
+	Patch "DKRCH0", 0, 0
+}
+
+Sprite "DKRCI0", 640, 240
+{
+	YScale 1.200
+	Offset 160, 38
+	Patch "DKRCI0", 0, 0
+}
+
+Sprite "DKRCJ0", 640, 240
+{
+	YScale 1.200
+	Offset 160, 38
+	Patch "DKRCJ0", 0, 0
+}
+
+Sprite "DKRCK0", 640, 240
+{
+	YScale 1.200
+	Offset 160, 38
+	Patch "DKRCK0", 0, 0
+}
+
+Sprite "DKRCL0", 640, 240
+{
+	YScale 1.200
+	Offset 160, 38
+	Patch "DKRCL0", 0, 0
+}
+
 Sprite "DKRDA0", 640, 240
 {
 	YScale 1.200
@@ -1074,56 +1158,238 @@ Sprite "DKSLE0", 640, 240
 	Patch "DKSLE0", 0, 0
 }
 
-Sprite "KRSLA0", 300, 200
+Sprite "KLEGA0", 300, 240
+{
+	YScale 1.200
+	Patch "KLEGA0", 0, 0
+	NoTrim
+}
+
+Sprite "KLGWA0", 300, 240
+{
+	YScale 1.200
+	Patch "KLGWA0", 0, 0
+	NoTrim
+}
+
+Sprite "KLGWB0", 300, 240
+{
+	YScale 1.200
+	Patch "KLGWB0", 0, 0
+	NoTrim
+}
+
+Sprite "KLGWC0", 300, 240
+{
+	YScale 1.200
+	Patch "KLGWC0", 0, 0
+	NoTrim
+}
+
+Sprite "KLGWD0", 300, 240
+{
+	YScale 1.200
+	Patch "KLGWD0", 0, 0
+	NoTrim
+}
+
+Sprite "KLGWE0", 300, 240
+{
+	YScale 1.200
+	Patch "KLGWE0", 0, 0
+	NoTrim
+}
+
+Sprite "KLGWF0", 300, 240
+{
+	YScale 1.200
+	Patch "KLGWF0", 0, 0
+	NoTrim
+}
+
+Sprite "KLGWG0", 300, 240
+{
+	YScale 1.200
+	Patch "KLGWG0", 0, 0
+	NoTrim
+}
+
+Sprite "KLGWH0", 300, 240
+{
+	YScale 1.200
+	Patch "KLGWH0", 0, 0
+	NoTrim
+}
+
+Sprite "KLGWI0", 300, 240
+{
+	YScale 1.200
+	Patch "KLGWI0", 0, 0
+	NoTrim
+}
+
+Sprite "KLGRA0", 300, 240
+{
+	YScale 1.200
+	Patch "KLGRA0", 0, 0
+	NoTrim
+}
+
+Sprite "KLGRB0", 300, 240
+{
+	YScale 1.200
+	Patch "KLGRB0", 0, 0
+	NoTrim
+}
+
+Sprite "KLGRC0", 300, 240
+{
+	YScale 1.200
+	Patch "KLGRC0", 0, 0
+	NoTrim
+}
+
+Sprite "KLGRD0", 300, 240
+{
+	YScale 1.200
+	Patch "KLGRD0", 0, 0
+	NoTrim
+}
+
+Sprite "KLGRE0", 300, 240
+{
+	YScale 1.200
+	Patch "KLGRE0", 0, 0
+	NoTrim
+}
+
+Sprite "KLGRF0", 300, 240
+{
+	YScale 1.200
+	Patch "KLGRF0", 0, 0
+	NoTrim
+}
+
+Sprite "KLGRG0", 300, 240
+{
+	YScale 1.200
+	Patch "KLGRG0", 0, 0
+	NoTrim
+}
+
+Sprite "KLGRH0", 300, 240
+{
+	YScale 1.200
+	Patch "KLGRH0", 0, 0
+	NoTrim
+}
+
+Sprite "KLGRI0", 300, 240
+{
+	YScale 1.200
+	Patch "KLGRI0", 0, 0
+	NoTrim
+}
+
+Sprite "KLGRJ0", 300, 240
+{
+	YScale 1.200
+	Patch "KLGRJ0", 0, 0
+	NoTrim
+}
+
+Sprite "KLGRK0", 300, 240
+{
+	YScale 1.200
+	Patch "KLGRK0", 0, 0
+	NoTrim
+}
+
+Sprite "KLGAA0", 300, 240
+{
+	YScale 1.200
+	Patch "KLGAA0", 0, 0
+	NoTrim
+}
+
+Sprite "KLGAB0", 300, 240
+{
+	YScale 1.200
+	Patch "KLGAB0", 0, 0
+	NoTrim
+}
+
+Sprite "KLGAC0", 300, 240
+{
+	YScale 1.200
+	Patch "KLGAC0", 0, 0
+	NoTrim
+}
+
+Sprite "KLGAD0", 300, 240
+{
+	YScale 1.200
+	Patch "KLGAD0", 0, 0
+	NoTrim
+}
+
+Sprite "KLGAE0", 300, 240
+{
+	YScale 1.200
+	Patch "KLGAE0", 0, 0
+	NoTrim
+}
+
+Sprite "KRSLA0", 300, 240
 {
 	YScale 1.200
 	Patch "KRSLA0", 0, 0
 	NoTrim
 }
 
-Sprite "KRSLB0", 300, 200
+Sprite "KRSLB0", 300, 240
 {
 	YScale 1.200
 	Patch "KRSLB0", 0, 0
 	NoTrim
 }
 
-Sprite "KRSLC0", 300, 200
+Sprite "KRSLC0", 300, 240
 {
 	YScale 1.200
 	Patch "KRSLC0", 0, 0
 	NoTrim
 }
 
-Sprite "KRSLD0", 300, 200
+Sprite "KRSLD0", 300, 240
 {
 	YScale 1.200
 	Patch "KRSLD0", 0, 0
 	NoTrim
 }
 
-Sprite "KRSLE0", 300, 200
+Sprite "KRSLE0", 300, 240
 {
 	YScale 1.200
 	Patch "KRSLE0", 0, 0
 	NoTrim
 }
 
-Sprite "KRSLF0", 300, 200
+Sprite "KRSLF0", 300, 240
 {
 	YScale 1.200
 	Patch "KRSLF0", 0, 0
 	NoTrim
 }
 
-Sprite "KRSLG0", 300, 200
+Sprite "KRSLG0", 300, 240
 {
 	YScale 1.200
 	Patch "KRSLG0", 0, 0
 	NoTrim
 }
 
-Sprite "KRSLH0", 300, 200
+Sprite "KRSLH0", 300, 240
 {
 	YScale 1.200
 	Patch "KRSLH0", 0, 0

@@ -13,6 +13,7 @@ version "4.14.3"
 
 // player scripts
 #include "zscript/player/DeltaPlayer..zsc"
+#include "zscript/player/DeltaPlayer.Legs.zsc"
 #include "zscript/player/DeltaPlayer.Lunge.zsc"
 #include "zscript/player/DeltaPlayer.Offhand.zsc"
 #include "zscript/player/DeltaPlayer.StatesActions.zsc"
@@ -44,6 +45,7 @@ version "4.14.3"
 	// kris's weapons
 	#include "zscript/weapons/kris/KrisSword.zsc"
 	#include "zscript/weapons/kris/KrisRevolver.zsc"
+	#include "zscript/weapons/kris/KrisRevolverChargeShot.zsc"
 	#include "zscript/weapons/kris/KrisShotgun.zsc"
 	#include "zscript/weapons/kris/KrisSMG.zsc"
 

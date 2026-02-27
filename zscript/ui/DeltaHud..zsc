@@ -82,11 +82,16 @@ class DeltaHud : BaseStatusBar
 		bool infiniteAmmo = sv_infiniteAmmo || (CPlayer.mo.FindInventory('PowerInfiniteAmmo', true) != null);
 		DeltaPlayer ply = DeltaPlayer(CPlayer.mo);
 		
-		if (!ply)
-			return;
-		
 		_oldTp = _tpInterp.GetValue();
-		_tpInterp.Update(infiniteAmmo ? ply.maxTensionPoints : ply.tensionPoints);
+		
+		int tpInterpTarget;
+		
+		if (ply)
+			tpInterpTarget = infiniteAmmo ? ply.maxTensionPoints : ply.tensionPoints;
+		else
+			tpInterpTarget = 0;
+		
+		_tpInterp.Update(tpInterpTarget);
 		
 		_oldHealth = _healthInterp.GetValue();
 		_healthInterp.Update(floor(GetHealthPerc() * 100));
@@ -136,7 +141,8 @@ class DeltaHud : BaseStatusBar
 	
 	protected float GetHealthPerc()
 	{
-		return CPlayer.mo.GetMaxHealth() == 0 ? 0 : min(2, CPlayer.Health / float(CPlayer.mo.GetMaxHealth()));
+		return CPlayer.mo.GetMaxHealth() == 0 ? 0
+			: min(2, CPlayer.Health / float(CPlayer.mo.GetMaxHealth()));
 	}
 	
 	override void Draw(int state, double ticFrac)
@@ -148,9 +154,9 @@ class DeltaHud : BaseStatusBar
 		if (state == HUD_None || !cl_delta_showHud)
 			return;
 		
-		//fullscreenOffsets = true;
 		_universalScale = GetHudScale() * 0.5;
-		_universalScale = (1 / _universalScale.x, 1 / _universalScale.y);
+		_universalScale = (1/_universalScale.x, 1/_universalScale.y)
+			* cl_delta_hudScale;
 		
 		_hBorder = 30 * _universalScale.x;
 		_vBorder = 30 * _universalScale.y;
@@ -164,10 +170,11 @@ class DeltaHud : BaseStatusBar
 		}
 		
 		BeginHUD(1, false);
-		//DrawString(_consoleFont, "offset: " .. drawOffset, (0, 0), scale: _universalScale);
+		
+		DrawMultiplayerUnderlay();
 		DrawMessages(ticFrac);
 		DrawIndicators(ticFrac);
-		DrawMultiplayer();
+		DrawMultiplayerOverlay();
 		DrawBossBars();
 		
 		if (CPlayer.Health > 0)
@@ -190,6 +197,7 @@ class DeltaHud : BaseStatusBar
 		_healthInterp.Reset(GetHealthPerc() * 100);
 		ClearIndicators();
 		ClearDamagePopups();
+		ClearMessages();
 	}
 	
 	protected TextureID GetMainBindingIcon(string cmd)
@@ -267,8 +275,7 @@ class DeltaHud : BaseStatusBar
 		// draw TP timer and bar
 		curY -= 2*_universalScale.y + panelYSpacing;
 		
-		double tpTimer = float(ply.tensionDrainTimer) /
-			(ply.DRAIN_TIMER_START * G_SkillPropertyFloat(SKILLP_AmmoFactor) * sv_ammofactor);
+		double tpTimer = float(ply.tensionDrainTimer) / (ply.DRAIN_TIMER_START * G_SkillPropertyFloat(SKILLP_AmmoFactor) * sv_ammofactor);
 		Fill(0xffffffff, _hBorder + panelXSpacing + barXOffset, curY, tpTimer * barWidth, 3*_universalScale.y, DI_SCREEN_LEFT_BOTTOM);
 		
 		curY -= 3*_universalScale.y + barHeight;
@@ -325,6 +332,7 @@ class DeltaHud : BaseStatusBar
 		curY -= panelYSpacing + barHeight;
 		Fill(Color(255, 255, 0, 0), _hBorder + panelXSpacing + barXOffset,
 			curY, min(1, healthInterpValue) * barWidth, barHeight, DI_SCREEN_LEFT_BOTTOM);
+		
 		Fill(ply.GetCharacterColor(), _hBorder + panelXSpacing + barXOffset,
 			curY, min(1, GetHealthPerc()) * barWidth, barHeight, DI_SCREEN_LEFT_BOTTOM);
 		
@@ -336,7 +344,7 @@ class DeltaHud : BaseStatusBar
 				curY, (GetHealthPerc() - 1) * barWidth, barHeight, DI_SCREEN_LEFT_BOTTOM);
 		
 		string format = GetHealthPerc() <= 0.33 ? "\c[DeltaLowHealth]%s" : "%s";
-		string maxHp = String.Format(format, "" .. ply.GetMaxHealth());
+		string maxHp = String.Format(format, "" .. CPlayer.mo.GetMaxHealth());
 		double maxHpWidth = _drHudFont.mFont.StringWidth(maxHp) * _universalScale.x;
 		double slashWidth = _drHudFont.mFont.GetCharWidth("/") * _universalScale.x;
 		DrawString(_drHudFont, String.Format(format, "" .. CPlayer.Health),

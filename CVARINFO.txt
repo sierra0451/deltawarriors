@@ -4,6 +4,8 @@ nosave bool 	cl_delta_changeSoulColor		= true;
 
 // HUD options
 nosave bool 	cl_delta_showHud				= true;
+nosave bool		cl_delta_showLegs				= true;
+nosave float	cl_delta_hudScale				= 1;
 nosave bool		cl_delta_showGrazeIndicators	= true;
 nosave bool		cl_delta_showDamageIndicators	= true;
 nosave bool 	cl_delta_lowHealthVignette		= true;

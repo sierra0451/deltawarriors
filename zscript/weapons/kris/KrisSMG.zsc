@@ -4,7 +4,6 @@ class KrisSmg : DeltaWeapon
 	{
 		Tag "$TAG_DELTA_SMG";
 		Obituary "$OBIT_DELTA_KSMG";
-		Inventory.RestrictedTo "KrisPlayer";
 		Inventory.PickupMessage "$PICKUP_DELTA_KSMG";
 		
 		Weapon.SlotNumber 4;
@@ -148,8 +147,7 @@ class KrisSmgGrenade : DeltaGrenade
 		let damageMult = DeltaUtil.Clamp(1.2 - dist/range, 0, 1),
 			dmg = ceil(25 * damageMult);
 		
-		if (target.DamageMobj(self, self, dmg, 'KrisSmgGrenade', DMG_THRUSTLESS) <= 0)
-			return;
+		target.DamageMobj(self, self, dmg, 'KrisSmgGrenade', DMG_THRUSTLESS);
 		
 		let knockbackDmg = dmg * 0.5;
 		let deltaTarget = DeltaPlayer(target);
