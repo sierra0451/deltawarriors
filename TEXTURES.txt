@@ -1165,6 +1165,48 @@ Sprite "KLEGA0", 300, 240
 	NoTrim
 }
 
+Sprite "KLEGB0", 300, 240
+{
+	YScale 1.200
+	Patch "KLEGB0", 0, 0
+	NoTrim
+}
+
+Sprite "KLEGC0", 300, 240
+{
+	YScale 1.200
+	Patch "KLEGC0", 0, 0
+	NoTrim
+}
+
+Sprite "KLEGB0", 300, 240
+{
+	YScale 1.200
+	Patch "KLEGB0", 0, 0
+	NoTrim
+}
+
+Sprite "KLEGD0", 300, 240
+{
+	YScale 1.200
+	Patch "KLEGD0", 0, 0
+	NoTrim
+}
+
+Sprite "KLEGE0", 300, 240
+{
+	YScale 1.200
+	Patch "KLEGE0", 0, 0
+	NoTrim
+}
+
+Sprite "KLEGC0", 300, 240
+{
+	YScale 1.200
+	Patch "KLEGC0", 0, 0
+	NoTrim
+}
+
 Sprite "KLGWA0", 300, 240
 {
 	YScale 1.200

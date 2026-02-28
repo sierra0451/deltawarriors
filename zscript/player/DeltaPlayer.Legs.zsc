@@ -50,7 +50,7 @@ extend class DeltaPlayer
 			
 			if (doingMoveInput && (inAir || inIdle || inWalk || inRun))
 				AnimateLegsWalking();
-			else if (!doingMoveInput && (inAir || inWalk || inRun))
+			else if (!doingMoveInput && (inAir || inIdle || inWalk || inRun))
 				AnimateLegsIdle();
 		}
 	}
@@ -59,10 +59,9 @@ extend class DeltaPlayer
 	{
 		double
 			fovFactor = (1/90.),
-			x = M_PI * fovFactor * sin(viewAngle) * cos(realPitch),
+			x = fovFactor * 6400 * cos(pitch + viewPitch) * sin(viewAngle),
 			y = (-realPitch) * fovFactor * 200;
 		
-		//A_Log("pitch: " .. realPitch .. ", offset y: " .. y);
 		if (y < 0)
 			y = 0;
 		return (x, y);
@@ -75,7 +74,24 @@ extend class DeltaPlayer
 	
 	virtual void AnimateLegsIdle()
 	{
-		player.FindPSprite(PSP_LEGS).SetState(ResolveState("IdleLegs"));
+		let psp = player.FindPSprite(PSP_LEGS);
+		bool inWalk = LegsInWalkState(),
+			inRun = LegsInRunState(),
+			inAir = LegsInAirState();
+		state targetState;
+		
+		if (inWalk || inRun || inAir)
+			psp.SetState(ResolveState("IdleLegs"));
+		
+		if (LegsInIdleState())
+		{
+			int targetFrame = 0;
+			double diff = viewHeight - player.viewHeight;
+			
+			targetFrame = DeltaUtil.Clamp(floor(diff / 4.),
+				int(player.deltaViewHeight < 0), 4);
+			psp.frame = targetFrame;
+		}
 	}
 	
 	virtual void AnimateLegsWalking()
@@ -90,9 +106,9 @@ extend class DeltaPlayer
 		state targetState;
 		
 		if (running && (inWalk || inAir || inIdle))
-			targetState = ResolveState("RunLegs");
+			targetState = inIdle ? ResolveState("RunLegs") : ResolveState("RunLoopLegs");
 		else if (!running && (inRun || inAir || inIdle))
-			targetState = ResolveState("WalkLegs");
+			targetState = inIdle ? ResolveState("WalkLegs") : ResolveState("WalkLoopLegs");
 		
 		if (targetState)
 			psp.SetState(targetState);

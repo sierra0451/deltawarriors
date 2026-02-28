@@ -112,7 +112,10 @@ class DeltaGrenade : DeltaParriable abstract
 		if (exploded || !bouncePlane)
 			return Super.SpecialBounceHit(bounceMobj, bounceLine, bouncePlane, is3dFloor);
 		
-		if (grenadeType == GRENADE_STICKY && bouncePlane.negiC < 0)
+		//A_Log("negiC " .. bouncePlane.negiC .. ", 3d floor " .. is3dFloor);
+		bool isFloor = is3dFloor ? (bouncePlane.negiC > 0) : (bouncePlane.negiC < 0);
+		
+		if (grenadeType == GRENADE_STICKY && isFloor)
 		{
 			Vel = (0, 0, 0);
 			if (!fuseLit)

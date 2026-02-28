@@ -7,7 +7,8 @@ class KrisPlayer : DeltaPlayer
 	protected double slideSlowing;		// time it takes sliding to slow to a stop on flat surface
 	
 	private double _currentSlideSpeed, _savedSlideSpeed;
-	private int _savedSlideSpeedTimer, _slideBuffer;
+	private int _savedSlideSpeedTimer;
+	private bool _lastCrouchedWhileAirborne, _lastCrouchedWhileGrounded;
 	private int _slideTics;				// used for smooth transitions into sliding effectss
     
 	const MAX_SLIDE_TICS = 7;
@@ -274,16 +275,16 @@ class KrisPlayer : DeltaPlayer
 		//   LEG OVERLAYS
 		// ================
 		IdleLegs:
-			KLEG A 1;
+			KLEG # 1;
 			Loop;
 		WalkLegs:
-			KLEG A 2;
+			KLEG A 3;
 			KLGW A 2;
 		WalkLoopLegs:
 			KLGW BCDEFGHI -1;
 			Loop;
 		RunLegs:
-			KLEG A 2;
+			KLEG A 3;
 			KLGR A 2;
 		RunLoopLegs:
 			KLGR BCDEFGHIJK -1;
@@ -380,26 +381,24 @@ class KrisPlayer : DeltaPlayer
 			&& !totallyfrozen)
 		{
 			int crouchDir = player.crouching;
+			bool doingMoveInput = buttons & (BT_MOVELEFT | BT_MOVERIGHT | BT_FORWARD | BT_BACK);
 			
 			if (crouchDir == 0)
 				crouchDir = (buttons & BT_CROUCH) ? -1 : 1;
 			else if (buttons & BT_CROUCH)
 				player.crouching = 0;
 			
-			if ((buttons & BT_CROUCH) && !(player.oldButtons & BT_CROUCH))
-				_slideBuffer = 3;
-			else if (_slideBuffer)
-				_slideBuffer--;
-			
-			if (jumpBuffer)
-				_slideBuffer = 0;
-			
 			if (crouchDir == 1 && crouchFactor < 1 && pos.z + height < ceilingz)
 				CrouchMove(2);
 			else if (crouchDir == -1 && crouchFactor > 0.5)
 				CrouchMove(-2);
 			
-			if (!isSliding && _slideBuffer && (buttons & BT_RUN) && IsGrounded() && IsCrouching())
+			//A_Log("lcwg " .. _lastCrouchedWhileGrounded .. ", lcwa " .. _lastCrouchedWhileAirborne);
+			
+			if (!isSliding
+				&& ((buttons & BT_CROUCH && !(player.oldButtons & BT_CROUCH))
+					|| (crouchDir == -1 && _lastCrouchedWhileAirborne && !_lastCrouchedWhileGrounded))
+				&& IsGrounded() && IsCrouching())
 			{
 				let dir = (GetPlayerInput(INPUT_FORWARDMOVE) / 12800., GetPlayerInput(INPUT_SIDEMOVE) / 10240.);
 				
@@ -408,10 +407,20 @@ class KrisPlayer : DeltaPlayer
 			}
 			else if (crouchDir == 1 && isSliding)
 				EndSlide();
+			
+			if (IsGrounded() && !isSliding && buttons & BT_CROUCH)
+				_lastCrouchedWhileGrounded = true;
+			else if (isSliding || !(buttons & BT_CROUCH))
+				_lastCrouchedWhileGrounded = false;
+			
+			if (!IsGrounded() && crouchDir == -1)
+				_lastCrouchedWhileAirborne = true;
+			else if (crouchDir != -1 || !doingMoveInput || isSliding)
+				_lastCrouchedWhileAirborne = false;
 		}
 		else if (!totallyfrozen)
 			DeltaUncrouch();
-
+		
 		player.crouchOffset = -(ViewHeight) * (1 - crouchFactor);
 	}
 	
@@ -621,10 +630,11 @@ class KrisPlayer : DeltaPlayer
 	
 	protected action void A_SpawnDeathSoul(double zOffset = 36)
 	{
-		let soul = DeltaSoul(Spawn("DeltaSoul", Vec3Offset(0, 0, zOffset)));
+		let soul = DeltaSoul(Spawn("DeltaSoul", Vec3Offset(0, 0, zOffset))),
+			ply = invoker.GetSavedPlayer();
 		
-		if (player)
-			soul.playerParent = player;
+		if (ply)
+			soul.playerParent = ply;
 	}
 	
 	protected void KrisShieldParry()
@@ -707,6 +717,8 @@ class KrisPlayer : DeltaPlayer
 		if (largestDotIndex == -1)
 		{
 			SetState(ResolveState("ParryMiss"));
+			tensionDrainTimer = preOffhandTpTimer;
+			tensionPoints = preOffhandTp;
 			return;
 		}
 		

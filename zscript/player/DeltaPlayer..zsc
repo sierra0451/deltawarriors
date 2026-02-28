@@ -72,6 +72,7 @@ class DeltaPlayer : PlayerPawn abstract
 	private double _landPunch, _deltaLandPunch;
 	
 	private Array<Name> _dynamicLights;
+	private PlayerInfo _savedPlayer;
 	
 	// Damage types that ignore I-frames.
 	static const Name DAMAGE_TYPES_IGNORE_IFRAMES[] =
@@ -1595,6 +1596,11 @@ class DeltaPlayer : PlayerPawn abstract
 	clearscope Vector3 GetViewPos()
 	{
 		return pos.PlusZ(viewHeight * crouchFactor);
+	}
+	
+	clearscope PlayerInfo GetSavedPlayer()
+	{
+		return _savedPlayer;
 	}
 	
 	clearscope bool IsVoodooDoll()
