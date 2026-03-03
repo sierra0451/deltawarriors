@@ -357,8 +357,7 @@ class DeltaWeapon : Weapon
 	
 	action void A_StartOffhand()
 	{
-		invoker.owner.A_Overlay(PSP_OFFHAND, "OffhandOverlay");
-		invoker.owner.A_OverlayFlags(PSP_OFFHAND, PSPF_ADDBOB, true);
+		
 	}
 	
 	action state A_CheckOffHand(bool bob = false, statelabel dest = "Select")

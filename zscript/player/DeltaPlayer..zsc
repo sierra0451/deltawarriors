@@ -572,7 +572,7 @@ class DeltaPlayer : PlayerPawn abstract
 		{
 			jumpBuffer--;
 			
-			if (waterlevel >= 2)
+			if (waterLevel >= 2)
 			{
 				Vel.Z = 4 * Speed;
 			}
@@ -586,8 +586,8 @@ class DeltaPlayer : PlayerPawn abstract
 				if (IsCrouching())
 					player.crouchOffset = 0;
 				
-				double jumpvelz = JumpZ * 35 / TICRATE;
-				double jumpfac = 0;
+				double jumpVelZ = JumpZ * 35 / TICRATE;
+				double jumpFac = 0;
 				
 				// [BC] If the player has the high jump power, double their jump velocity.
 				// (actually, pick the best factors from all active items.)
@@ -597,12 +597,12 @@ class DeltaPlayer : PlayerPawn abstract
 					if (pp)
 					{
 						double f = pp.Strength;
-						if (f > jumpfac) jumpfac = f;
+						if (f > jumpFac) jumpFac = f;
 					}
 				}
-				if (jumpfac > 0) jumpvelz *= jumpfac;
+				if (jumpFac > 0) jumpVelZ *= jumpFac;
 				
-				Vel.Z = jumpvelz;
+				Vel.Z = jumpVelZ;
 				bOnMobj = false;
 				jumpBuffer = 0;
 				coyoteTimer = COYOTE_TIME + 1;
@@ -1428,8 +1428,8 @@ class DeltaPlayer : PlayerPawn abstract
 			if (!mis.CanCollideWith(self, false))
 				continue;
 			
-			double blockDist = (radius * 3) + (mis.radius * 3);
-			double blockHeight = (height * 3) + (mis.height * 3);
+			double blockDist = (radius * 6) + (mis.radius * 6);
+			double blockHeight = (height * 0.5 * 6) + (mis.height * 0.5 * 6);
 			Vector3 diff = level.Vec3Diff(pos, mis.pos);
 			
 			if (abs(diff.x) > blockDist || abs(diff.y) > blockDist)

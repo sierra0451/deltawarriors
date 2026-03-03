@@ -213,6 +213,11 @@ OptionMenu "DeltaPlayerOptions"
 	ColorPicker "$MENU_SOUL_COLOR", "user_delta_soulColor"
 	
 	StaticText ""
+	Option "$MENU_WEAP_HANDEDNESS", "cl_delta_weaponHandedness", "RightLeft"
+	Option "$MENU_SHOW_LEGS", "cl_delta_showLegs", "ShowHide"
+	
+	StaticText ""
 	StaticText "$MENU_RECOMMENDED_ON", "DeltaMenuHeader"
 	Option "$PLYRMNU_ALWAYSRUN", "cl_run", "OnOff"
+	Option "$MOUSEMNU_ALWAYSMOUSELOOK",	"freelook", "OnOff"
 }

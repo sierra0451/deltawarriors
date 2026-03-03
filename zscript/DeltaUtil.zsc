@@ -1,7 +1,7 @@
 // all our random static functions (mostly math related rn) go here
 class DeltaUtil
 {
-	clearscope static float Lerp(float a, float b, float t, bool _clamp = true)
+	clearscope static double Lerp(double a, double b, double t, bool _clamp = true)
 	{
 		if (_clamp)
 			t = Clamp(t, 0, 1);
@@ -9,11 +9,11 @@ class DeltaUtil
 		return a + ((b - a) * t);
 	}
 	
-	clearscope static float Clamp(float value, float min, float max)
+	clearscope static double Clamp(double value, double min, double max)
 	{
 		if (max < min)
 		{
-			float temp = max;
+			double temp = max;
 			max = min;
 			min = temp;
 		}
@@ -21,18 +21,28 @@ class DeltaUtil
 		return max(min, min(max, value));
 	}
 	
-	clearscope static Vector2 Vector2Lerp(Vector2 a, Vector2 b, float t, bool _clamp = true)
+	clearscope static int Sign(double value)
 	{
-		float
+		if (value < 0)
+			return -1;
+		if (value > 0)
+			return 1;
+		
+		return 0;
+	}
+	
+	clearscope static Vector2 Vector2Lerp(Vector2 a, Vector2 b, double t, bool _clamp = true)
+	{
+		double
 			x = Lerp(a.x, b.x, t, _clamp),
 			y = Lerp(a.y, b.y, t, _clamp);
 		
 		return (x, y);
 	}
 	
-	clearscope static Vector3 Vector3Lerp(Vector3 a, Vector3 b, float t, bool _clamp = true)
+	clearscope static Vector3 Vector3Lerp(Vector3 a, Vector3 b, double t, bool _clamp = true)
 	{
-		float
+		double
 			x = Lerp(a.x, b.x, t, _clamp),
 			y = Lerp(a.y, b.y, t, _clamp),
 			z = Lerp(a.z, b.z, t, _clamp);

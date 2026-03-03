@@ -95,17 +95,21 @@ class KrisShotgun : DeltaWeapon
 					CHANF_OVERLAP);
 			}
 			DKSD ABCD 2;
-			#### E 1 A_StartSound("delta/shotgun/deploy2", CHAN_WEAPON,
-				CHANF_OVERLAP);
 			#### E 1
 			{
 				if (invoker.pumped)
-					A_DeltaWeaponReady(WRF_NOBOB);
+					return A_DeltaWeaponReady(WRF_NOBOB);
+				
+				return ResolveState(null);
 			}
+			#### E 1 A_StartSound("delta/shotgun/deploy2", CHAN_WEAPON,
+				CHANF_OVERLAP);
 			#### FGH 2
 			{
 				if (invoker.pumped)
-					A_DeltaWeaponReady(WRF_NOBOB);
+					return A_DeltaWeaponReady(WRF_NOBOB);
+				
+				return ResolveState(null);
 			}
 			DKSG A 1 A_FinishRaiseWeapon;
 			Stop;

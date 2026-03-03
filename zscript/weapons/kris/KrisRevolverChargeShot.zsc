@@ -13,6 +13,7 @@ class KrisRevolverChargeShot : FastProjectile
 		Alpha 0.9;
 		MissileType "KrisRevolverChargeShotTrail";
 		MissileHeight 8;
+		Obituary "$OBIT_DELTA_REVOLVERALT";
 		
 		+BLOODSPLATTER
 		+RIPPER

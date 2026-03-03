@@ -1207,6 +1207,69 @@ Sprite "KLEGC0", 300, 240
 	NoTrim
 }
 
+Sprite "KLCWA0", 300, 240
+{
+	YScale 1.200
+	Patch "KLCWA0", 0, 0
+	NoTrim
+}
+
+Sprite "KLCWB0", 300, 240
+{
+	YScale 1.200
+	Patch "KLCWB0", 0, 0
+	NoTrim
+}
+
+Sprite "KLCWC0", 300, 240
+{
+	YScale 1.200
+	Patch "KLCWC0", 0, 0
+	NoTrim
+}
+
+Sprite "KLCWD0", 300, 240
+{
+	YScale 1.200
+	Patch "KLCWD0", 0, 0
+	NoTrim
+}
+
+Sprite "KLCWE0", 300, 240
+{
+	YScale 1.200
+	Patch "KLCWE0", 0, 0
+	NoTrim
+}
+
+Sprite "KLCWF0", 300, 240
+{
+	YScale 1.200
+	Patch "KLCWF0", 0, 0
+	NoTrim
+}
+
+Sprite "KLCWG0", 300, 240
+{
+	YScale 1.200
+	Patch "KLCWG0", 0, 0
+	NoTrim
+}
+
+Sprite "KLCWH0", 300, 240
+{
+	YScale 1.200
+	Patch "KLCWH0", 0, 0
+	NoTrim
+}
+
+Sprite "KLCWI0", 300, 240
+{
+	YScale 1.200
+	Patch "KLCWI0", 0, 0
+	NoTrim
+}
+
 Sprite "KLGWA0", 300, 240
 {
 	YScale 1.200

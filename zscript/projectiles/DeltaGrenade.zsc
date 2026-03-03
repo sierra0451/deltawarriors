@@ -12,6 +12,7 @@ class DeltaGrenade : DeltaParriable abstract
 	protected bool exploded;
 	protected Vector3 stickOffset;
 	protected Actor stickVictim;
+	protected float extraDamageFactor;
 	
 	property GrenadeType: grenadeType;
 	property ActorBounceFactor: actorBounceFactor;
@@ -294,7 +295,7 @@ class DeltaGrenadeHitbox : Actor abstract
 			return 0;
 		
 		if (source == parent.target)
-			return Super.DamageMobj(inflictor, source, damage * 10, mod, flags, angle);
+			return Super.DamageMobj(inflictor, source, damage * 2, mod, flags, angle);
 		
 		return Super.DamageMobj(inflictor, source, damage, mod, flags, angle);
 	}

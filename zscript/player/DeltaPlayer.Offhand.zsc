@@ -8,14 +8,11 @@ extend class DeltaPlayer
 	
 	private TextureID _offhandIconId;
 	
-	action void A_StartOffhand()
-	{
-		invoker.StartOffhand();
-	}
-	
 	virtual void StartOffhand()
 	{
 		isUsingOffhand = true;
+		A_Overlay(PSP_OFFHAND, "OffhandOverlay");
+		A_OverlayFlags(PSP_OFFHAND, PSPF_ADDBOB, true);
 	}
 	
 	virtual bool TryStartOffhand()

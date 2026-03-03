@@ -9,9 +9,11 @@ class KrisPlayer : DeltaPlayer
 	private double _currentSlideSpeed, _savedSlideSpeed;
 	private int _savedSlideSpeedTimer;
 	private bool _lastCrouchedWhileAirborne, _lastCrouchedWhileGrounded;
-	private int _slideTics;				// used for smooth transitions into sliding effectss
+	private int _slideTics;				// used for smooth transitions into sliding effects
+	private int _slideTime;				// used for nerfing slide spamming
     
 	const MAX_SLIDE_TICS = 7;
+	const MIN_SLIDE_TIME = floor(TICRATE * 0.5);
 	
 	Default
 	{
@@ -283,6 +285,12 @@ class KrisPlayer : DeltaPlayer
 		WalkLoopLegs:
 			KLGW BCDEFGHI -1;
 			Loop;
+		CrouchWalkLegs:
+			KLEG A 3;
+			KLCW A 2;
+		CrouchWalkLoopLegs:
+			KLCW BCDEFGHI -1;
+			Loop;
 		RunLegs:
 			KLEG A 3;
 			KLGR A 2;
@@ -334,7 +342,9 @@ class KrisPlayer : DeltaPlayer
 	{
 		if (isSliding)
 			EndSlide();
+		
 		_slideTics = 0;
+		_slideTime = 0;
 		
 		Super.Travelled();
 	}
@@ -384,7 +394,7 @@ class KrisPlayer : DeltaPlayer
 			bool doingMoveInput = buttons & (BT_MOVELEFT | BT_MOVERIGHT | BT_FORWARD | BT_BACK);
 			
 			if (crouchDir == 0)
-				crouchDir = (buttons & BT_CROUCH) ? -1 : 1;
+				crouchDir = ((buttons & BT_CROUCH) || (isSliding && _slideTime < MIN_SLIDE_TIME)) ? -1 : 1;
 			else if (buttons & BT_CROUCH)
 				player.crouching = 0;
 			
@@ -392,8 +402,6 @@ class KrisPlayer : DeltaPlayer
 				CrouchMove(2);
 			else if (crouchDir == -1 && crouchFactor > 0.5)
 				CrouchMove(-2);
-			
-			//A_Log("lcwg " .. _lastCrouchedWhileGrounded .. ", lcwa " .. _lastCrouchedWhileAirborne);
 			
 			if (!isSliding
 				&& ((buttons & BT_CROUCH && !(player.oldButtons & BT_CROUCH))
@@ -525,6 +533,8 @@ class KrisPlayer : DeltaPlayer
 			if (_slideTics < MAX_SLIDE_TICS)
 				_slideTics++;
 			
+			_slideTime++;
+			
 			if (reactionTime)
 				return;
 			
@@ -569,7 +579,8 @@ class KrisPlayer : DeltaPlayer
 		{
 			if (_slideTics > 0)
 				_slideTics--;
-				
+			
+			_slideTime = 0;
 			if (IsActorPlayingSound(6))
 				A_StopSound(6);
 			
@@ -598,6 +609,7 @@ class KrisPlayer : DeltaPlayer
 		
 		self.slideAngle = slideAngle;
 		isSliding = true;
+		_slideTime = 0;
 		
 		if (resetSpeed)
 			_currentSlideSpeed = max(_savedSlideSpeed, Vel.PlusZ(-Vel.Z).Length());
@@ -616,6 +628,7 @@ class KrisPlayer : DeltaPlayer
 	protected void EndSlide()
 	{
 		isSliding = false;
+		_slideTime = 0;
 		
 		// prevent legs reappearing if we stop sliding as result of death
 		if (Health <= 0)

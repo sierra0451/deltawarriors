@@ -47,12 +47,19 @@ class KrisSmg : DeltaWeapon
 			DKSM B 1 A_KrisSmgFire;
 			#### # 1 A_ZoomFactor(1, ZOOM_NOSCALETURNING);
 			#### C 2 A_RemoveDynamicLight("smgMuzzle");
-			#### D 1;
+			#### D 1
+			{
+				if (!invoker.CheckAmmo(PrimaryFire, true))
+					return ResolveState("DoneFiring");
+				
+				return ResolveState(null);
+			}
 		Hold: // fallthrough is intentional
 			DKSM B 1 A_KrisSmgFire;
 			#### # 1 A_ZoomFactor(1, ZOOM_NOSCALETURNING);
 			#### C 2 A_RemoveDynamicLight("smgMuzzle");
 			#### D 1;
+		DoneFiring: // see above
 			#### EFA 2 A_ReFire;
 			Goto Ready;
 		AltFire:
@@ -136,9 +143,10 @@ class KrisSmgGrenade : DeltaGrenade
 	{
 		Super.Explode();
 		
+		int dmgTaken = DeltaUtil.Clamp(-hitbox.health, 0, 100);
 		double range = 110;
-		RadiusAttack(target, 250, range, 'KrisSmgGrenade', RADF_THRUSTZ,
-			range*0.2);
+		RadiusAttack(target, 250 + dmgTaken, range, 'KrisSmgGrenade',
+			RADF_THRUSTZ, range*0.2);
 		
 		let dist = Distance3D(target);
 		if (dist > range || !CheckSight(target, SF_IGNOREVISIBILITY))
@@ -159,6 +167,14 @@ class KrisSmgGrenade : DeltaGrenade
 			knockbackDmg = 20;
 		
 		target.Vel += level.Vec3Diff(pos, target.pos).Unit() * knockbackDmg;
+	}
+	
+	override string GetObituary(Actor victim, Actor inflictor, Name mod, bool playerAttack)
+	{
+		if (victim == target)
+			return StringTable.Localize("$OBIT_DELTA_KSMGALTSELF");
+		
+		return Super.GetObituary(victim, inflictor, mod, playerAttack);
 	}
 	
 	States

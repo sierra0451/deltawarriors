@@ -37,9 +37,19 @@ extend class DeltaPlayer
 		bool inIdle = LegsInIdleState(),
 			inWalk = LegsInWalkState(),
 			inRun = LegsInRunState(),
-			inAir = LegsInAirState();
+			inAir = LegsInAirState(),
+			inCrouchWalk = LegsInCrouchWalkState(),
+			inJurisdiction = (inAir || inIdle || inWalk || inRun || inCrouchWalk);
 		
-		if ((coyoteTimer >= COYOTE_TIME && pos.z != floorz) && (inAir || inIdle || inWalk || inRun))
+		if (inJurisdiction && waterLevel >= 2 && !IsGrounded())
+		{
+			if (psp)
+				psp.SetState(null);
+			
+			return;
+		}
+		
+		if ((coyoteTimer >= COYOTE_TIME && pos.z != floorz) && inJurisdiction)
 			AnimateLegsAir();
 		else
 		{
@@ -48,9 +58,12 @@ extend class DeltaPlayer
 					: false,
 				running = player ? (player.buttons & BT_RUN) : false;
 			
-			if (doingMoveInput && (inAir || inIdle || inWalk || inRun))
+			if (!inJurisdiction)
+				return;
+			
+			if (doingMoveInput)
 				AnimateLegsWalking();
-			else if (!doingMoveInput && (inAir || inIdle || inWalk || inRun))
+			else
 				AnimateLegsIdle();
 		}
 	}
@@ -77,10 +90,11 @@ extend class DeltaPlayer
 		let psp = player.FindPSprite(PSP_LEGS);
 		bool inWalk = LegsInWalkState(),
 			inRun = LegsInRunState(),
-			inAir = LegsInAirState();
+			inAir = LegsInAirState(),
+			inCrouchWalk = LegsInCrouchWalkState();
 		state targetState;
 		
-		if (inWalk || inRun || inAir)
+		if (inWalk || inRun || inAir || inCrouchWalk)
 			psp.SetState(ResolveState("IdleLegs"));
 		
 		if (LegsInIdleState())
@@ -96,26 +110,39 @@ extend class DeltaPlayer
 	
 	virtual void AnimateLegsWalking()
 	{
-		bool inIdle = LegsInIdleState(),
+		let inIdle = LegsInIdleState(),
 			inWalk = LegsInWalkState(),
 			inRun = LegsInRunState(),
 			inAir = LegsInAirState(),
-			running = player ? (player.buttons & BT_RUN) : false;
+			inCrouchWalk = LegsInCrouchWalkState(),
+			crouching = IsCrouching(inCrouchWalk),
+			running = player ? ((player.buttons & BT_RUN) && waterLevel < 2) : false;
 		
 		let psp = player.FindPSprite(PSP_LEGS);
 		state targetState;
 		
-		if (running && (inWalk || inAir || inIdle))
-			targetState = inIdle ? ResolveState("RunLegs") : ResolveState("RunLoopLegs");
-		else if (!running && (inRun || inAir || inIdle))
-			targetState = inIdle ? ResolveState("WalkLegs") : ResolveState("WalkLoopLegs");
+		if (crouching && (inWalk || inRun || inAir || inIdle))
+			targetState = inIdle ? ResolveState("CrouchWalkLegs") : ResolveState("CrouchWalkLoopLegs");
+		else if (!crouching)
+		{
+			if (running && (inWalk || inAir || inIdle || inCrouchWalk))
+				targetState = inIdle ? ResolveState("RunLegs") : ResolveState("RunLoopLegs");
+			else if (!running && (inRun || inAir || inIdle || inCrouchWalk))
+				targetState = inIdle ? ResolveState("WalkLegs") : ResolveState("WalkLoopLegs");
+		}
 		
 		if (targetState)
 			psp.SetState(targetState);
 		
-		if ((inWalk || inRun) && psp.tics == -1)
+		if (psp.tics == -1)
 		{
-			int targetTics = running ? 2 : 4;
+			int targetTics;
+			
+			if (inWalk || inRun)
+				targetTics = running ? 2 : 4;
+			else if (inCrouchWalk)
+				targetTics = running ? 4 : 7;
+			
 			psp.tics = targetTics;
 		}
 	}
@@ -124,7 +151,7 @@ extend class DeltaPlayer
 	{
 		let psp = player.FindPSprite(PSP_LEGS);
 		
-		if (LegsInIdleState() || LegsInWalkState() || LegsInRunState())
+		if (LegsInIdleState() || LegsInWalkState() || LegsInRunState() || LegsInCrouchWalkState())
 			psp.SetState(ResolveState("AirLegs"));
 		
 		let stoppedThreshold = 1.,
@@ -177,5 +204,14 @@ extend class DeltaPlayer
 			return false;
 		
 		return psp.curState.InStateSequence(ResolveState("AirLegs"));
+	}
+	
+	bool LegsInCrouchWalkState()
+	{
+		let psp = player.FindPSprite(PSP_LEGS);
+		if (!psp || !psp.curState)
+			return false;
+		
+		return psp.curState.InStateSequence(ResolveState("CrouchWalkLegs"));
 	}
 }

@@ -64,11 +64,17 @@ class DeltaWeaponPickup : Weapon
 	override bool TryPickup(in out Actor toucher)
 	{
 		let weap = GetWeapon();
-		if (!weap || !Super.TryPickup(toucher))
+		if (!weap)
 			return false;
 		
+		let realWeap = Weapon(Spawn(weap));
+		if (!realWeap.TryPickup(toucher))
+		{
+			realWeap.Destroy();
+			return false;
+		}
+		
 		GoAwayAndDie();
-		toucher.GiveInventory(weap, 1);
 		return true;
 	}
 	

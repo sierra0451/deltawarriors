@@ -231,7 +231,9 @@ class KrisRevolver : DeltaWeapon
 		if (!ply)
 			return ResolveState(null);
 		
-		if (!invoker.CheckAmmo(AltFire, false))
+		A_WeaponReady(WRF_NOFIRE | WRF_NOBOB | WRF_NOSWITCH);
+		
+		if (!invoker.CheckAmmo(AltFire, false) || ply.PendingWeapon != WP_NOCHANGE)
 			return invoker.chargeTics ? ResolveState("Discharge")
 				: ResolveState("Ready");
 		
@@ -278,20 +280,22 @@ class KrisRevolver : DeltaWeapon
 			return ResolveState("Ready");
 		
 		invoker.chargeTics--;
-		double perc = invoker.GetChargePercent();
 		
-		if (IsActorPlayingSound(CHAN_CHARGE))
+		if (player.PendingWeapon != WP_NOCHANGE && invoker.chargeTics)
+			invoker.chargeTics--;
+		
+		if (!IsActorPlayingSound(CHAN_CHARGE))
+			return ResolveState(null);
+		
+		if (!invoker.chargeTics)
+			A_StopSound(CHAN_CHARGE);
+		else 
 		{
-			if (!invoker.chargeTics)
-				A_StopSound(CHAN_CHARGE);
-			else 
-			{
-				A_SoundVolume(CHAN_CHARGE, perc);
-				A_SoundPitch(CHAN_CHARGE, perc);
-			}
+			double perc = invoker.GetChargePercent();
+			A_SoundVolume(CHAN_CHARGE, perc);
+			A_SoundPitch(CHAN_CHARGE, perc);
 		}
 		
-		A_DeltaWeaponReady(WRF_DISABLESWITCH);
 		return ResolveState(null);
 	}
 	

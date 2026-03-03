@@ -5,7 +5,7 @@ class DeltaHud : BaseStatusBar
 	private Vector2 _universalScale, _inverseUniversalScale;
 	private HUDFont _consoleFont, _drHudFont;
 	private TextureID _hpText, _tpText, _tpMaxText, _tpHighlight,
-		_leftPanelBack, _vignette, _infiniteText, _defaultCrosshair,
+		_leftPanelBack, _vignette, _vignette2, _infiniteText, _defaultCrosshair,
 		_offhandCrosshair, _reticleBarOverlay, _reticleBar;
 	
 	private double _oldTp, _oldHealth, _oldTicFrac, _deltaTime;
@@ -42,6 +42,7 @@ class DeltaHud : BaseStatusBar
 		_tpHighlight 				= TexMan.CheckForTexture("DRTPHLGT");
 		_leftPanelBack 				= TexMan.CheckForTexture("DRLPBACK");
 		_vignette 					= TexMan.CheckForTexture("sprites/hud/vignette.png");
+		_vignette2 					= TexMan.CheckForTexture("sprites/hud/vignette2.png");
 		_infiniteText 				= TexMan.CheckForTexture("DRINFTXT");
 		_defaultCrosshair 			= TexMan.CheckForTexture("DRMTYRET");
 		_offhandCrosshair 			= TexMan.CheckForTexture("DROFHRET");
@@ -161,21 +162,31 @@ class DeltaHud : BaseStatusBar
 		_hBorder = 30 * _universalScale.x;
 		_vBorder = 30 * _universalScale.y;
 		
-		if (CPlayer.Health <= 40 && cl_delta_lowHealthVignette && !automapActive)
+		if (GetHealthPerc() <= 0.4 && cl_delta_lowHealthVignette && !automapActive)
 		{
-			double alpha = 1 - CPlayer.Health / 40.;
+			double alpha = 1 - (GetHealthPerc() / 0.4);
 			Screen.DrawTexture(_vignette, false, 0, 0, DTA_Fullscreen, true,
 				DTA_FullScreenScale, FSMode_ScaleToScreen, DTA_Alpha, alpha,
 				DTA_Color, CPlayer.mo.GetPainFlash());
 		}
 		
-		BeginHUD(1, false);
+		let airTime = max(0, CPlayer.air_finished - level.mapTime + 1),
+			airPerc = double(airTime) / level.airSupply;
 		
+		if (airPerc <= 0.4 && !automapActive)
+		{
+			double alpha = 1 - (airPerc / 0.4);
+			Screen.DrawTexture(_vignette2, false, 0, 0, DTA_Fullscreen, true,
+				DTA_FullScreenScale, FSMode_ScaleToScreen, DTA_Alpha, alpha,
+				DTA_Color, Color(255, 0, 0, 0));
+		}
+		
+		BeginHUD(1, false);
 		DrawMultiplayerUnderlay();
+		DrawBossBars();
 		DrawMessages(ticFrac);
 		DrawIndicators(ticFrac);
 		DrawMultiplayerOverlay();
-		DrawBossBars();
 		
 		if (CPlayer.Health > 0)
 		{
@@ -183,9 +194,7 @@ class DeltaHud : BaseStatusBar
 			DrawLeftPanel(infAmmo, ticFrac);
 			DrawRightPanel(infAmmo);
 			DrawReticle(infAmmo, ticFrac);
-			
-			// note to self: getting remaining air time for being underwater is
-			// this formula: player.air_finished - level.mapTime
+			DrawOxygen();
 		}
 		else
 			DrawDeathStuff();
@@ -577,6 +586,35 @@ class DeltaHud : BaseStatusBar
 				DI_SCREEN_CENTER | DI_ITEM_VCENTER | DI_ITEM_RIGHT, 180,
 				scale: (1/_universalScale.x, 1/_universalScale.y) * 2);
 		}
+	}
+	
+	protected void DrawOxygen()
+	{
+		if (!CPlayer)
+			return;
+		
+		let airTime = max(0, CPlayer.air_finished - level.mapTime + 1),
+			airPerc = double(airTime) / level.airSupply,
+			airBarWidth = 50 * _universalScale.x;
+		
+		if (airTime == level.airSupply)
+			return;
+		
+		let normCol = Color(192, 0, 128, 255),
+			lowCol = Color(192, 192, 24, 24),
+			lowFadeTics = 10,
+			lowFade = min(lowFadeTics, level.airSupply*0.4 - airTime) / lowFadeTics;
+		int barR = DeltaUtil.Lerp(normCol.r, lowCol.r, lowFade),
+			barG = DeltaUtil.Lerp(normCol.g, lowCol.g, lowFade),
+			barB = DeltaUtil.Lerp(normCol.b, lowCol.b, lowFade);
+		Color barCol = Color(192, barR, barG, barB);
+		
+		Fill(Color(128, barCol.r/2, barCol.g/2, barCol.b/2), -airBarWidth / 2.,
+			50*_universalScale.y, airBarWidth, 5*_universalScale.y,
+			DI_SCREEN_CENTER);
+		Fill(barCol, -airBarWidth / 2.,
+			50*_universalScale.y, airBarWidth * airPerc,
+			5*_universalScale.y, DI_SCREEN_CENTER);
 	}
 	
 	protected void DrawDeathStuff()
