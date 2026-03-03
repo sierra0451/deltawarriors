@@ -4,8 +4,8 @@ class KrisRevolverChargeShot : FastProjectile
 	
 	Default
 	{
-		Radius 13;
-		Height 8;
+		Radius 7;
+		Height 4;
 		Projectile;
 		Speed 150;
 		DamageFunction random[revolverChargeDamage](100, 120);
@@ -36,6 +36,8 @@ class KrisRevolverChargeShot : FastProjectile
 	
 	override int SpecialMissileHit(Actor victim)
 	{
+		if (victim == target)
+			return MHIT_PASS;
 		if (victim.bNonshootable)
 			return Super.SpecialMissileHit(victim);
 		if (_hitActors.Find(victim) != _hitActors.Size())

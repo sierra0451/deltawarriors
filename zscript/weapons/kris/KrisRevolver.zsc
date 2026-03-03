@@ -340,6 +340,7 @@ class KrisRevolverPuff : BulletPuff
 	Default
 	{
 		ProjectileKickBack 20;
+		Obituary "$OBIT_DELTA_REVOLVER";
 		+NOEXTREMEDEATH
 	}
 }

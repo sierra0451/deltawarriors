@@ -173,7 +173,7 @@ class DeltaHud : BaseStatusBar
 		let airTime = max(0, CPlayer.air_finished - level.mapTime + 1),
 			airPerc = double(airTime) / level.airSupply;
 		
-		if (airPerc <= 0.4 && !automapActive)
+		if (CPlayer.Health > 0 && airPerc <= 0.4 && !automapActive)
 		{
 			double alpha = 1 - (airPerc / 0.4);
 			Screen.DrawTexture(_vignette2, false, 0, 0, DTA_Fullscreen, true,
