@@ -186,6 +186,7 @@ PICKUP_DELTA_CHAINSAW,(You picked up a cardboard cutout of a \c[DeltaHighlight]%
 PICKUP_DELTA_SWORD,(You retrieved \c[DeltaHighlight]your sword\c-.),
 PICKUP_DELTA_REVOLVER,(You found a \c[DeltaHighlight]revolver\c-.),
 PICKUP_DELTA_KSHOTGUN,(You found a \c[DeltaHighlight]shotgun\c-.),
+PICKUP_DELTA_KSHOTGUN_NIGHRIEL,"(""WHY DOES KRIS HAVE A \c[DeltaHighlight]SHOTGUN\c-??"" -N.D.)",
 PICKUP_DELTA_KSMG,(You found an \c[DeltaHighlight]SMG\c-.),
 PICKUP_DELTA_AXE,(You retrieved \c[DeltaHighlight]your axe\c-.)\c-,
 PICKUP_DELTA_TPSMALL,(You found a \c[DeltaHighlight]Tension Bit\c-.),

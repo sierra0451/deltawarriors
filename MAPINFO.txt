@@ -93,7 +93,7 @@ Skill DeltaHard
 // not calling it nightmare cuz we won't have instant reactions or respawning
 Skill DeltaVeryHard
 {
-    DamageFactor = 1.1
+    DamageFactor = 1.25
     
     SpawnFilter = Nightmare
     FastMonsters

@@ -7,6 +7,7 @@ class DeltaWeapon : Weapon
 	protected string _altFireIcon;				// used for displaying alt fire key and cost (keep as null if you don't want anything there)
 	protected string _crosshair;
     protected bool _atEase;
+	protected bool _hasBeenPickedUp;			// used to determine if we should do inspect animation upon pulling this out or not
 	protected int _easeTics;
 	
 	protected double _tensionUse, _tensionUse2;
@@ -155,6 +156,20 @@ class DeltaWeapon : Weapon
 			return true;
 		
 		return false;
+	}
+	
+	override state GetUpState()
+	{
+		if (_hasBeenPickedUp)
+			return Super.GetUpState();
+		
+		_hasBeenPickedUp = true;
+		
+		let dest = FindState("SelectFirst");
+		if (dest)
+			return dest;
+		
+		return Super.GetUpState();
 	}
 	
 	virtual bool TakeTension(bool altFire)

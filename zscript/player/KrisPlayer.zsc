@@ -388,7 +388,7 @@ class KrisPlayer : DeltaPlayer
 		int buttons = player.cmd.buttons;
 		
 		if (CanCrouch() && player.health > 0 && level.IsCrouchingAllowed()
-			&& !totallyfrozen)
+			&& !totallyFrozen)
 		{
 			int crouchDir = player.crouching;
 			bool doingMoveInput = buttons & (BT_MOVELEFT | BT_MOVERIGHT | BT_FORWARD | BT_BACK);
@@ -426,7 +426,7 @@ class KrisPlayer : DeltaPlayer
 			else if (crouchDir != -1 || !doingMoveInput || isSliding)
 				_lastCrouchedWhileAirborne = false;
 		}
-		else if (!totallyfrozen)
+		else if (!totallyFrozen)
 			DeltaUncrouch();
 		
 		player.crouchOffset = -(ViewHeight) * (1 - crouchFactor);
@@ -545,11 +545,24 @@ class KrisPlayer : DeltaPlayer
 			slideX += sin(Angle) * adjustFactor;
 			slideY -= cos(Angle) * adjustFactor;
 			
+			if (player.cheats & CF_FROZEN)
+			{
+				vel = (0, 0, 0);
+				return;
+			}
+			
 			A_ChangeVelocity(slideX, slideY, Vel.Z, CVF_REPLACE);
 			
 			if (coyoteTimer <= COYOTE_TIME)
 			{
-				_currentSlideSpeed = max(0, _currentSlideSpeed - (slideSlowing / TICRATE));
+				double friction, moveFactor;
+				[friction, moveFactor] = GetFriction();
+				
+				let slowFactor = friction < ORIG_FRICTION ?
+					ORIG_FRICTION_FACTOR / moveFactor :
+					moveFactor / ORIG_FRICTION_FACTOR;
+				
+				_currentSlideSpeed = max(0, _currentSlideSpeed - (slideSlowing * slowFactor / TICRATE));
 				
 				if (!IsActorPlayingSound(6))
 					A_StartSound("delta/kris/slide_loop", 6, CHANF_LOOPING, _currentSlideSpeed / slideSpeed);

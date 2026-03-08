@@ -1,5 +1,7 @@
+<div align="center">
+[ <img src="graphics/delta_logo.png" alt="DeltaWarriors logo" style="height: 8em; width: 100%" /> ][repo]
+</div>
 
-# DeltaWarriors
 DeltaWarriors, a Doom gameplay mod that adds the main characters of Deltarune as playable characters.
 
 Currently, Kris is the only one playable, but Susie, Ralsei, and Noelle are planned for later! Kris has most of their stuff done, they just need their arsenal finished, their ultimate ability, and an art pass, and then they should be good as finished :3

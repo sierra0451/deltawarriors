@@ -329,51 +329,53 @@ class DeltaPlayer : PlayerPawn abstract
 		// We must apply thrust to the player and bobbing separately, to avoid
 		// anomalies. The thrust applied to bobbing is always the same strength on
 		// ice, because the player still "works just as hard" to move, while the
-		// thrust applied to the movement varies with 'movefactor'.
-		double forwardmove, sidemove;
-		double bobfactor;
-		double friction, movefactor;
+		// thrust applied to the movement varies with 'moveFactor'.
+		double forwardMove, sideMove;
+		double bobFactor;
+		double friction, moveFactor;
 		double fm, sm;
 		double perc = 1 - airBobTics / double(MAX_AIR_BOB_TICS);
 		
-		[friction, movefactor] = GetFriction();
-		bobfactor = friction < ORIG_FRICTION ? movefactor : ORIG_FRICTION_FACTOR;
-		bobfactor *= perc * perc;
+		[friction, moveFactor] = GetFriction();
+		bobFactor = friction < ORIG_FRICTION ? moveFactor : ORIG_FRICTION_FACTOR;
+		bobFactor *= perc * perc;
 		
-		fm = cmd.forwardmove;
-		sm = cmd.sidemove;
+		fm = cmd.forwardMove;
+		sm = cmd.sideMove;
 		[fm, sm] = TweakSpeeds (fm, sm);
 		fm *= Speed / 256;
 		sm *= Speed / 256;
 		
 		if (!player.onground && !bNoGravity && !waterlevel)
-			ApplyAirControl(movefactor, bobfactor);
+			ApplyAirControl(moveFactor, bobFactor);
 		
 		// When crouching, speed and bobbing have to be reduced
 		if (CanCrouch() && crouchFactor != 1)
 		{
 			fm *= crouchFactor;
 			sm *= crouchFactor;
-			bobfactor *= crouchFactor;
+			bobFactor *= crouchFactor;
 		}
 		
-		forwardmove = fm * movefactor * (35 / TICRATE);
-		sidemove = sm * movefactor * (35 / TICRATE);
+		forwardMove = fm * moveFactor * (35 / TICRATE);
+		sideMove = sm * moveFactor * (35 / TICRATE);
 		
 		if (lunging)
 			player.vel = (0, 0);
 		else
 		{
-			if (forwardmove)
+			let slowRate = 3. / TICRATE;
+			
+			if (forwardMove)
 			{
-				Bob(Angle, cmd.forwardmove * bobfactor / 256., true);
-				ForwardThrust(forwardmove, Angle);
+				Bob(Angle, cmd.forwardMove * bobFactor / 256., true);
+				ForwardThrust(forwardMove, Angle);
 			}
-			if (sidemove)
+			if (sideMove)
 			{
 				let a = Angle - 90;
-				Bob(a, cmd.sidemove * bobfactor / 256., false);
-				Thrust(sidemove, a);
+				Bob(a, cmd.sideMove * bobFactor / 256., false);
+				Thrust(sideMove, a);
 			}
 		}
 		
@@ -499,25 +501,24 @@ class DeltaPlayer : PlayerPawn abstract
 		
 		if (!_frozenDeath && player.onGround)
 		{
-			// Fall to ground (if not frozen)
 			player.deltaViewHeight = 0;
 			if (player.viewHeight > 6)
 				player.viewHeight -= deathTimer;
-				
+			
 			if (player.viewHeight < 6)
 				player.viewHeight = 6;
 			
 			if (player.viewHeight == 6)
 			{
-				if (deathPitchFP > -19.)
+				if (deathPitchFP != 0)
 				{
-					double lookDelta = (-19. - deathPitchFP) / 8;
+					double lookDelta = -deathPitchFP / 8.;
 					deathPitchFP += lookDelta;
 				}
 				
 				if (abs(deathPitchTP) > 0.01)
 				{
-					double lookDelta = -deathPitchTP / 8;
+					double lookDelta = -deathPitchTP / 8.;
 					deathPitchTP += lookDelta;
 				}
 				else if (!(deathPitchTP ~== 0))

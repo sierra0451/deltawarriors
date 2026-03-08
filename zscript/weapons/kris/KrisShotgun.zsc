@@ -22,53 +22,6 @@ class KrisShotgun : DeltaWeapon
 		+WEAPON.NOALERT
 	}
 	
-	override void BeginPlay()
-	{
-		Super.BeginPlay();
-		pumped = true;
-	}
-	
-	action void A_KrisShotgunFire()
-	{
-		A_FireBullets(5.5, 5.5, 8, 9, "KrisShotgunPuff",
-			flags: FBF_USEAMMO | FBF_NORANDOM, spawnHeight: 32 * invoker.GetCrouchFactor());
-		A_AddDynamicLight("shotgunMuzzle", "DeltaGenericMuzzle");
-		A_AddRecoil(10, 1, p: -3);
-		invoker.pumped = false;
-		
-		A_StartSound("delta/shotgun/fire", CHAN_WEAPON, CHANF_OVERLAP);
-		A_AlertMonsters();
-		
-		A_OwnerPlayAttack();
-	}
-	
-	action state A_KrisShotgunAltFire()
-	{
-		if (!invoker.DepleteAmmo(true))
-			return ResolveState("Ready");
-		
-		A_FireBullets(6.5, 6.5, 16, 10, "KrisShotgunAltPuff", FBF_NORANDOM);
-		A_AddDynamicLight("shotgunMuzzle", "DeltaGenericMuzzle");
-		A_AddRecoil(20, 3, p: -7);
-		invoker.pumped = false;
-		
-		A_StartSound("delta/shotgun/fire", CHAN_WEAPON, CHANF_OVERLAP);
-		A_AlertMonsters();
-		
-		A_OwnerPlayAttack();
-		A_ZoomFactor(0.97, ZOOM_INSTANT | ZOOM_NOSCALETURNING);
-		
-		if (player.crouchOffset ~== 0)
-		{
-			Vector2 forward = AngleToVector(player.mo.angle);
-			Vector2 up = AngleToVector(player.mo.pitch);
-			player.mo.vel -= (forward.x * up.x, forward.y * up.x, -up.y)
-				* (player.onGround ? 5 : 10);
-		}
-		
-		return ResolveState(null);
-	}
-	
 	States
 	{
 		Ready:
@@ -142,6 +95,63 @@ class KrisShotgun : DeltaWeapon
 		Spawn:
 			DSHG A -1;
 			Stop;
+	}
+	
+	override void BeginPlay()
+	{
+		Super.BeginPlay();
+		pumped = true;
+	}
+	
+	override string PickupMessage()
+	{
+		double chance = 0.0025;
+		
+		if (cfrandom(0, 1) <= chance)
+			return StringTable.Localize("$PICKUP_DELTA_KSHOTGUN_NIGHRIEL");
+		
+		return Super.PickupMessage();
+	}
+	
+	action void A_KrisShotgunFire()
+	{
+		A_FireBullets(5.5, 5.5, 8, 9, "KrisShotgunPuff",
+			flags: FBF_USEAMMO | FBF_NORANDOM, spawnHeight: 32 * invoker.GetCrouchFactor());
+		A_AddDynamicLight("shotgunMuzzle", "DeltaGenericMuzzle");
+		A_AddRecoil(10, 1, p: -3);
+		invoker.pumped = false;
+		
+		A_StartSound("delta/shotgun/fire", CHAN_WEAPON, CHANF_OVERLAP);
+		A_AlertMonsters();
+		
+		A_OwnerPlayAttack();
+	}
+	
+	action state A_KrisShotgunAltFire()
+	{
+		if (!invoker.DepleteAmmo(true))
+			return ResolveState("Ready");
+		
+		A_FireBullets(6.5, 6.5, 16, 10, "KrisShotgunAltPuff", FBF_NORANDOM);
+		A_AddDynamicLight("shotgunMuzzle", "DeltaGenericMuzzle");
+		A_AddRecoil(20, 3, p: -7);
+		invoker.pumped = false;
+		
+		A_StartSound("delta/shotgun/fire", CHAN_WEAPON, CHANF_OVERLAP);
+		A_AlertMonsters();
+		
+		A_OwnerPlayAttack();
+		A_ZoomFactor(0.97, ZOOM_INSTANT | ZOOM_NOSCALETURNING);
+		
+		if (player.crouchOffset ~== 0)
+		{
+			Vector2 forward = AngleToVector(player.mo.angle);
+			Vector2 up = AngleToVector(player.mo.pitch);
+			player.mo.vel -= (forward.x * up.x, forward.y * up.x, -up.y)
+				* (player.onGround ? 5 : 10);
+		}
+		
+		return ResolveState(null);
 	}
 }
 
