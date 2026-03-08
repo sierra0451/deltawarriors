@@ -1,5 +1,5 @@
 <div align="center">
-[ <img src="graphics/delta_logo.png" alt="DeltaWarriors logo" style="height: 8em; width: 100%" /> ][repo]
+<img src="graphics/delta_logo.png" alt="DeltaWarriors logo" />
 </div>
 
 DeltaWarriors, a Doom gameplay mod that adds the main characters of Deltarune as playable characters.
