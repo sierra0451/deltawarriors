@@ -1,4 +1,4 @@
-class DeltaGrenade : DeltaParriable abstract
+class DeltaGrenade : DeltaProjectile abstract
 {
 	DeltaGrenadeType grenadeType;
 	Array<Actor> hitActors;
@@ -230,7 +230,7 @@ class DeltaGrenade : DeltaParriable abstract
 				if (dmg <= 0)
 					break;
 				
-				DeltaUtil.ForceActorPain(victim);
+				DeltaUtil.ForceActorPain(victim, 'None');
 				break;
 				
 			case GRENADE_CONTACT:

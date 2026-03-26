@@ -21,7 +21,5 @@ vec4 ProcessTexel()
 	vec4 layer2 = getTexel(texCoord + offset);
 	
 	float secondLayerAlpha = 0.5;
-	
-	//return layer1;
 	return secondLayerAlpha * layer2 + (1 - secondLayerAlpha) * layer1;
 }

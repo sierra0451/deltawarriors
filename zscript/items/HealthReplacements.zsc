@@ -2,7 +2,18 @@ class DeltaHealthBonus : HealthBonus replaces HealthBonus
 {
 	override bool TryPickup(in out Actor toucher)
 	{
-		toucher.GiveBody(1, toucher.GetMaxHealth() * 2);
+		toucher.GiveBody(5, toucher.GetMaxHealth() * 2);
+		GoAwayAndDie();
+		return true;
+	}
+}
+
+class DeltaBerserk : Berserk replaces Berserk
+{
+	override bool TryPickup(in out Actor toucher)
+	{
+		toucher.GiveInventory("PowerStrength", 1);
+		toucher.GiveBody(toucher.GetMaxHealth());
 		GoAwayAndDie();
 		return true;
 	}

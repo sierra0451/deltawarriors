@@ -240,6 +240,7 @@ class KrisRevolver : DeltaWeapon
 		Weapon.DoReadyWeaponToBob(ply);
 		int input = ply.cmd.buttons, oldInput = ply.oldButtons,
 			cTics = invoker.chargeTics, maxCTics = invoker.MAX_CHARGE_TICS;
+		double shake = 0.5;
 		bool fullCharge = cTics == maxCTics;
 		
 		if ((!(input & BT_ALTATTACK) && (oldInput & BT_ALTATTACK)) ||
@@ -271,6 +272,7 @@ class KrisRevolver : DeltaWeapon
 			A_StartSound("delta/revolver/charge", CHAN_CHARGE, CHANF_LOOPING,
 				volume: perc, pitch: perc);
 		
+		shake *= perc * perc;
 		return ResolveState(null);
 	}
 	

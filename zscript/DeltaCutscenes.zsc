@@ -1,0 +1,441 @@
+class DeltaMessageBox : Object ui
+{
+	protected TextureID cornerTex, sideTex;
+	protected DeltaMessageState messageState;
+	protected string goalMessage, displayedMessage;
+	protected sound typeSound;
+	protected int curTics, curCharIndex, soundTimer;
+	
+	static DeltaMessageBox Create(string message = "", int delayTics = 0,
+		TextureID cornerTex = null, TextureID sideTex = null,
+		sound typeSound = "delta/type", bool localize = true)
+	{
+		if (localize)
+			message = StringTable.Localize(message);
+		
+		return new("DeltaMessageBox").Init(message, delayTics, cornerTex,
+			sideTex, typeSound);
+	}
+	
+	protected DeltaMessageBox Init(string message, int delayTics,
+		TextureID cornerTex, TextureID sideTex, sound typeSound)
+	{
+		self.cornerTex = cornerTex;
+		self.sideTex = sideTex;
+		goalMessage = message;
+		curTics = delayTics;
+		self.typeSound = typeSound;
+		
+		curCharIndex = -1;
+		displayedMessage = "";
+		messageState = MSG_STATE_INITDELAY;
+		return self;
+	}
+	
+	virtual void Tick()
+	{
+		if (soundTimer)
+			soundTimer--;
+		
+		if (messageState == MSG_STATE_HOLD)
+			return;
+		if (curTics > 0)
+		{
+			curTics--;
+			return;
+		}
+		
+		ProcessNextCharacter();
+	}
+	
+	virtual void ProcessNextCharacter()
+	{
+		if (messageState == MSG_STATE_HOLD)
+			return;
+		else if (messageState == MSG_STATE_INITDELAY)
+			messageState = MSG_STATE_TYPING;
+		
+		bool printed = false,
+			playSound = true,
+			usesAsterisk = goalMessage.GetNextCodePoint(0) == int("*");
+		
+		while (!printed)
+		{
+			curCharIndex++;
+			
+			int chr, next;
+			[chr, next] = goalMessage.GetNextCodePoint(curCharIndex);
+			
+			if (curCharIndex >= goalMessage.CodePointCount())
+				messageState = MSG_STATE_HOLD;
+			
+			switch (chr)
+			{
+				case "^":
+					string str = goalMessage.Mid(curCharIndex+1, 1);
+					int timer = str.ToInt(10);
+					
+					if (timer < 5)
+						curTics = max(1, timer) * TICRATE / 6;
+					else
+					{
+						switch (timer)
+						{
+							case 5:
+								curTics = TICRATE;
+								break;
+							case 6:
+								curTics = 40;
+								break;
+							case 7:
+								curTics = 2 * TICRATE;
+								break;
+							case 8:
+								curTics = 3 * TICRATE;
+								break;
+							case 9:
+								curTics = 5 * TICRATE;
+								break;
+							default:
+								curTics = 5;
+								break;
+						}
+					}
+					
+					curCharIndex++;
+					break;
+				case "/":
+					messageState = MSG_STATE_HOLD;
+					playSound = false;
+					printed = true;
+					break;
+				case "&":
+					displayedMessage.AppendCharacter("\n");
+					
+					if (usesAsterisk && goalMessage.Mid(curCharIndex+1, 1) != "*")
+						displayedMessage.AppendFormat("  ");
+					
+					printed = true;
+					break;
+				default:
+					// don't play typing sound for punctuation
+					if (IsPunctuation(chr))
+						playSound = false;
+					else if (chr == int(" ") && IsPunctuation(next))
+						playSound = false;
+					
+					displayedMessage.AppendCharacter(chr);
+					printed = true;
+					break;
+			}
+		}
+		
+		if (playSound)
+			PlayTypeSound();
+	}
+	
+	virtual int TakeInput(InputEvent evt)
+	{
+		switch (messageState)
+		{
+			case MSG_STATE_TYPING:
+				return MSG_SKIP;
+			case MSG_STATE_HOLD:
+				return MSG_FINISH;
+			case MSG_STATE_INITDELAY:
+			default:
+				return MSG_IGNORE;
+		}
+	}
+	
+	virtual void PlayTypeSound()
+	{
+		if (soundTimer)
+			return;
+		
+		soundTimer = 2;
+		S_StartSound(typeSound, 1);
+	}
+	
+	virtual void Draw(double smoothRatio)
+	{
+		if (messageState == MSG_STATE_INITDELAY)
+			return;
+		
+		// dark world dialogue box is 296 x 82 px
+		// light world is 289 x 76
+		int boxScale = max(1, min(Screen.GetWidth() / 960, Screen.GetHeight() / 480));
+		Vector2
+			boxSize = (340 * boxScale, 76 * boxScale),
+			boxPos = ((Screen.GetWidth() - boxSize.x) / 2.,
+				(Screen.GetHeight() - boxSize.y - (40. * boxScale)));
+		
+		if (cornerTex && sideTex)
+		{
+			Screen.Dim(0xff000000, 1, boxPos.x, boxPos.y,
+				boxSize.x, boxSize.y);
+			
+			Screen.DrawTexture(cornerTex, true, boxPos.x, boxPos.y, DTA_ScaleX,
+				boxScale, DTA_ScaleY, boxScale);
+			Screen.DrawTexture(cornerTex, true, boxPos.x, boxPos.y + boxSize.y,
+				DTA_ScaleX, boxScale, DTA_ScaleY, boxScale, DTA_Rotate, 90);
+			Screen.DrawTexture(cornerTex, true, boxPos.x + boxSize.x,
+				boxPos.y + boxSize.y, DTA_ScaleX, boxScale, DTA_ScaleY,
+				boxScale, DTA_Rotate, 180);
+			Screen.DrawTexture(cornerTex, true, boxPos.x + boxSize.x, boxPos.y,
+				DTA_ScaleX, boxScale, DTA_ScaleY, boxScale, DTA_Rotate, -90);
+			
+			// top
+			Screen.DrawTexture(sideTex, true, boxPos.x, boxPos.y,
+				DTA_ScaleX, boxSize.x, DTA_ScaleY, boxScale);
+			// bottom
+			Screen.DrawTexture(sideTex, true, boxPos.x + boxSize.x, boxPos.y + boxSize.y,
+				DTA_ScaleX, boxSize.x, DTA_ScaleY, boxScale, DTA_Rotate, 180);
+			// left
+			Screen.DrawTexture(sideTex, true, boxPos.x, boxPos.y + boxSize.y,
+				DTA_ScaleX, boxScale, DTA_ScaleY, boxSize.y, DTA_Rotate, 90);
+			// right
+			Screen.DrawTexture(sideTex, true, boxPos.x + boxSize.x, boxPos.y,
+				DTA_ScaleX, boxScale, DTA_ScaleY, boxSize.y, DTA_Rotate, -90);
+		}
+		else
+		{
+			double thicc = 3 * boxScale;
+			Screen.Dim(0xff000000, 1, boxPos.x - thicc*2, boxPos.y - thicc*2,
+				boxSize.x + thicc*4, boxSize.y + thicc*4);
+			Screen.DrawLineFrame(0xffffffff, boxPos.x - thicc*2, boxPos.y - thicc*2,
+				boxSize.x + thicc*4, boxSize.y + thicc*4, thicc);
+		}
+		
+		Screen.DrawText(smallFont, Font.CR_UNTRANSLATED, boxPos.x, boxPos.y,
+			displayedMessage, DTA_ScaleX, boxScale, DTA_ScaleY, boxScale);
+	}
+	
+	bool IsPunctuation(int chr)
+	{
+		if (chr < int("0"))
+			return true;
+		if (chr > int("9") && chr < int("A"))
+			return true;
+		if (chr > int("Z") && chr < int("a"))
+			return true;
+		if (chr > int("z") && chr < int("À"))
+			return true;
+		
+		return false;
+	}
+}
+
+class DeltaCutscene : ScreenJob
+{
+	int msgIndex;
+	string debugString;
+	Array<DeltaMessageBox> messages;
+	
+	static DeltaCutscene Create()
+	{
+		return new("DeltaCutscene").Init();
+	}
+	
+	virtual DeltaCutscene Init(int flags = 0, double fadeT = 250.)
+	{
+		Super.Init(flags, fadeT);
+		msgIndex = -1;
+		noWipe = true;
+		return self;
+	}
+	
+	virtual void NextMessage()
+	{
+		if (msgIndex >= messages.Size() - 1)
+		{
+			jobState = finished;
+			return;
+		}
+		
+		msgIndex++;
+	}
+	
+	override void OnTick()
+	{
+		if (msgIndex < 0)
+		{
+			NextMessage();
+			return;
+		}
+		
+		Super.OnTick();
+		messages[msgIndex].Tick();
+	}
+	
+	override bool OnEvent(InputEvent evt)
+	{
+		if (msgIndex < 0)
+			return true;
+		if (evt.type == InputEvent.Type_KeyDown && !System.SpecialKeyEvent(evt))
+		{
+			messages[msgIndex].TakeInput(evt);
+			return true;
+		}
+		
+		return true;
+	}
+	
+	override void Draw(double smoothRatio)
+	{
+		Super.Draw(smoothRatio);
+		
+		Screen.DrawText(smallFont, Font.CR_RED, 0, 30, debugString);
+		
+		if (msgIndex >= 0)
+			messages[msgIndex].Draw(smoothRatio);
+	}
+}
+
+class DeltaWarriorsIntro : ScreenJob
+{
+	TextureID bySierraTex, heartTex;
+	int introState;
+	/*
+		-1 = uninitialized
+		 0 = "Made by" card fade in
+		 1 = "Made by" card hold
+		 2 = "Made by" card hold, fade in "made with love"
+		 3 = "Made by" card hold, hold "made with love"
+		 4 = Fade out
+		 5 = black screen
+	*/
+	
+	int curTics, targetTics;
+	
+	static DeltaWarriorsIntro Create(int flags)
+	{
+		return new("DeltaWarriorsIntro").Init(flags);
+	}
+	
+	DeltaWarriorsIntro Init(int flags = 0)
+	{
+		bySierraTex = TexMan.CheckForTexture("graphics/sierraSign.png");
+		heartTex = TexMan.CheckForTexture("graphics/love.png");
+		introState = curTics = targetTics = -1;
+		noWipe = true;
+		Super.Init(flags);
+		return self;
+	}
+	
+	override void OnTick()
+	{
+		Super.OnTick();
+		
+		if (curTics >= 0)
+			curTics++;
+		
+		if (curTics == targetTics)
+		{
+			introState++;
+			curTics = 0;
+			
+			switch (introState)
+			{
+				case 0: 	// "Made by" card fade in
+					targetTics = TICRATE;
+					break;
+				case 1: 	// "Made by" card hold
+					targetTics = TICRATE;
+					break;
+				case 2: 	// "Made by" card hold, fade in "made with love"
+					targetTics = TICRATE;
+					break;
+				case 3: 	// "Made by" card hold, hold "made with love"
+					targetTics = TICRATE * 3;
+					break;
+				case 4: 	// Fade out
+					targetTics = TICRATE;
+					break;
+				case 5: 	// Black screen
+					targetTics = TICRATE / 2;
+					break;
+				default:
+					jobState = finished;
+					break;
+			}
+		}
+	}
+	
+	override bool OnEvent(InputEvent evt)
+	{
+		if (introState == 5)
+			return true;
+		
+		if (evt.type == InputEvent.Type_KeyDown && !System.SpecialKeyEvent(evt))
+		{
+			introState = 5;
+			curTics = 0;
+			targetTics = 5;
+		}
+		return true;
+	}
+	
+	override void Draw(double smoothRatio)
+	{
+		Super.Draw(smoothRatio);
+		Screen.Dim(0xff000000, 1, 0, 0, Screen.GetWidth(), Screen.GetHeight());
+		
+		if (introState == 5)
+			return;
+		
+		double targetAlpha = 1.,
+			sc = max(1, min(Screen.GetWidth()/1920, Screen.GetHeight()/1080));
+		
+		if (introState < 1 || introState > 3)
+		{
+			targetAlpha = double(curTics) / targetTics;
+			
+			if (introState == 4)
+				targetAlpha = 1 - targetAlpha;
+		}
+		
+		string str = StringTable.Localize("$DELTAWARRIORS_FAN_PROJECT");
+		double signW, signH, heartW, heartH,
+			stringW = smallFont.StringWidth(str) * sc * 2;
+		[signW, signH] = TexMan.GetSize(bySierraTex);
+		signW *= sc*0.5;
+		signH *= sc*0.5;
+		[heartW, heartH] = TexMan.GetSize(heartTex);
+		heartW *= sc*2;
+		heartH *= sc*2;
+		
+		Screen.DrawText(smallFont, Font.CR_UNTRANSLATED,
+			(Screen.GetWidth() - stringW)/2, (Screen.GetHeight() - signH - heartH)/2,
+			str, DTA_Alpha, targetAlpha, DTA_ScaleX, sc*2, DTA_ScaleY, sc*2);
+		Screen.DrawTexture(bySierraTex, false, Screen.GetWidth()/2,
+			(Screen.GetHeight())/2, DTA_Alpha, targetAlpha,
+			DTA_ScaleX, sc*0.5, DTA_ScaleY, sc*0.5);
+		
+		if (introState < 2)
+			return;
+		
+		str = StringTable.Localize("$DELTAWARRIORS_MADE_WITH");
+		stringW = smallFont.StringWidth(str) * sc * 2;
+		
+		if (introState == 2)
+			targetAlpha = double(curTics) / targetTics;
+		
+		Screen.DrawText(smallFont, Font.CR_UNTRANSLATED,
+			(Screen.GetWidth() - (stringW + heartW))/2, (Screen.GetHeight() + signH)/2,
+			str, DTA_Alpha, targetAlpha, DTA_ScaleX, sc*2, DTA_ScaleY, sc*2);
+		Screen.DrawTexture(heartTex, false, (Screen.GetWidth() + stringW - heartW/2)/2,
+			(Screen.GetHeight() + signH)/2, DTA_Alpha, targetAlpha,
+			DTA_ScaleX, sc*2, DTA_ScaleY, sc*2);
+	}
+}
+
+class DeltaCutsceneManager ui
+{
+	static void IntroCutscene(ScreenJobRunner runner)
+	{
+		let csn = DeltaWarriorsIntro.Create(ScreenJob.transition_crossfade);
+		runner.Append(csn);
+		runner.Init(false, true);
+	}
+}

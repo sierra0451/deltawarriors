@@ -68,7 +68,7 @@ class DeltaWeaponPickup : Weapon
 			return false;
 		
 		let realWeap = Weapon(Spawn(weap));
-		realWeap.bDropped = false;
+		realWeap.bDropped = bDropped;
 		
 		if (!realWeap.TryPickup(toucher))
 		{
@@ -96,6 +96,32 @@ class DeltaWeaponPickup : Weapon
 			return;
 		
 		other.GiveInventoryType(weap);
+	}
+}
+
+// Doom replacers
+class DeltaChainsaw : Inventory replaces Chainsaw
+{
+	Default
+	{
+		Inventory.PickupMessage "";
+		Inventory.PickupSound "misc/w_pkup";
+		Inventory.MaxAmount 1;
+		
+		+INVENTORY.UNTOSSABLE
+	}
+	
+	States
+	{
+		Spawn:
+			CSAW A -1;
+			Stop;
+	}
+	
+	override string PickupMessage()
+	{
+		return String.Format(StringTable.Localize("$PICKUP_DELTA_CHAINSAW"),
+			GetDefaultByType('Chainsaw').GetTag().MakeLower());
 	}
 }
 
@@ -128,31 +154,6 @@ class ChaingunReplacer : DeltaWeaponPickup replaces Chaingun
 	override void AddPickups()
 	{
 		actualPickups.Insert("KrisPlayer", "KrisSMG");
-	}
-}
-
-class DeltaChainsaw : Inventory replaces Chainsaw
-{
-	Default
-	{
-		Inventory.PickupMessage "";
-		Inventory.PickupSound "misc/w_pkup";
-		Inventory.MaxAmount 1;
-		
-		+INVENTORY.UNTOSSABLE
-	}
-	
-	States
-	{
-		Spawn:
-			CSAW A -1;
-			Stop;
-	}
-	
-	override string PickupMessage()
-	{
-		return String.Format(StringTable.Localize("$PICKUP_DELTA_CHAINSAW"),
-			GetDefaultByType('Chainsaw').GetTag().MakeLower());
 	}
 }
 

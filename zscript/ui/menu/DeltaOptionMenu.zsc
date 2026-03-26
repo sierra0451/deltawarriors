@@ -1,6 +1,5 @@
 class DeltaOptionMenu : OptionMenu
 {
-	protected Font consoleFont;
 	protected string debugString;
 	protected int oldSelect;
 	protected int selectSoundTimer;
@@ -11,7 +10,6 @@ class DeltaOptionMenu : OptionMenu
 	{
 		Super.Init(parent, desc);
 		oldSelect = desc.mSelectedItem;
-		consoleFont = Font.FindFont("drconfont");
 	}
 	
 	override void Ticker()
@@ -52,15 +50,5 @@ class DeltaOptionMenu : OptionMenu
 		
 		debugString = "type: " .. type .. ", pos: " .. (mX, mY);
 		return true;
-	}
-	
-	override void Drawer()
-	{
-		Super.Drawer();
-		
-		/*
-		if (debugString.CodePointCount())
-			Screen.DrawText(consoleFont, Font.CR_UNTRANSLATED, 0, 0, debugString);
-		*/
 	}
 }

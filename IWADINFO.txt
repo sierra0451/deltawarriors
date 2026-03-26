@@ -1,0 +1,11 @@
+IWad
+{
+	Name = "DeltaWarriors"
+	AutoName = "DeltaWarriors"
+	Game = "Doom"
+	Config = "DeltaWarriors"
+	StartupType = "Doom"
+	BannerColors = "ff ff ff", "00 00 00"
+	IgnoreTitlePatches = 1
+	DiscordAppID = "1467675234864857120"
+}

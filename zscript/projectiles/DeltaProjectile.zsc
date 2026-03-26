@@ -1,4 +1,4 @@
-class DeltaParriable : Actor
+class DeltaProjectile : Actor
 {
 	virtual bool TryParry(Actor parrier)
 	{

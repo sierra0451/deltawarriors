@@ -4,8 +4,14 @@ version "4.14.3"
 #include "zscript/DeltaEnums.zsc"
 #include "zscript/DeltaUtil.zsc"
 #include "zscript/DeltaEvents.zsc"
-#include "zscript/DeltaParriable.zsc"
-#include "zscript/DeltaBadExplosion.zsc"
+#include "zscript/DeltaCutscenes.zsc"
+
+// effects
+#include "zscript/effects/DeltaBadExplosion.zsc"
+#include "zscript/effects/DeltaSoul.zsc"
+
+// enemies
+#include "zscript/enemies/DeltaEnemy.zsc"
 
 // items
 #include "zscript/items/HealthReplacements.zsc"
@@ -27,7 +33,7 @@ version "4.14.3"
 #include "zscript/ui/DeltaHud.BossHealth.zsc"
 #include "zscript/ui/DeltaHud.DamagePopups.zsc"
 #include "zscript/ui/DeltaHud.Indicators.zsc"
-#include "zscript/ui/DeltaHud.Messages.zsc"
+//ye#include "zscript/ui/DeltaHud.Messages.zsc"
 #include "zscript/ui/DeltaHud.Multiplayer.zsc"
 #include "zscript/ui/DeltaPopups..zsc"
 #include "zscript/ui/DeltaPopups.Damage.zsc"
@@ -37,6 +43,7 @@ version "4.14.3"
 	#include "zscript/ui/menu/DeltaSkillMenu.zsc"
 
 // projectiles
+#include "zscript/projectiles/DeltaProjectile.zsc"
 #include "zscript/projectiles/DeltaGrenade.zsc"
 
 // weapons
@@ -48,6 +55,3 @@ version "4.14.3"
 	#include "zscript/weapons/kris/KrisRevolverChargeShot.zsc"
 	#include "zscript/weapons/kris/KrisShotgun.zsc"
 	#include "zscript/weapons/kris/KrisSMG.zsc"
-
-// soul
-#include "zscript/DeltaSoul.zsc"

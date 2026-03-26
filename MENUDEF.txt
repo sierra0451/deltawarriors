@@ -2,7 +2,7 @@ DefaultListMenu
 {
 	Class "DeltaListMenu"
 	Position 110, 64
-	Font "DRCONFONT", "DeltaMenuText", "DeltaMenuHighlight"
+	Font "SmallFont", "DeltaMenuText", "DeltaMenuHighlight"
 	Selector "DRSELECT", -14, 4
 	Size Clean
 }

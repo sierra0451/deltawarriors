@@ -1,0 +1,21 @@
+// Title screen
+HardwareShader "DELTATT1"
+{
+	shader "shaders/titleWarp.fp"
+}
+HardwareShader "DELTATT2"
+{
+	shader "shaders/titleWarp.fp"
+}
+HardwareShader "DELTATT3"
+{
+	shader "shaders/titleWarp.fp"
+}
+HardwareShader "DELTATT4"
+{
+	shader "shaders/titleWarp.fp"
+}
+HardwareShader "DELTATT5"
+{
+	shader "shaders/titleWarp.fp"
+}

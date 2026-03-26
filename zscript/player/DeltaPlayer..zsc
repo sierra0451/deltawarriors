@@ -9,6 +9,7 @@ class DeltaPlayer : PlayerPawn abstract
 {
 	const COYOTE_TIME = 3;
 	const MAX_AIR_BOB_TICS = 7;
+	const DELTA_AIR_CONTROL = 0.6;
 	const DAMAGE_IFRAMES = 10;
 	const DRAIN_TIMER_START = TICRATE * 12;			// tp lasts for 12 seconds before we start draining it
 	const DRAIN_AMOUNT = 5./TICRATE;
@@ -25,6 +26,7 @@ class DeltaPlayer : PlayerPawn abstract
 	protected int damageTics; 						// invulnerability frames, essentially
 	protected int deathTimer; 						// used for first person death animation and for "Press E to respawn" prompt
 	protected double deathPitchFP, deathPitchTP;
+	protected DeltaCrouchState crouchState;
 	
 	protected double flinchMultiplier;				// wanna be able to make certain characters flinch more or flinch less at incoming damage
 	protected int startFlinchTics;
@@ -40,7 +42,7 @@ class DeltaPlayer : PlayerPawn abstract
 	
 	protected LinearValueInterpolator heartbeat, shakiness;
 	
-	protected double oldAngle;
+	protected double angleDiff, oldAngle;
 	
 	protected state
 		SpawnGunState,		SpawnMeleeState,		SpawnMagicState,
@@ -280,7 +282,6 @@ class DeltaPlayer : PlayerPawn abstract
 	{
 		Super.PlayerThink();
 		HandleViewAngles();
-		HandleTurning();
 		
 		if (IsPredicting())
 			return;
@@ -302,6 +303,19 @@ class DeltaPlayer : PlayerPawn abstract
 		CheckGraze();
 	}
 	
+	override void ApplyAirControl(out double moveFactor, out double bobFactor)
+	{
+		let targetAirCtrl = DELTA_AIR_CONTROL,
+			fric = level.airFriction;
+		
+		if (player && !(player.cmd.buttons & (BT_FORWARD | BT_BACK | BT_MOVELEFT | BT_MOVERIGHT)))
+			targetAirCtrl = 0;
+		
+		level.airFriction = 1.0004 - (targetAirCtrl*0.0941);
+		moveFactor *= targetAirCtrl;
+		bobFactor *= targetAirCtrl;
+	}
+	
 	// grabbing code from uzdoom.pk3 and retooling for more preferred feeling
 	override void MovePlayer()
 	{
@@ -316,13 +330,26 @@ class DeltaPlayer : PlayerPawn abstract
 			if (player.turnticks)
 			{
 				player.turnticks--;
-				A_SetAngle(Angle + (180. / TURN180_TICKS), SPF_INTERPOLATE);
+				angleDiff = (180. / TURN180_TICKS);
+				A_SetAngle(Angle + angleDiff, SPF_INTERPOLATE);
 			}
 			else
-				Angle += cmd.yaw * (360./65536.);
+			{
+				angleDiff = cmd.yaw * (360./65536.);
+				Angle += angleDiff;
+			}
+			
+			_oldTurn = _turn;
+			
+			if (abs(_turn) > 0.5)
+				_turn /= 2;
+			else
+				_turn = 0;
+			
+			_turn = DeltaUtil.Clamp(_turn + angleDiff * 0.2, -MAX_TURN, MAX_TURN);
 		}
 		
-		player.onground = (pos.z <= floorz) || bOnMobj || bMBFBouncer || (player.cheats & CF_NOCLIP2);
+		player.onGround = (pos.z <= floorz) || bOnMobj || bMBFBouncer || (player.cheats & CF_NOCLIP2);
 		
 		// killough 10/98:
 		//
@@ -357,20 +384,19 @@ class DeltaPlayer : PlayerPawn abstract
 			bobFactor *= crouchFactor;
 		}
 		
-		forwardMove = fm * moveFactor * (35 / TICRATE);
-		sideMove = sm * moveFactor * (35 / TICRATE);
+		forwardMove = fm * moveFactor * (35. / TICRATE);
+		sideMove = sm * moveFactor * (35. / TICRATE);
 		
 		if (lunging)
 			player.vel = (0, 0);
 		else
 		{
-			let slowRate = 3. / TICRATE;
-			
 			if (forwardMove)
 			{
 				Bob(Angle, cmd.forwardMove * bobFactor / 256., true);
 				ForwardThrust(forwardMove, Angle);
 			}
+			
 			if (sideMove)
 			{
 				let a = Angle - 90;
@@ -452,7 +478,7 @@ class DeltaPlayer : PlayerPawn abstract
 		
 		if (lunging)
 		{
-			let oldVel = Vel;
+			let oldVel = Vel / 10.;
 			StopLunge();
 			Vel = oldVel;
 		}
@@ -524,7 +550,7 @@ class DeltaPlayer : PlayerPawn abstract
 				else if (!(deathPitchTP ~== 0))
 					deathPitchTP = 0;
 				
-				if ((player.cheats & CF_CHASECAM) || r_deathcamera)
+				if ((player.cheats & CF_CHASECAM) || r_deathCamera)
 					Pitch = deathPitchTP;
 				else
 					Pitch = deathPitchFP;
@@ -533,10 +559,10 @@ class DeltaPlayer : PlayerPawn abstract
 		
 		player.mo.CalcHeight();
 		
-		if (player.damagecount)
-			player.damagecount--;
-		if (player.poisoncount)
-			player.poisoncount--;
+		if (player.damageCount)
+			player.damageCount--;
+		if (player.poisonCount)
+			player.poisonCount--;
 		
 		bool playerWantsToRespawn = (player.cmd.buttons & BT_USE);
 		bool respawnAllowed = multiplayer || level.AllowRespawn
@@ -574,13 +600,9 @@ class DeltaPlayer : PlayerPawn abstract
 			jumpBuffer--;
 			
 			if (waterLevel >= 2)
-			{
 				Vel.Z = 4 * Speed;
-			}
 			else if (bNoGravity)
-			{
 				Vel.Z = 3.;
-			}
 			else if (level.IsJumpingAllowed() && coyoteTimer <= COYOTE_TIME
 				&& Vel.Z <= 0)
 			{
@@ -618,27 +640,35 @@ class DeltaPlayer : PlayerPawn abstract
 	{
 		if (!player)
 			return;
+		if (crouchState != CS_STANDING && crouchState != CS_CROUCHING)
+			return;
 		
 		let buttons = player.cmd.buttons;
 		
-		if (CanCrouch() && player.health > 0 && level.IsCrouchingAllowed())
+		if (CanCrouch() && player.health > 0 && level.IsCrouchingAllowed()
+			&& !totallyfrozen)
 		{
-			if (!totallyfrozen)
+			int crouchDir = player.crouching;
+			
+			if (crouchDir == 0)
+				crouchDir = (buttons & BT_CROUCH) ? -1 : 1;
+			else if (buttons & BT_CROUCH)
+				player.crouching = 0;
+			
+			if (crouchDir == 1 && IsCrouching() && pos.Z + height < ceilingz)
 			{
-				int crouchDir = player.crouching;
+				CrouchMove(2);
 				
-				if (crouchDir == 0)
-					crouchDir = (buttons & BT_CROUCH) ? -1 : 1;
-				else if (buttons & BT_CROUCH)
-					player.crouching = 0;
-				
-				if (crouchDir == 1 && IsCrouching() && pos.Z + height < ceilingz)
-					CrouchMove(2);
-				else if (crouchDir == -1 && crouchFactor > 0.5)
-					CrouchMove(-2);
+				if (crouchFactor ~== 1)
+					crouchState = CS_STANDING;
+			}
+			else if (crouchDir == -1 && crouchFactor > 0.5)
+			{
+				crouchState = CS_CROUCHING;
+				CrouchMove(-2);
 			}
 		}
-		else
+		else if (!totallyfrozen)
 			DeltaUncrouch();
 		
 		player.crouchOffset = -(ViewHeight) * (1 - crouchFactor);
@@ -765,7 +795,7 @@ class DeltaPlayer : PlayerPawn abstract
 				return;
 			
 			if (amount == 0)
-				amount = maxTensionPoints;
+				amount = ceil(maxTensionPoints);
 			
 			tensionPoints = min(maxTensionPoints, tensionPoints + amount);
 			tensionDrainTimer = DRAIN_TIMER_START;
@@ -1077,7 +1107,7 @@ class DeltaPlayer : PlayerPawn abstract
 		double factor = G_SkillPropertyFloat(SKILLP_AmmoFactor) * sv_ammofactor;
 		
 		if (tensionPoints > 0)
-			tensionDrainTimer = DRAIN_TIMER_START * factor;
+			tensionDrainTimer = ceil(DRAIN_TIMER_START * factor);
 		else
 			tensionDrainTimer = 0;
 		return true;
@@ -1251,20 +1281,6 @@ class DeltaPlayer : PlayerPawn abstract
 		A_SetViewRoll(recoil.z, SPF_INTERPOLATE);
 	}
 	
-	protected void HandleTurning()
-	{
-		let diffAngle = DeltaAngle(oldAngle, angle);
-		_oldTurn = _turn;
-		
-		if (abs(_turn) > 0.5)
-			_turn /= 2;
-		else
-			_turn = 0;
-		
-		_turn = DeltaUtil.Clamp(_turn + diffAngle*0.2, -MAX_TURN, MAX_TURN);
-		oldAngle = angle;
-	}
-	
 	protected void HandleIFrames()
 	{
 		if (damageTics < 0)
@@ -1390,15 +1406,18 @@ class DeltaPlayer : PlayerPawn abstract
 		LineTrace(ang, distance, pitch, TRF_NOSKY,
 			height*0.5 - floorclip + AttackZOffset * crouchFactor, data: l);
 		
-		if (!l.HitActor || l.HitActor.curState.InStateSequence(l.HitActor.ResolveState("Death")))
+		let ac = l.HitActor;
+		
+		if (!ac || ac.curState.InStateSequence(ac.ResolveState("Death")) || 
+			((ac is "DeltaProjectile") && ac.curState.InStateSequence(ac.ResolveState("Explode"))))
 		{
 			_crosshairState = DELTA_XHR_NEUTRAL;
 			return;
 		}
 		
-		if (IsFriend(l.HitActor))
+		if (IsFriend(ac))
 			_crosshairState = DELTA_XHR_FRIENDLY;
-		else if (IsHostile(l.HitActor))
+		else if (IsHostile(ac))
 			_crosshairState = DELTA_XHR_ENEMY;
 		else
 			_crosshairState = DELTA_XHR_NEUTRAL;
@@ -1485,9 +1504,9 @@ class DeltaPlayer : PlayerPawn abstract
 		if (abs(cos(ang)) <= 0.1)
 			pMult = 0;
 		
-		AddRecoil(RECOIL_DAMAGE, 7 + damageAddTics, 2, p: -cos(ang) * flinchMultiplier * damageMultiplier,
-			y: isExplosion ? yrMult * flinchMultiplier * damageMultiplier : 0,
-			r: isExplosion ? 0 : yrMult * flinchMultiplier * damageMultiplier);
+		AddRecoil(RECOIL_DAMAGE, 7 + damageAddTics, 2,
+			p: -cos(ang) * flinchMultiplier * damageMultiplier,
+			r: yrMult * flinchMultiplier * damageMultiplier);
 	}
 	
 	void AddRecoil(DeltaRecoilType recoilType, int startTime, int leadInTime = 0, double p = 0, double y = 0, double r = 0)
@@ -1567,10 +1586,7 @@ class DeltaPlayer : PlayerPawn abstract
 	
 	bool IsPredicting()
 	{
-		if (player)
-			return (player.cheats & CF_PREDICTING);
-		
-		return false;
+		return player && (player.cheats & CF_PREDICTING);
 	}
 	
 	// returns -1 if not dead, otherwise returns how many ticks this character has been dead for

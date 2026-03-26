@@ -1,6 +1,6 @@
 #include "zcommon.acs"
 
-script "Delta_AirControl" OPEN
+script "Delta_FirstTimeDeath" (void)
 {
-	SetAirControl(0.6);
+	SetCvar("prgr_delta_diedFirstTime", true);
 }

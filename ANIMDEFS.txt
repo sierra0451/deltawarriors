@@ -11,3 +11,10 @@ texture DELTATT1
 	pic DELTATT3 tics 15
 	pic DELTATT4 tics 15
 	pic DELTATT5 tics 15
+
+texture DRDWBOR1 oscillate
+	pic DRDWBOR1 tics 5
+	pic DRDWBOR2 tics 5
+	pic DRDWBOR3 tics 5
+	pic DRDWBOR4 tics 5
+	pic DRDWBOR5 tics 5

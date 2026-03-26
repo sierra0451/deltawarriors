@@ -1,3 +1,31 @@
+enum DeltaCrouchState
+{
+	CS_STANDING,
+	CS_CROUCHING,
+	CS_SLAMMING,
+	CS_SLIDING
+}
+
+enum DeltaMessageType
+{
+	MSG_TYPE_NORMAL,		// uses normal border
+	MSG_TYPE_DARKWORLD		// uses dark world border
+}
+
+enum DeltaMessageState
+{
+	MSG_STATE_INITDELAY,	// initial delay before a message shows
+	MSG_STATE_TYPING,		// actively typing
+	MSG_STATE_HOLD			// whole message is shown
+}
+
+enum DeltaMessageInputResponse
+{
+	MSG_IGNORE,				// ignore input
+	MSG_SKIP,				// skip to end of message
+	MSG_FINISH				// finish message, move on to next thing
+}
+
 enum DeltaTpResult
 {
 	TP_FAIL,

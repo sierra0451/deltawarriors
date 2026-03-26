@@ -7,8 +7,8 @@ class SusiePlayer : DeltaPlayer
 		Speed 0.85;
 		Mass 120;
 		
-		Health 130;
-		Player.MaxHealth 130;
+		Health 230;
+		Player.MaxHealth 230;
 		
 		Player.DisplayName "$DELTA_CHAR_SUSIE";
 		Player.ViewHeight 34.5;

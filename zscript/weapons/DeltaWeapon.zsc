@@ -325,7 +325,8 @@ class DeltaWeapon : Weapon
 				
 				if (!currMo || (currMo.health <= 0)
 					|| (!currMo.bIsMonster && !(currMo is "PlayerPawn"))
-					|| invoker.owner.IsFriend(currMo)) continue;
+					|| invoker.owner.IsFriend(currMo)
+					|| currMo.bNeverTarget) continue;
 				
 				Vector3 diff = level.Vec3Diff(pos, currMo.pos);
 				Vector3 diffNorm = diff.Unit();

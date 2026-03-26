@@ -3,6 +3,7 @@ class DeltaSoul : Actor
 	double alpha;
 	PlayerInfo playerParent;
 	Color defaultColor;
+	protected double prevZ;
 	const BASE_LINGER_TIME = floor(TICRATE * 0.75);
 	const SOUL_SHARD_COUNT = 6;
 	
@@ -14,7 +15,8 @@ class DeltaSoul : Actor
 		StencilColor "ff 00 00";
 		
 		+NOBLOCKMAP
-		+NOLIFTDROP
+		+MOVEWITHSECTOR
+		+RELATIVETOFLOOR
 		+NOGRAVITY
 		+BRIGHT
 		+FORCEXYBILLBOARD
@@ -23,8 +25,12 @@ class DeltaSoul : Actor
 	States
 	{
 		Spawn:
-			DRSL A random(BASE_LINGER_TIME - 5, BASE_LINGER_TIME + 5);
-			DRSL B TICRATE A_StartSound("delta/soul_break", attenuation: 0.5);
+			DRSL A random(BASE_LINGER_TIME - 3, BASE_LINGER_TIME + 3);
+			DRSL B TICRATE-1 A_StartSound("delta/soul_break", attenuation: 0.5);
+			DRSL B 1
+			{
+				invoker.prevZ = prev.z;
+			}
 		SoulBreak:
 			TNT1 A 0
 			{
@@ -43,7 +49,8 @@ class DeltaSoul : Actor
 						10, 												// Size
 						ang + i + cfrandom(-3, 3),							// Angle offset
 						0, 5, 0,											// Position offset
-						cfrandom(-1, 1), cfrandom(-5, -4), cfrandom(3, 4),	// Initial velocity
+						cfrandom(-1, 1), cfrandom(-5, -4),
+							cfrandom(3, 4) + pos.z - invoker.prevZ,			// Initial velocity
 						0, 0, -.5											// Acceleration
 					);
 				}

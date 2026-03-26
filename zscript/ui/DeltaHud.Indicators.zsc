@@ -13,7 +13,8 @@ struct GrazeIndicatorInfo
 
 extend class DeltaHud
 {
-	private TextureID _damageIndicator, _grazeIndicator;
+	private TextureID _damageIndicator, _grazeIndicator, _grazeStencil,
+		_grazeMarker;
 	
 	private DamageIndicatorInfo[10] _damageIndicators;
 	private GrazeIndicatorInfo[10] _grazeIndicators;
@@ -26,6 +27,8 @@ extend class DeltaHud
 	{
 		_damageIndicator 	= TexMan.CheckForTexture("DRDMGIND");
 		_grazeIndicator 	= TexMan.CheckForTexture("DRGRZIND");
+		_grazeStencil		= TexMan.CheckForTexture("sprites/hud/grazeStencil.png");
+		_grazeMarker		= TexMan.CheckForTexture("sprites/hud/grazeMarker.png");
 	}
 	
 	protected void TickIndicators()
@@ -62,8 +65,9 @@ extend class DeltaHud
 		if (!cl_delta_showDamageIndicators)
 			return;
 		
+		float indicatorSize = 1;
 		float distance = 100;
-		Vector2 indicatorScale = (1.5, 1.5);
+		Vector2 indicatorScale = _inverseUniversalScale / indicatorSize;
 		
 		for (int i = 0; i < _damageIndicators.Size(); i++)
 		{
@@ -80,14 +84,13 @@ extend class DeltaHud
 			
 			DrawTextureRotated (
 				_damageIndicator,
-				(distance * sin(-ang) / indicatorScale.x, -distance * cos(ang) / indicatorScale.y),
+				(distance * sin(-ang) * _universalScale.x, -distance * cos(ang) * _universalScale.y),
 				DI_SCREEN_CENTER | DI_ITEM_OFFSETS,
 				ang,
 				alpha,
 				indicatorScale,
 				col: 0xff000000 | player.GetPainFlash()
 			);
-			//DrawString(_consoleFont, "Angle: " .. ang, (0, 0));
 		}
 	}
 	
@@ -96,8 +99,30 @@ extend class DeltaHud
 		if (!cl_delta_showGrazeIndicators)
 			return;
 		
+		let ply = DeltaPlayer(CPlayer.mo);
+		if (!ply)
+			return;
+		
+		Screen.EnableStencil(true);
+		Screen.SetStencil(0, SOP_Increment, SF_ColorMaskOff);
+		
+		DrawTexture(_grazeStencil, (0, 0), DI_SCREEN_CENTER | DI_ITEM_OFFSETS,
+			scale: _universalScale * 2);
+		
+		Screen.SetStencil(1, SOP_Keep, SF_AllOn);
+		
+		if (ply.ticLastGrazed >= 0)
+		{
+			int timePassed = level.time - ply.ticLastGrazed;
+			int alpha = 48 * (1 - (timePassed / 5.));
+			
+			DrawTexture(_grazeStencil, (0, 0), DI_SCREEN_CENTER | DI_ITEM_OFFSETS,
+				scale: _universalScale * 2, col: Color(alpha, 160, 160, 160));
+		}
+		
+		float indicatorSize = 2;
 		float distance = 80;
-		Vector2 indicatorScale = (1.5, 1.5);
+		Vector2 indicatorScale = _inverseUniversalScale / indicatorSize;
 		
 		for (int i = 0; i < _grazeIndicators.Size(); i++)
 		{
@@ -113,15 +138,17 @@ extend class DeltaHud
 			float alpha = min(1, (_grazeIndicators[i].timer - ticFrac) / GRAZE_INDICATOR_TIME);
 			
 			DrawTextureRotated(
-				_grazeIndicator,
-				(distance * sin(-ang) / indicatorScale.x, -distance * cos(ang) / indicatorScale.y),
+				_grazeMarker,//_grazeIndicator,
+				(distance * sin(-ang) * _universalScale.x, -distance * cos(ang) * _universalScale.y),
 				DI_SCREEN_CENTER | DI_ITEM_OFFSETS,
 				ang,
 				alpha,
-				indicatorScale,
-				col: 0xffffffff
+				indicatorScale
 			);
 		}
+		
+		Screen.EnableStencil(false);
+		Screen.ClearStencil();
 	}
 	
 	void CreateDamageIndicator(Actor source, Actor inflictor)

@@ -1,5 +1,8 @@
 class DeltaPopup : Actor abstract
 {
+	const FADE_MIN_DISTANCE = 10.0;
+	const FADE_MAX_DISTANCE = 150.0;
+	
 	int timer, scaleUpTime, popUpTime, bounceTime, holdTime, fadeTime;
 	double startVelZ, bounceVelZ;
 	
@@ -20,6 +23,7 @@ class DeltaPopup : Actor abstract
 		DeltaPopup.FadeTime floor(TICRATE * 0.5);
 		DeltaPopup.StartVelZ 5.;
 		DeltaPopup.BounceVelZ 1.2; // 5/4
+		RenderStyle "Translucent";
 		
 		+NOINTERACTION;
 		+SQUAREPIXELS;
@@ -46,6 +50,8 @@ class DeltaPopup : Actor abstract
 		Super.Tick();
 		if (IsFrozen())
 			return;
+		
+		alpha = GetFadeAlpha();
 		
 		timer++;
 		int tempTime = timer; // using this to make code easier to debug and read
@@ -89,7 +95,31 @@ class DeltaPopup : Actor abstract
 		
 		vel.z = 1;
 		A_SetScale(1, 0.9 + (tempTime)*2./TICRATE);
-		A_FadeOut(1. / fadeTime);
+		let finalFadeAlpha = 1 - double(tempTime) / fadeTime;
+		
+		if (finalFadeAlpha <= 0)
+		{
+			Destroy();
+			return;
+		}
+		
+		alpha *= finalFadeAlpha;
+	}
+	
+	double GetFadeAlpha()
+	{
+		Actor cam = players[consolePlayer].camera;
+		
+		if (!cam)
+			return 1.;
+		
+		let diff = level.Vec3Diff(pos, cam.pos.PlusZ(players[consolePlayer].viewHeight)),
+			dist = diff.Length();
+		
+		if (dist > FADE_MAX_DISTANCE)
+			return 1.;
+		
+		return (dist - FADE_MIN_DISTANCE) / (FADE_MAX_DISTANCE - FADE_MIN_DISTANCE);
 	}
 	
 	static DeltaPopup SpawnPopup(Class<DeltaPopup> cls, Actor thing,

@@ -1,6 +1,8 @@
 identifier,default,remarks
 DELTAWARRIORS_VERSION,Development Build,Version display
 DELTAWARRIORS_NAME,DeltaWarriors,
+DELTAWARRIORS_FAN_PROJECT,A Deltarune Fan Project,
+DELTAWARRIORS_MADE_WITH,Made with ,"Full thing has the soul following this string, the space at the end is intentional"
 ,,Doom endings
 ,,E1TEXT
 ,,E2TEXT
@@ -150,11 +152,18 @@ TXT_DELTA_RESPAWNMSG1,IT APPEARS YOU HAVE REACHED,Meant to be a reference to Cha
 TXT_DELTA_RESPAWNMSG2,AN END.,This and respawnMsg1 are meant to be two parts of one sentence with a time delay between showing each
 TXT_DELTA_RESPAWNREMIND,PRESS %s TO TRY AGAIN.,%s is where the player's use key will be put.
 TXT_DELTA_RESPAWNREMINDDM,PRESS %s TO RETURN.,This one is used if we'll simply respawn instead of reloading the level (e.g. if sv_singleplayerrespawn is true or if in deathmatch)
-HUSTR_TALKTOSELF1,(You murmur to yourself.),
-HUSTR_TALKTOSELF2,(You hear a voice. It's yours...?),
+HUSTR_TALKTOSELF1,(You talk to yourself.),
+HUSTR_TALKTOSELF2,(You hear a voice. It's... yours?),
 HUSTR_TALKTOSELF3,(You speak to where only you can hear it.),
-HUSTR_TALKTOSELF4,(You talk to yourself.),
-HUSTR_TALKTOSELF5,(You start to wonder if you've lost your mind...),
+HUSTR_TALKTOSELF4,"(You speak in hushed tones, hugging yourself as you murmur to yourself.)",
+HUSTR_TALKTOSELF5,(You start to wonder if you're going insane...),
+TXT_LIGHTER,(You can feel your feet start to leave the ground...),
+TXT_GRAVITY,(You feel the world pulling you back down again.),
+TXT_NO_RESURRECT,(You cannot resurrect without a vessel...),
+TXT_FRAGLIMIT,(Frag limit has been reached.),
+TXT_TIMELIMIT,(Time limit has been reached.),
+,,
+,,
 ,,
 ,,Gameplay menu options
 GMPLYMNU_PISTOLSTART,Reset inventory when entering a new level,
@@ -174,7 +183,7 @@ OB_SUICIDE,%o killed %hself.,
 OB_KILLEDSELF,%o killed %hself.,
 OB_EXIT,%o tried to escape.,
 OB_WATER,%o drowned.,
-OB_VOODOO,%o was killed mysteriously.,
+OB_VOODOO,%o died under mysterious circumstances.,
 OB_MPDEFAULT,%o died by %k's hands.,
 OB_FRIENDLY1,%o was betrayed by %k.,
 OB_FRIENDLY2,%o found that %k seems to be working with the Knight.,
@@ -186,7 +195,7 @@ PICKUP_DELTA_CHAINSAW,(You picked up a cardboard cutout of a \c[DeltaHighlight]%
 PICKUP_DELTA_SWORD,(You retrieved \c[DeltaHighlight]your sword\c-.),
 PICKUP_DELTA_REVOLVER,(You found a \c[DeltaHighlight]revolver\c-.),
 PICKUP_DELTA_KSHOTGUN,(You found a \c[DeltaHighlight]shotgun\c-.),
-PICKUP_DELTA_KSHOTGUN_NIGHRIEL,"(""WHY DOES KRIS HAVE A \c[DeltaHighlight]SHOTGUN\c-??"" -N.D.)",
+PICKUP_DELTA_KSHOTGUN_NIGHRIEL,"(""WHY DOES KRIS HAVE A \c[DeltaHighlight]SHOTGUN\c-??"" -N.D.)",for context: https://youtu.be/7nant9T9aag?t=10524  ts so fucking funny ongggggg ??
 PICKUP_DELTA_KSMG,(You found an \c[DeltaHighlight]SMG\c-.),
 PICKUP_DELTA_AXE,(You retrieved \c[DeltaHighlight]your axe\c-.)\c-,
 PICKUP_DELTA_TPSMALL,(You found a \c[DeltaHighlight]Tension Bit\c-.),

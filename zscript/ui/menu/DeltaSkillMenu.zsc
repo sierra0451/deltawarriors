@@ -36,7 +36,7 @@ class DeltaSkillMenu : DeltaListMenu
 		if (!lines.Count())
 			return;
 		
-		int fontH = consoleFont.GetHeight();
+		int fontH = smallFont.GetHeight();
 		let strPos = (CLIP_W,
 			Screen.GetHeight() - CLIP_H - (fontH*FONT_SCALE*lines.Count()));
 		Screen.Dim(0xff000000, 0.5, strPos.x - 10, strPos.y - 10,
@@ -45,7 +45,7 @@ class DeltaSkillMenu : DeltaListMenu
 		
 		for (int i = 0; i < lines.Count(); i++)
 		{
-			Screen.DrawText(consoleFont, Font.CR_UNTRANSLATED, strPos.x,
+			Screen.DrawText(smallFont, Font.CR_UNTRANSLATED, strPos.x,
 				strPos.y, lines.StringAt(i), DTA_ScaleX, FONT_SCALE,
 				DTA_ScaleY, FONT_SCALE);
 			strPos.y += fontH * FONT_SCALE;
@@ -81,6 +81,6 @@ class DeltaSkillMenu : DeltaListMenu
 		}
 		
 		let descString = StringTable.Localize(localize);
-		lines = consoleFont.BreakLines(descString, floor((Screen.GetWidth() - CLIP_W * 2.) / FONT_SCALE));
+		lines = smallFont.BreakLines(descString, floor((Screen.GetWidth() - CLIP_W * 2.) / FONT_SCALE));
 	}
 }

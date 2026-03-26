@@ -1,0 +1,36 @@
+GameInfo
+{
+	StatusBarClass = "DeltaHud"
+	AltHUDClass = "DeltaAltHud"
+	CorrectPrintBold = true
+	
+	AddEventHandlers = "DeltaEvents"
+	CursorPic = "CURSOR03"
+	
+	TitlePage = "DELTATT1"
+	TitleMusic = "music/mus_deltaMenu.ogg"
+	CreditPage = ""
+	MenuFontColor_Title = "DeltaMenuTitle"
+	MenuFontColor_Label = "DeltaOptMenuLabel"
+	MenuFontColor_Value = "DeltaOptMenuValue"
+	MenuFontColor_Action = "DeltaOptMenuInactive"
+	MenuFontColor_Header = "DeltaMenuHeader"
+	MenuFontColor_Highlight = "DeltaOptMenuHighlight"
+	MenuFontColor_Selection = "DeltaOptMenuActive"
+	
+	DimColor = "#000000"
+	QuitMessages =	"$QUIT_DELTA_1", "$QUIT_DELTA_2", "$QUIT_DELTA_3",
+					"$QUIT_DELTA_4", "$QUIT_DELTA_5", "$QUIT_DELTA_6",
+					"$QUIT_DELTA_7", "$QUIT_DELTA_8"
+	
+	PlayerClasses = "KrisPlayer"/*,
+					"SusiePlayer",
+					"RalseiPlayer",
+					"NoellePlayer"*/
+	NoRandomPlayerClass = true
+	
+	Intro
+	{
+		Function = "DeltaCutsceneManager.IntroCutscene"
+	}
+}

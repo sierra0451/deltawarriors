@@ -27,3 +27,5 @@ nosave int		cl_delta_weaponHandedness		= 0;			// enum: 0 = right, 1 = left
 nosave float 	cl_delta_leanIntensity 			= 1.0;
 nosave float 	cl_delta_weaponRecoil 			= 1.0;
 nosave float 	cl_delta_damageRecoil 			= 1.0;
+
+nosave bool		prgr_delta_diedFirstTime		= false;

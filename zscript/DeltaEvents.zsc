@@ -92,6 +92,42 @@ class DeltaEvents : EventHandler
 		}
 	}
 	
+	override void WorldHitscanFired(WorldEvent e)
+	{
+		/*
+		DeltaDebugPositionMarker.SpawnMarker(e.attackPos, TICRATE * 3, 0x00ff00, 1);
+		DeltaDebugPositionMarker.SpawnMarker(e.damagePosition, TICRATE * 3, 0xff0000, 1);
+		
+		let diff = level.Vec3Diff(e.attackPos, e.damagePosition),
+			dir = diff.Unit(),
+			leng = diff.Length();
+		double MARKER_DIST = 30.;
+		
+		for (double i = MARKER_DIST; i <= leng - MARKER_DIST/2; i += MARKER_DIST)
+		{
+			DeltaDebugPositionMarker.SpawnMarker(level.Vec3Offset(e.attackPos, dir * i), TICRATE * 3, 0xffff00, 0.5);
+		}
+		*/
+		
+		let check = new('DeltaHitscanGrazeChecker');
+		if (!check)
+			return;
+		
+		check.CheckHitscanGraze(e.thing, e.attackPos, e.damagePosition);
+		
+		for (int i = 0; i < check._grazed.Size(); i++)
+		{
+			GrazeEvent graze;
+			graze.thing = check._grazed[i];
+			graze.grazeSource = e.thing;
+			PlayerGrazed(graze);
+			
+			let grazeAmount = max(5, e.inflictor.GetMissileDamage(0, 1));
+			check._grazed[i].AddTension(grazeAmount * check._grazed[i].GetGrazeMultiplier(), true);
+			check._grazed[i].A_StartSound("delta/graze", 5, 0);
+		}
+	}
+	
 	override void WorldThingRevived(WorldEvent e)
 	{
 		if (!e.thing)
@@ -142,68 +178,68 @@ class DeltaEvents : EventHandler
 		}
 	}
 	
-	/*
-	override void WorldThingDestroyed(WorldEvent e)
+	override void PlayerDied(PlayerEvent e)
 	{
-		if (!e.thing)
+		return;
+		
+		if (deathmatch)
 			return;
 		
-		if (e.thing is "Health")
+		for (int i = 0; i < MAXPLAYERS; i++)
 		{
-			let hlth = Health(e.thing);
+			if (!playerInGame[i] || !players[i].mo)
+				continue;
+			if (players[i].mo.health > 0)
+				return;
+		}
+		
+		level.SetFrozen(true);
+		S_StartSound("delta/hurt", CHAN_AUTO);
+		
+		for (int i = 0; i < MAXPLAYERS; i++)
+		{
+			if (!playerInGame[i] || !players[i].mo)
+				continue;
 			
-			if (hlth.owner)
-				hlth.A_Log(hlth.GetClassName() .. " destroyed by " .. hlth.owner.GetClassName());
-			else
-				hlth.A_Log("destroyed " .. hlth.GetClassName());
+			EventHandler.SendInterfaceEvent(i, "Died",
+				Cvar.GetCvar("prgr_delta_diedFirstTime").GetBool());
 		}
 	}
-	*/
 	
 	override void PlayerEntered(PlayerEvent e)
 	{
-		EventHandler.SendInterfaceEvent(e.playerNumber, "ResetHUD");
+		EventHandler.SendInterfaceEvent(e.playerNumber, "DeltaResetHUD");
 	}
 	
 	override void PlayerRespawned(PlayerEvent e)
 	{
-		EventHandler.SendInterfaceEvent(e.playerNumber, "ResetHUD");
+		EventHandler.SendInterfaceEvent(e.playerNumber, "DeltaResetHUD");
 	}
 	
 	override void InterfaceProcess(ConsoleEvent e)
 	{
-		if (e.IsManual) return;
+		if (e.IsManual || !(statusBar is "DeltaHud")) return;
+		let hud = DeltaHud(statusBar);
 		
-		if (e.name ~== "ResetHUD")
-		{
-			if (!(statusBar is "DeltaHud"))
-				return;
-			
-			let hud = DeltaHud(statusBar);
+		if (e.name ~== "DeltaResetHUD")
 			hud.ResetHUD();
-		}
 		else if (e.name ~== "DeltaPlayerDamage")
 		{
-			if (!(statusBar is "DeltaHud"))
-				return;
-			
-			let hud = DeltaHud(statusBar);
-			Actor source = Actor(GetNetworkEntity(e.Args[0])),
-				inflictor = Actor(GetNetworkEntity(e.Args[1]));
-			let amount = e.Args[2];
+			Actor source = Actor(GetNetworkEntity(e.args[0])),
+				inflictor = Actor(GetNetworkEntity(e.args[1]));
+			let amount = e.args[2];
 			
 			hud.CreateDamageIndicator(source, inflictor);
 			hud.CreateDamagePopup(source, amount);
 		}
 		else if (e.name ~== "DeltaPlayerGraze")
 		{
-			if (!(statusBar is "DeltaHud"))
-				return;
-			
-			let hud = DeltaHud(statusBar);
-			let source = Actor(GetNetworkEntity(e.Args[0]));
-			
+			let source = Actor(GetNetworkEntity(e.args[0]));
 			hud.CreateGrazeIndicator(source);
+		}
+		else if (e.name ~== "DeltaAllPlayersDead")
+		{
+			
 		}
 	}
 	

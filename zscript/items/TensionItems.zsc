@@ -1,9 +1,16 @@
 /// base class for tension items!
 class DeltaTensionPickup : Inventory
 {
+	bool exactAmount;	// if true, Inventory.Amount will be actual TP given instead of percent
+						// i.e. if true, amount of 5 will give 5 TP instead of 5% TP, or 12.5 TP
+	
+	property ExactAmount: exactAmount;
+	
 	Default
 	{
 		Inventory.Amount 0;
+		DeltaTensionPickup.ExactAmount true;
+		
 		+INVENTORY.KEEPDEPLETED
 	}
 	
@@ -16,7 +23,7 @@ class DeltaTensionPickup : Inventory
 		if (delta.GetTension(delta.maxTensionPoints) != TP_FAIL && !bAlwaysPickup)
 			return false;
 		
-		delta.AddTension(Amount);
+		delta.AddTension(Amount * 2.5);
 		GoAwayAndDie();
 		return true;
 	}
@@ -27,7 +34,7 @@ class DeltaTensionBit : DeltaTensionPickup replaces ArmorBonus
 	Default
 	{
 		Tag "$TAG_DELTA_TPSMALL";
-		Inventory.Amount 20;
+		Inventory.Amount 5; // 5% i.e. 12.5 TP, not actually 5 TP
 		Inventory.PickupMessage "$PICKUP_DELTA_TPSMALL";
 		
 		+COUNTITEM
@@ -47,7 +54,7 @@ class DeltaTensionGem : DeltaTensionPickup replaces GreenArmor
 	Default
 	{
 		Tag "$TAG_DELTA_TPMED";
-		Inventory.Amount 125;
+		Inventory.Amount 50; // 50% i.e. 125 TP, not actually 50 TP
 		Inventory.PickupMessage "$PICKUP_DELTA_TPMED";
 	}
 	
@@ -64,7 +71,7 @@ class DeltaTensionMax : DeltaTensionPickup replaces BlueArmor
 	Default
 	{
 		Tag "$TAG_DELTA_TPLARGE";
-		Inventory.Amount 250;
+		Inventory.Amount 100; // 100% i.e. 250 TP, not actually 100 TP
 		Inventory.PickupMessage "$PICKUP_DELTA_TPLARGE";
 		+INVENTORY.BIGPOWERUP;
 	}

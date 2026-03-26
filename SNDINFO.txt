@@ -62,6 +62,8 @@ $pitchshiftrange 0
 		delta/use = "sounds/player/shared/player_usefail.wav"
 		delta/tp_fail = "sounds/player/shared/player_tpfail.wav"
 		
+		delta/type = "sounds/type.wav"
+		
 		// Footstep sounds
 			// Generic
 			delta/step_generic1 = "sounds/player/shared/footsteps/generic/footstep_generic01.wav"

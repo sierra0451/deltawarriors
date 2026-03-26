@@ -13,7 +13,7 @@ class KrisSmg : DeltaWeapon
 		Weapon.AmmoGive 30;
 		Weapon.AmmoType "Clip";
 		Weapon.AmmoType2 "RocketAmmo";
-		DeltaWeapon.Crosshair "DRPSTRET";
+		DeltaWeapon.Crosshair "DRSMGRET";
 		DeltaWeapon.TensionUse2 75;
 		
 		+SQUAREPIXELS
@@ -148,14 +148,15 @@ class KrisSmgGrenade : DeltaGrenade
 		RadiusAttack(target, 250 + dmgTaken, range, 'KrisSmgGrenade',
 			RADF_THRUSTZ, range*0.2);
 		
-		let dist = Distance3D(target);
+		let diff = level.Vec3Diff(pos, target.pos),
+			dist = max(abs(diff.x), abs(diff.y), abs(diff.z));
 		if (dist > range || !CheckSight(target, SF_IGNOREVISIBILITY))
 			return;
 		
 		let damageMult = DeltaUtil.Clamp(1.2 - dist/range, 0, 1),
 			dmg = ceil(25 * damageMult);
 		
-		target.DamageMobj(self, self, dmg, 'KrisSmgGrenade', DMG_THRUSTLESS);
+		target.DamageMobj(self, target, dmg, 'KrisSmgGrenade', DMG_THRUSTLESS);
 		
 		let knockbackDmg = dmg * 0.5;
 		let deltaTarget = DeltaPlayer(target);
@@ -166,7 +167,7 @@ class KrisSmgGrenade : DeltaGrenade
 		if (knockbackDmg > 20)
 			knockbackDmg = 20;
 		
-		target.Vel += level.Vec3Diff(pos, target.pos).Unit() * knockbackDmg;
+		target.Vel += diff.Unit() * knockbackDmg;
 	}
 	
 	override string GetObituary(Actor victim, Actor inflictor, Name mod, bool playerAttack)

@@ -9,8 +9,8 @@ class RalseiPlayer : DeltaPlayer
 		Speed 0.7;
 		Mass 90;
 		
-		Health 80;
-		Player.MaxHealth 80;
+		Health 180;
+		Player.MaxHealth 180;
 		
 		Player.DisplayName "$DELTA_CHAR_RALSEI";
 		Player.ViewHeight 32;
@@ -38,11 +38,8 @@ class RalseiPlayer : DeltaPlayer
 		Spawn:
 			DRAL A 1
 			{
-				if (!IsGrounded())
-					return ResolveState("Airborne");
 				if (invoker.krisNearby)
 					return ResolveState("Blush");
-				
 				return ResolveState(null);
 			}
 			Loop;

@@ -76,12 +76,12 @@ class DeltaUtil
 		return GetActorForward(a) cross GetActorRight(a, countRoll);
 	}
 	
-	play static void ForceActorPain(Actor a)
+	play static void ForceActorPain(Actor a, Name mod)
 	{
 		if (a.Health <= 0 || a.bNoPain)
 			return;
 		
-		state pain = a.ResolveState("Pain.Parry");
+		state pain = a.FindStateByString("Pain." .. mod);
 		
 		if (!pain)
 			pain = a.ResolveState("Pain");
@@ -100,5 +100,116 @@ class DeltaSpriteCacher : Actor abstract
 			KCGN A 1;
 			KCSW A 1;
 			Stop;
+	}
+}
+
+class DeltaDebugPositionMarker : Actor
+{
+	int lifeTime;
+	double startAlpha;
+	
+	Default
+	{
+		+NOBLOCKMAP
+		+NOINTERACTION
+		RenderStyle "Stencil";
+		Alpha 0.5;
+	}
+	
+	States
+	{
+		Spawn:
+			DTNB A -1 Bright;
+			Stop;
+	}
+	
+	override void Tick()
+	{
+		Super.Tick();
+		
+		if (lifeTime <= 0 || IsFrozen())
+			return;
+		
+		let cam = players[consolePlayer].camera;
+		
+		if (cam)
+		{
+			let sc = min(0.25, Distance3D(cam) / 200.);
+			A_SetScale(sc);
+		}
+		
+		lifeTime--;
+		A_FadeOut(startAlpha / lifeTime);
+	}
+	
+	static DeltaDebugPositionMarker SpawnMarker(Vector3 pos, int lifetime = -1, Color col = 0xffffffff, double alpha = 1.)
+	{
+		let marker = DeltaDebugPositionMarker(Spawn("DeltaDebugPositionMarker", pos));
+		marker.SetShade(col);
+		marker.A_SetRenderStyle(alpha, STYLE_TranslucentStencil);
+		marker.startAlpha = alpha;
+		marker.lifetime = lifetime;
+		return marker;
+	}
+}
+
+class DeltaHitscanGrazeChecker : LineTracer
+{
+	double fireLength;
+	bool firstFire;
+	DeltaPlayer _actualHit; // used to ensure if the hitscan deals damage, it doesn't also graze that same player
+	Array<DeltaPlayer> _grazed;
+	
+	virtual void CheckHitscanGraze(Actor source, Vector3 attackPos,
+		Vector3 hitPos)
+	{
+		let diff = level.Vec3Diff(attackPos, hitPos),
+			dir = diff.Unit();
+		fireLength = diff.Length();
+		firstFire = true;
+		_grazed.Clear();
+		
+		if (Trace(attackPos, source.curSector, dir, fireLength, TRACE_NoSky,
+			ignore: source))
+		{
+			if (results.HitActor)
+				_actualHit = DeltaPlayer(results.HitActor);
+			
+			fireLength = results.distance;
+		}
+		
+		firstFire = false;
+		
+		double
+			minOffs = -32,
+			maxOffs = 32;
+		int iterations = 8;
+		
+		for (double ofsSide = minOffs; ofsSide <= maxOffs; ofsSide += (maxOffs - minOffs) / iterations)
+		{
+			Vector3 actualPos = level.Vec3Offset(attackPos, DeltaUtil.GetActorRight(source) * ofsSide);
+			Trace(actualPos, source.curSector, dir, fireLength, TRACE_NoSky,
+				ignore: source);
+		}
+	}
+	
+	override ETraceStatus TraceCallback()
+	{
+		if (firstFire)
+			return TRACE_STOP;
+		if (!results.HitActor)
+			return TRACE_STOP;
+		
+		let ply = DeltaPlayer(results.HitActor);
+		if (!ply)
+			return TRACE_Skip;
+		
+		if (ply != _actualHit && _grazed.Find(ply) == _grazed.Size())
+		{
+			_grazed.Push(ply);
+			return TRACE_Continue;
+		}
+		
+		return TRACE_Skip;
 	}
 }
