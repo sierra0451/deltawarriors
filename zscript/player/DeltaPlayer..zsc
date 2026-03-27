@@ -309,10 +309,11 @@ class DeltaPlayer : PlayerPawn abstract
 	
 	virtual void AnimateDeath()
 	{
-		if (curState.InStateSequence(ResolveState("Death")))
+		let deathState = ResolveState("Death");
+		if (curState.InStateSequence(deathState))
 			return;
 		
-		SetState(ResolveState("Death"));
+		SetStateSafe(deathState);
 	}
 	
 	override void PlayerThink()
@@ -917,7 +918,7 @@ class DeltaPlayer : PlayerPawn abstract
 			curAnimType = DeltaWeapon(player.ReadyWeapon).GetAnimType();
 		
 		if (curAnimType != lastAnimType || InAirState() || InAirPainState() || InSeeState())
-			SetState(A_DeltaGetState("Spawn"));
+			SetStateSafe(A_DeltaGetState("Spawn"));
 		
 		if (!InSpawnState())
 			return;
@@ -943,7 +944,7 @@ class DeltaPlayer : PlayerPawn abstract
 			curAnimType = DeltaWeapon(player.ReadyWeapon).GetAnimType();
 		
 		if (curAnimType != lastAnimType || InAirState() || InAirPainState() || InSpawnState())
-			SetState(A_DeltaGetState("See"));
+			SetStateSafe(A_DeltaGetState("See"));
 		
 		if (!InSeeState())
 			return;
@@ -1027,24 +1028,17 @@ class DeltaPlayer : PlayerPawn abstract
 	
 	override void PlayAttacking()
 	{
-		let dest = A_DeltaGetState("Missile");
-		if (!dest)
-			return;
-		
-		SetState(dest);
+		SetStateSafe(A_DeltaGetState("Missile"));
 	}
 	
 	// specifically overriding in the event we don't want a muzzle flash!
 	override void PlayAttacking2()
 	{
 		let dest = A_DeltaGetState("Missile");
-		if (!dest)
-			return;
-		
 		if (dest.InStateSequence(ResolveState("MissileGun")))
 			dest = ResolveState("MissileGunNoFlash");
 		
-		SetState(dest);
+		SetStateSafe(dest);
 	}
 	
 	void PlayAir()
@@ -1054,7 +1048,7 @@ class DeltaPlayer : PlayerPawn abstract
 			curAnimType = DeltaWeapon(player.ReadyWeapon).GetAnimType();
 		
 		if (curAnimType != lastAnimType || InSeeState() || InSpawnState())
-			SetState(A_DeltaGetState("Air"));
+			SetStateSafe(A_DeltaGetState("Air"));
 	}
 	
 	action state A_DeltaGetState(string prefix)

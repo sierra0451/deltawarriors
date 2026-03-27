@@ -324,7 +324,7 @@ class KrisPlayer : DeltaPlayer
 		
 		let dest = A_CheckDeathLand();
 		if (dest)
-			SetState(dest);
+			SetStateSafe(dest);
 	}
 	
 	override void PostBeginPlay()
@@ -814,7 +814,7 @@ class KrisPlayer : DeltaPlayer
 			curAnimType = DeltaWeapon(player.ReadyWeapon).GetAnimType();
 		
 		if (curAnimType != lastAnimType || InSeeState() || InSpawnState() || InAirState())
-			SetState(A_DeltaGetState("Slide"));
+			SetStateSafe(A_DeltaGetState("Slide"));
 	}
 	
 	override void AnimatePlayer()
@@ -825,7 +825,7 @@ class KrisPlayer : DeltaPlayer
 		if (crouchState == CS_SLIDING)
 		{
 			if (InPainState())
-				SetState(A_DeltaGetState("SlidePain"));
+				SetStateSafe(A_DeltaGetState("SlidePain"));
 			else
 				PlaySliding();
 			
@@ -834,7 +834,7 @@ class KrisPlayer : DeltaPlayer
 		else
 		{
 			if (InSlideState())
-				SetState(SpawnState);
+				SetStateSafe(SpawnState);
 			
 			Super.AnimatePlayer();
 		}

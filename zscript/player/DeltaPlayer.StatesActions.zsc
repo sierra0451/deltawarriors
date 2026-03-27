@@ -46,6 +46,14 @@ extend class DeltaPlayer
 	// class dies.
 	virtual void DeltaExtraDeathStuff() {}
 	
+	void SetStateSafe(state dest)
+	{
+		if (!dest)
+			return;
+		
+		SetState(dest);
+	}
+	
 	void DefineDeltaSprite(int standSpr, int crouchSpr)
 	{
 		if (standSpr < 0)
