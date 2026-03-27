@@ -261,6 +261,7 @@ class DeltaPlayer : PlayerPawn abstract
 		beingHugged = false;
 		lunging = false;
 		isUsingOffhand = false;
+		customBobPerc = 1.;
 		_turn = 0;
 		_oldTurn = 0;
 		_targetRoll = 0;
@@ -1035,6 +1036,9 @@ class DeltaPlayer : PlayerPawn abstract
 	override void PlayAttacking2()
 	{
 		let dest = A_DeltaGetState("Missile");
+		if (!dest)
+			return;
+		
 		if (dest.InStateSequence(ResolveState("MissileGun")))
 			dest = ResolveState("MissileGunNoFlash");
 		

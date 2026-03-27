@@ -23,7 +23,7 @@ extend class DeltaPlayer
 		
 		lunging = bNoGravity = true;
 		bSolid = false;
-		SetState(ResolveState("Lunge"));
+		SetStateSafe(ResolveState("Lunge"));
 	}
 	
 	bool LungeBlocked(Actor _target = null)
@@ -62,7 +62,7 @@ extend class DeltaPlayer
 		if (LungeBlocked())
 		{
 			StopLunge();
-			SetState(SpawnState);
+			SetStateSafe(SpawnState);
 			return;
 		}
 		

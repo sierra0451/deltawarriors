@@ -91,16 +91,15 @@ OptionMenu "DeltaOptions"
 	StaticText ""
 	
 	SubMenu "$MENU_CTRL_HEADER", "DeltaControls"
-	SubMenu "$MENU_AUDIO_HEADER", "SoundOptions"
-	SubMenu "$MENU_DISPLAY_HEADER", "DeltaDisplayOptions"
-	SubMenu "$MENU_CAMERA_HEADER", "DeltaCameraOptions"
-	SubMenu "$MENU_HUD_HEADER", "DeltaHudOptions"
+	SubMenu "$MENU_MOUSE_OPTIONS", "MouseOptions"
 	
 	StaticText ""
+	SubMenu "$MENU_AUDIO_HEADER", "SoundOptions"
+	SubMenu "$MENU_DISPLAY_HEADER", "DeltaDisplayOptions"
 	SubMenu "$MENU_PLAYER_HEADER", "DeltaPlayerOptions"
 	
 	StaticText ""
-	Slider "$MENU_FOV", "fov", 75, 120, 0.1, 0
+	Slider "$MENU_FOV", "fov", 75, 160, 1, 0
 	
 	StaticText ""
 	SubMenu "$MENU_OPT_SEARCH", "os_menu"
@@ -113,9 +112,6 @@ OptionMenu "DeltaControls"
 	
 	StaticText "$MENU_CTRL_DESC", "DeltaMenuHeader"
 	StaticText ""
-	
-    SubMenu "$MENU_MOUSE_OPTIONS", "MouseOptions"
-    StaticText ""
     
 	StaticText "$MENU_MOVEMENT", "DeltaMenuHeader"
 	Control "$MENU_MOVEFRWD", "+forward"
@@ -144,17 +140,41 @@ OptionMenu "DeltaControls"
 	SubMenu "$MENU_UZDOOM_CONTROLS", "CustomizeControls"
 }
 
-OptionMenu "DeltaHudOptions"
+OptionMenu "DeltaDisplayOptions"
 {
-	Title "$MENU_HUD_HEADER"
+	Title "$MENU_DISPLAY_HEADER"
 	
-	StaticText "$MENU_HUD_DESC", "DeltaMenuHeader"
+	StaticText "$MENU_DISPLAY_DESC", "DeltaMenuHeader"
 	StaticText ""
+	
+	Slider "$MENU_GAMMA", "vid_gamma", 0.75, 3.0, 0.05, 2
+	Slider "$MENU_BRIGHTNESS", "vid_brightness", -0.8, 0.8, 0.05, 2
+	Slider "$MENU_CONTRAST", "vid_contrast", 0.1, 3.0, 0.1, 1
+	Slider "$MENU_SATURATION", "vid_saturation", -3.0, 3.0, 0.25, 2
+	StaticText ""
+	Option "$MENU_VSYNC", "vid_vsync", "YesNo"
+	
+	StaticText ""
+	StaticText "$MENU_CAMERA_HEADER", "DeltaMenuHeader"
+	
+	Slider "$MENU_FOV", "fov", 75, 160, 1, 0
+	Option "$MENU_DEATHCAM", "r_deathcamera", "YesNo"
+	StaticText ""
+    Slider "$MENU_MOVE_BOB", "movebob", 0, 1, 0.1, 2
+    Slider "$MENU_STILL_BOB", "stillbob", 0, 1, 0.1, 2
+	Slider "$MENU_LEAN_INTENSITY", "cl_delta_leanIntensity", 0, 1, 0.1, 2
+	StaticText ""
+	Slider "$MENU_WEAP_RECOIL", "cl_delta_weaponRecoil", 0, 1, 0.1, 2
+	Slider "$MENU_DMG_RECOIL", "cl_delta_damageRecoil", 0, 1, 0.1, 2
+	
+	StaticText ""
+	StaticText "$MENU_HUD_HEADER", "DeltaMenuHeader"
 	
 	Option "$MENU_HIDE_HUD", "cl_delta_showHud", "ShowHide"
 	Option "$MENU_LOW_HEALTH_VIG", "cl_delta_lowHealthVignette", "ShowHide"
 	Option "$MENU_HEARTBEAT", "cl_delta_heartbeatSound", "Heartbeat"
 	Option "$MENU_WEAP_HANDEDNESS", "cl_delta_weaponHandedness", "RightLeft"
+	Option "$MENU_SHOW_LEGS", "cl_delta_showLegs", "ShowHide"
 	
 	StaticText ""
 	StaticText "$MENU_XHAIR_OPTIONS", "DeltaMenuHeader"
@@ -172,36 +192,6 @@ OptionMenu "DeltaHudOptions"
 	Option "$MENU_SHOW_QUICK_INFO", "cl_delta_showQuickInfo", "ShowHide", "cl_delta_showCrosshair", 0, 0
 }
 
-OptionMenu "DeltaDisplayOptions"
-{
-	Title "$MENU_DISPLAY_HEADER"
-	
-	StaticText "$MENU_DISPLAY_DESC", "DeltaMenuHeader"
-	StaticText ""
-	
-	Slider "$MENU_GAMMA", "vid_gamma", 0.75, 3.0, 0.05, 2
-	Slider "$MENU_BRIGHTNESS", "vid_brightness", -0.8, 0.8, 0.05, 2
-	Slider "$MENU_CONTRAST", "vid_contrast", 0.1, 3.0, 0.1, 1
-	Slider "$MENU_SATURATION", "vid_saturation", -3.0, 3.0, 0.25, 2
-}
-
-OptionMenu "DeltaCameraOptions"
-{
-	Title "$MENU_CAMERA_HEADER"
-	
-	StaticText "$MENU_CAMERA_DESC", "DeltaMenuHeader"
-	StaticText ""
-	
-	Slider "$MENU_FOV", "fov", 75, 120, 0.1, 0
-	StaticText ""
-    Slider "$MENU_MOVE_BOB", "movebob", 0, 1, 0.1, 2
-    Slider "$MENU_STILL_BOB", "stillbob", 0, 1, 0.1, 2
-	Slider "$MENU_LEAN_INTENSITY", "cl_delta_leanIntensity", 0, 1, 0.1, 2
-	StaticText ""
-	Slider "$MENU_WEAP_RECOIL", "cl_delta_weaponRecoil", 0, 1, 0.1, 2
-	Slider "$MENU_DMG_RECOIL", "cl_delta_damageRecoil", 0, 1, 0.1, 2
-}
-
 OptionMenu "DeltaPlayerOptions"
 {
 	Title "$MENU_PLAYER_HEADER"
@@ -211,10 +201,6 @@ OptionMenu "DeltaPlayerOptions"
 	
 	Option "$MENU_CHANGE_SOUL_COLOR", "cl_delta_changeSoulColor", "YesNo"
 	ColorPicker "$MENU_SOUL_COLOR", "user_delta_soulColor"
-	
-	StaticText ""
-	Option "$MENU_WEAP_HANDEDNESS", "cl_delta_weaponHandedness", "RightLeft"
-	Option "$MENU_SHOW_LEGS", "cl_delta_showLegs", "ShowHide"
 	
 	StaticText ""
 	StaticText "$MENU_RECOMMENDED_ON", "DeltaMenuHeader"
