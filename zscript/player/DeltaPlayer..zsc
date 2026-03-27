@@ -171,6 +171,43 @@ class DeltaPlayer : PlayerPawn abstract
 			Loop;
 	}
 	
+	States (Overlay)
+	{
+		// ====================
+		//   OFFHAND OVERLAYS  
+		// ====================
+		OffhandOverlay:
+			TNT1 A 0 A_EndOffhand;
+			Stop;
+		
+		// ================
+		//   LEG OVERLAYS
+		// ================
+		IdleLegs:
+			TNT1 A 1;
+			Loop;
+		WalkLegs:
+			TNT1 A 3;
+			TNT1 A 2;
+		WalkLoopLegs:
+			TNT1 A -1;
+			Loop;
+		CrouchWalkLegs:
+			TNT1 A 3;
+			TNT1 A 2;
+		CrouchWalkLoopLegs:
+			TNT1 A -1;
+			Loop;
+		RunLegs:
+			TNT1 A 3;
+		RunLoopLegs:
+			TNT1 A -1;
+			Loop;
+		AirLegs:
+			TNT1 A 1;
+			Loop;
+	}
+	
 	override void BeginPlay()
 	{
 		_originalHeight = height;
@@ -692,7 +729,7 @@ class DeltaPlayer : PlayerPawn abstract
 		double defaultHeight = FullHeight;
 		double savedHeight = Height;
 		double crouchSpeed = direction * CROUCHSPEED;
-		double oldHeight = player.viewheight;
+		double oldHeight = player.viewHeight;
 		
 		player.crouchDir = direction;
 		crouchFactor += crouchspeed;
@@ -990,13 +1027,19 @@ class DeltaPlayer : PlayerPawn abstract
 	
 	override void PlayAttacking()
 	{
-		SetState(A_DeltaGetState("Missile"));
+		let dest = A_DeltaGetState("Missile");
+		if (!dest)
+			return;
+		
+		SetState(dest);
 	}
 	
 	// specifically overriding in the event we don't want a muzzle flash!
 	override void PlayAttacking2()
 	{
 		let dest = A_DeltaGetState("Missile");
+		if (!dest)
+			return;
 		
 		if (dest.InStateSequence(ResolveState("MissileGun")))
 			dest = ResolveState("MissileGunNoFlash");

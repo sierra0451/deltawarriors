@@ -30,6 +30,9 @@ extend class DeltaPlayer
 			psp = player.FindPSprite(PSP_LEGS);
 		}
 		
+		if (!psp)
+			return;
+		
 		psp.bAddBob = false;
 		psp.bAddWeapon = false;
 		A_OverlayOffset(PSP_LEGS, offset.x, offset.y, WOF_INTERPOLATE);
