@@ -542,10 +542,11 @@ class KrisPlayer : DeltaPlayer
 				
 				_currentSlideSpeed = max(0, _currentSlideSpeed - (slideSlowing * slowFactor / TICRATE));
 				
-				if (!IsActorPlayingSound(6))
-					A_StartSound("delta/kris/slide_loop", 6, CHANF_LOOPING, _currentSlideSpeed / slideSpeed);
+				if (!IsActorPlayingSound(CHAN_MOVEMENT))
+					A_StartSound("delta/kris/slide_loop", CHAN_MOVEMENT,
+						CHANF_LOOPING, _currentSlideSpeed / slideSpeed);
 				else
-					A_SoundVolume(6, _currentSlideSpeed / slideSpeed);
+					A_SoundVolume(CHAN_MOVEMENT, _currentSlideSpeed / slideSpeed);
 				
 				if (_currentSlideSpeed < 1)
 				{
@@ -563,8 +564,8 @@ class KrisPlayer : DeltaPlayer
 				
 				_savedSlideSpeedTimer = TICRATE / 10;
 			}
-			else if (IsActorPlayingSound(6))
-				A_StopSound(6);
+			else if (IsActorPlayingSound(CHAN_MOVEMENT))
+				A_StopSound(CHAN_MOVEMENT);
 		}
 		else
 		{
@@ -572,8 +573,8 @@ class KrisPlayer : DeltaPlayer
 				_slideTics--;
 			
 			_slideTime = 0;
-			if (IsActorPlayingSound(6))
-				A_StopSound(6);
+			if (IsActorPlayingSound(CHAN_MOVEMENT))
+				A_StopSound(CHAN_MOVEMENT);
 			
 			if (!IsGrounded())
 				_savedSlideSpeed = max(_savedSlideSpeed, -Vel.Z * 0.75);
@@ -809,7 +810,7 @@ class KrisPlayer : DeltaPlayer
 	
 	void PlaySliding()
 	{
-		let curAnimType = DELTA_WEAPONANIM_GUN;
+		let curAnimType = DELTA_WEAPONANIM_MELEE;
 		if (player.ReadyWeapon && (player.ReadyWeapon is "DeltaWeapon"))
 			curAnimType = DeltaWeapon(player.ReadyWeapon).GetAnimType();
 		

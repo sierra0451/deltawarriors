@@ -311,7 +311,8 @@ class DeltaPlayer : PlayerPawn abstract
 	virtual void AnimateDeath()
 	{
 		let deathState = ResolveState("Death");
-		if (curState.InStateSequence(deathState))
+		if (curState.InStateSequence(deathState)
+			|| curState.InStateSequence(ResolveState("FinishDeath")))
 			return;
 		
 		SetStateSafe(deathState);
@@ -483,7 +484,7 @@ class DeltaPlayer : PlayerPawn abstract
 		
 		if (finalDamage > 0 && Health > 0)
 		{
-			A_StartSound("delta/hurt", CHAN_VOICE, 0, 1, 0.5);
+			A_StartSound("delta/hurt", CHAN_HEALTH_SOUNDS, 0, 1, 0.5);
 			
 			if (!ignoreIFrames)
 				damageTics = (inflictor && (inflictor.bIsPuff || inflictor.bIsMonster)) ? -1 : DAMAGE_IFRAMES;
@@ -508,6 +509,7 @@ class DeltaPlayer : PlayerPawn abstract
 	{
 		Super.Die(source, inflictor, dmgFlags, MeansOfDeath);
 		
+		DeltaExtraDeathStuff(); // any extra death functions can be called here
 		A_StartDeath();
 		
 		if (MeansOfDeath == 'Falling')
@@ -525,7 +527,7 @@ class DeltaPlayer : PlayerPawn abstract
 		if (MeansOfDeath != 'Suicide')
 		{
 			A_StopSound();
-			A_StartSound("delta/hurt", CHAN_VOICE);
+			A_StartSound("delta/hurt", CHAN_HEALTH_SOUNDS);
 		}
 		else
 		{
@@ -914,7 +916,7 @@ class DeltaPlayer : PlayerPawn abstract
 	
 	override void PlayIdle()
 	{
-		let curAnimType = DELTA_WEAPONANIM_GUN;
+		let curAnimType = DELTA_WEAPONANIM_MELEE;
 		if (player && player.ReadyWeapon && (player.ReadyWeapon is "DeltaWeapon"))
 			curAnimType = DeltaWeapon(player.ReadyWeapon).GetAnimType();
 		
@@ -940,7 +942,7 @@ class DeltaPlayer : PlayerPawn abstract
 	
 	override void PlayRunning()
 	{
-		let curAnimType = DELTA_WEAPONANIM_GUN;
+		let curAnimType = DELTA_WEAPONANIM_MELEE;
 		if (player && player.ReadyWeapon && (player.ReadyWeapon is "DeltaWeapon"))
 			curAnimType = DeltaWeapon(player.ReadyWeapon).GetAnimType();
 		
@@ -1047,7 +1049,7 @@ class DeltaPlayer : PlayerPawn abstract
 	
 	void PlayAir()
 	{
-		let curAnimType = DELTA_WEAPONANIM_GUN;
+		let curAnimType = DELTA_WEAPONANIM_MELEE;
 		if (player && player.ReadyWeapon && (player.ReadyWeapon is "DeltaWeapon"))
 			curAnimType = DeltaWeapon(player.ReadyWeapon).GetAnimType();
 		
@@ -1167,10 +1169,11 @@ class DeltaPlayer : PlayerPawn abstract
 			SetTension(tensionPoints - DRAIN_AMOUNT/factor, false);
 	}
 	
-	protected state GetStateByAnimType(string prefix, out DeltaWeaponAnimType animType)
+	protected state GetStateByAnimType(string prefix, out DeltaWeaponAnimType animType, int defaultAnimType = DELTA_WEAPONANIM_MELEE)
 	{
 		let oldAnimType = animType;
-		animType = DELTA_WEAPONANIM_GUN;
+		animType = defaultAnimType;
+		
 		if (player && player.ReadyWeapon && player.ReadyWeapon is "DeltaWeapon")
 			animType = DeltaWeapon(player.ReadyWeapon).GetAnimType();
 		
@@ -1227,10 +1230,10 @@ class DeltaPlayer : PlayerPawn abstract
 		
 		double vol = heartbeat.GetValue() / 100.;
 		
-		if (!IsActorPlayingSound(7))
-			A_StartSound("delta/heartbeat", 7, CHANF_LOOPING, vol, 120);
+		if (!IsActorPlayingSound(CHAN_HEARTBEAT))
+			A_StartSound("delta/heartbeat", CHAN_HEARTBEAT, CHANF_LOOPING, vol, 120);
 		else
-			A_SoundVolume(7, vol);
+			A_SoundVolume(CHAN_HEARTBEAT, vol);
 	}
 	
 	protected virtual double GetViewRoll()
@@ -1596,6 +1599,9 @@ class DeltaPlayer : PlayerPawn abstract
 	
 	clearscope bool IsCrouching(bool fullyOnly = false)
 	{
+		if (!CanCrouch())
+			return false;
+		
 		return fullyOnly ? (crouchFactor == 0.5) : (crouchFactor != 1);
 	}
 	

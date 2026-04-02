@@ -64,7 +64,7 @@ extend class DeltaPlayer
 			return;
 		}
 		
-		sprite = ((player.cmd.buttons & BT_CROUCH) && crouchSpr >= 0)
+		sprite = (CanCrouch() && (player.cmd.buttons & BT_CROUCH) && crouchSpr >= 0)
 			? crouchSpr : standSpr;
 	}
 	
@@ -122,8 +122,6 @@ extend class DeltaPlayer
 		
 		A_NoBlocking();
 		A_ClearDynamicLights();
-		
-		invoker.DeltaExtraDeathStuff(); // can't be an action cuz we need to be able to override it
 		
 		// if we have partial invisibility or anything like that, turn it off
 		A_SetRenderStyle(1, STYLE_Normal);

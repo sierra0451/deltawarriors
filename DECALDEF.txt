@@ -1,21 +1,14 @@
-decal KrisSwordSlash1
+decal KrisSwordSlashL
 {
-	pic PLASMA1
+	pic KRSSLASH
 	shade "00 00 00"
-	x-scale 0.6
-	y-scale 0.05
-	randomflipx
-	randomflipy
+	flipx
 }
 
-decal KrisSwordSlash2
+decal KrisSwordSlashR
 {
-	pic PLASMA2
+	pic KRSSLASH
 	shade "00 00 00"
-	x-scale 0.6
-	y-scale 0.05
-	randomflipx
-	randomflipy
 }
 
 decal ChargeShotScorch
@@ -28,13 +21,6 @@ decal ChargeShotScorch
 	randomflipy
 }
 
-decalgroup KrisSwordSlash
-{
-	KrisSwordSlash1	1
-	KrisSwordSlash2	1
-}
-
-generator KrisSword KrisSwordSlash
 generator KrisRevolver BulletChip
 generator KrisRevolverChargeShot ChargeShotScorch
 generator KrisShotgun BulletChip

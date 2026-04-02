@@ -94,20 +94,36 @@ class DeltaEvents : EventHandler
 	
 	override void WorldHitscanFired(WorldEvent e)
 	{
-		/*
-		DeltaDebugPositionMarker.SpawnMarker(e.attackPos, TICRATE * 3, 0x00ff00, 1);
-		DeltaDebugPositionMarker.SpawnMarker(e.damagePosition, TICRATE * 3, 0xff0000, 1);
-		
 		let diff = level.Vec3Diff(e.attackPos, e.damagePosition),
 			dir = diff.Unit(),
-			leng = diff.Length();
-		double MARKER_DIST = 30.;
+			dist = diff.Length();
 		
-		for (double i = MARKER_DIST; i <= leng - MARKER_DIST/2; i += MARKER_DIST)
+		if (!(e.AttackLineFlags & LAF_ISMELEEATTACK))
 		{
-			DeltaDebugPositionMarker.SpawnMarker(level.Vec3Offset(e.attackPos, dir * i), TICRATE * 3, 0xffff00, 0.5);
+			let fwd = DeltaUtil.GetActorForward(e.thing),
+				right = DeltaUtil.GetActorRight(e.thing, true);
+			
+			let pos = e.attackPos.PlusZ(-2);
+			pos = level.Vec3Offset(pos, right * 2);
+			pos = level.Vec3Offset(pos, fwd * max(0, (e.thing.vel dot fwd) * 2));
+			
+			FSpawnParticleParams p;
+			int count = 0;
+			p.color1 = "ff c0 40";
+			p.flags = SPF_FULLBRIGHT;
+			p.size = 4;
+			p.startAlpha = 1;
+			p.fadeStep = -1;
+			
+			for (double i = e.thing.radius; i < min(dist, PLAYERMISSILERANGE);
+				i += 2.5)
+			{
+				p.pos = level.Vec3Offset(pos, dir * i);
+				p.lifetime = 3 + (count/50);
+				level.SpawnParticle(p);
+				count++;
+			}
 		}
-		*/
 		
 		let check = new('DeltaHitscanGrazeChecker');
 		if (!check)

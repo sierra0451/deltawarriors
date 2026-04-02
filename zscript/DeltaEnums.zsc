@@ -6,6 +6,13 @@ enum DeltaCrouchState
 	CS_SLIDING
 }
 
+enum DeltaSoundChannels
+{
+	CHAN_HEALTH_SOUNDS = 6, // things like damage and healing sounds
+	CHAN_HEARTBEAT = 7,
+	CHAN_MOVEMENT = 8		// things like grinding sound when kris is sliding
+}
+
 enum DeltaMessageType
 {
 	MSG_TYPE_NORMAL,		// uses normal border

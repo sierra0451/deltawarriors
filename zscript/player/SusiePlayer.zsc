@@ -32,7 +32,6 @@ class SusiePlayer : DeltaPlayer
 	
 	override void DeltaExtraDeathStuff()
 	{
-		Super.DeltaExtraDeathStuff();
 		A_StartSound("delta/susie/gasp", CHAN_VOICE, CHANF_OVERLAP, attenuation: 0.2);
 	}
 	
@@ -72,6 +71,19 @@ class SusiePlayer : DeltaPlayer
 			DSUS G 1 A_StartDeath;
 			DSUS G 1; // turn to dust here!
 			DSUS G -1;
+			Stop;
+	}
+	
+	States (Overlay)
+	{
+		// ====================
+		//   OFFHAND OVERLAYS  
+		// ====================
+		OffhandOverlay:
+			TNT1 A 0;
+		TauntOverlay:
+			TNT1 A 5 A_StartSound("delta/generic_pullWeapon", CHAN_AUTO);
+			TNT1 A 0 A_EndOffhand;
 			Stop;
 	}
 }

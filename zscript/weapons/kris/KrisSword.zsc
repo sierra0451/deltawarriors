@@ -81,7 +81,7 @@ class KrisSword : DeltaWeapon
 			DKSW K 1 A_DoLunge(ResolveState("SwingL"));
 			Loop;
 		SwingL:
-			DKSW L 1 A_KrisSwordSwing;
+			DKSW L 1 A_KrisSwordSwing(true);
 			DKSW L 1 A_AddRecoil(5, 1, p: 2,
 				y: cl_delta_weaponHandedness ? -5 : 5);
 			DKSW MN 1;
@@ -108,7 +108,7 @@ class KrisSword : DeltaWeapon
 		pulledOutFirstTime = false;
 	}
 	
-	action void A_KrisSwordSwing()
+	action void A_KrisSwordSwing(bool leftSlash = false)
 	{
 		invoker.swingCombo++;
 		invoker.ResetReadyToStopLunging();
@@ -117,11 +117,11 @@ class KrisSword : DeltaWeapon
 			pitch: cfrandom(0.95, 1.05));
 		A_AlertMonsters();
 		
-		int dmg;
-		int TRACER_COUNT = 16;
-		double distance = 80;
-		Array<Actor> targets;		
-		double zOffset = player.viewz - player.mo.pos.z;
+		int dmg, TRACER_COUNT = 16;
+		bool hitSomething = false;
+		double distance = 80, puffDist = 40,
+			zOffset = player.viewz - player.mo.pos.z;
+		Array<Actor> targets;
 		
 		for (double ang = -45; ang <= 45; ang += 45./TRACER_COUNT)
 		{
@@ -140,11 +140,17 @@ class KrisSword : DeltaWeapon
 			if (l.HitActor is "ExplosiveBarrel")
 				continue;
 			
-			LineAttack(newAng, distance, pitch, dmg, "Melee", "KrisSwordPuff",
-				LAF_OVERRIDEZ, t, zOffset);
+			hitSomething = true;
+			LineAttack(newAng, distance, pitch, dmg, "Melee", leftSlash ?
+				"KrisSwordPuffL" : "KrisSwordPuffR", LAF_OVERRIDEZ | LAF_ISMELEEATTACK, t, zOffset);
 			targets.Push(l.HitActor);
+			
+			let diff = level.Vec3Diff(player.mo.pos.PlusZ(zOffset), l.HitActor.pos),
+				dist = max(5, diff.Length() - l.HitActor.radius);
+			
+			if (dist < puffDist)
+				puffDist = dist;
 		}
-		
 		
 		if (targets.Size() > 0)
 		{
@@ -152,16 +158,85 @@ class KrisSword : DeltaWeapon
 			A_StartSound("delta/sword/hit", CHAN_WEAPON, CHANF_OVERLAP);
 		}
 		else
-			LineAttack(Angle, distance, Pitch, dmg, "Melee", "KrisSwordPuff",
-				LAF_OVERRIDEZ, offsetZ: zOffset);
+		{
+			Actor puff;
+			puff = LineAttack(angle, distance, pitch, dmg, "Melee", leftSlash ?
+				"KrisSwordPuffL" : "KrisSwordPuffR", LAF_OVERRIDEZ | LAF_ISMELEEATTACK, offsetZ: zOffset);
+			
+			if (puff)
+			{
+				hitSomething = true;
+				let diff = level.Vec3Diff(player.mo.pos.PlusZ(zOffset), puff.pos),
+					dist = max(5, diff.Length());
+				
+				if (dist < puffDist)
+					puffDist = dist;
+			}
+		}
+		
+		if (!hitSomething)
+			return;
+		
+		let slsh = Spawn(leftSlash? "KrisSwordSlashL":"KrisSwordSlashR",
+			player.mo.pos.PlusZ(zOffset)
+				+ DeltaUtil.GetActorForward(player.mo)*puffDist);
+		slsh.angle = player.mo.angle;
+		slsh.pitch = player.mo.pitch;
 	}
 }
 
-class KrisSwordPuff : BulletPuff
+class KrisSwordPuff : Actor
 {
 	Default
 	{
 		ProjectileKickBack 5;
-		+NOEXTREMEDEATH;
+		+NOEXTREMEDEATH
+	}
+	
+	States
+	{
+		Spawn:
+			TNT1 A 0;
+			Stop;
+	}
+}
+class KrisSwordPuffL : KrisSwordPuff
+{
+	Default
+	{
+		Decal "KrisSwordSlashL";
+	}
+}
+class KrisSwordPuffR : KrisSwordPuff
+{
+	Default
+	{
+		Decal "KrisSwordSlashR";
+	}
+}
+
+class KrisSwordSlashL : Actor
+{
+	Default
+	{
+		Gravity 0;
+		
+		+WALLSPRITE
+		+BRIGHT
+		+SQUAREPIXELS
+	}
+	
+	States
+	{
+		Spawn:
+			KSLH ABC 2;
+			Stop;
+	}
+}
+class KrisSwordSlashR : KrisSwordSlashL
+{
+	Default
+	{
+		+XFLIP
 	}
 }

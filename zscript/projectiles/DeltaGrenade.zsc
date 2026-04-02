@@ -156,17 +156,11 @@ class DeltaGrenade : DeltaProjectile abstract
 	{
 		switch (grenadeType)
 		{
-			case GRENADE_CONTACT:
-				return !exploded;
-			
 			case GRENADE_STICKY:
 				if (stickVictim || fuseLit)
 					return false;
-				
-				return !exploded;
 			
-			case GRENADE_NORMAL:
-			default:
+			default: // fallthrough is intentional
 				return !exploded;
 		}
 	}

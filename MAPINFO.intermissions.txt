@@ -1,3 +1,4 @@
+/*
 cluster 1
 {
 	flat = "$BGFLATE1"
@@ -65,3 +66,4 @@ cluster 10
 	flat = "$BGFLAT31"
 	enterText = lookup, "C6TEXT"
 }
+*/

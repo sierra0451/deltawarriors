@@ -68,6 +68,12 @@ OptionValue "OnOff"
 	1, "On"
 }
 
+OptionValue "DeathCamOptions"
+{
+	0, "First person"
+	1, "Third person"
+}
+
 DefaultOptionMenu
 {
 	Class "DeltaOptionMenu"
@@ -100,6 +106,7 @@ OptionMenu "DeltaOptions"
 	
 	StaticText ""
 	Slider "$MENU_FOV", "fov", 75, 160, 1, 0
+	Option "$MENU_DISCORD_RPC", "i_discordrpc", "YesNo"
 	
 	StaticText ""
 	SubMenu "$MENU_OPT_SEARCH", "os_menu"
@@ -158,7 +165,7 @@ OptionMenu "DeltaDisplayOptions"
 	StaticText "$MENU_CAMERA_HEADER", "DeltaMenuHeader"
 	
 	Slider "$MENU_FOV", "fov", 75, 160, 1, 0
-	Option "$MENU_DEATHCAM", "r_deathcamera", "YesNo"
+	Option "$MENU_DEATHCAM", "r_deathcamera", "DeathCamOptions"
 	StaticText ""
     Slider "$MENU_MOVE_BOB", "movebob", 0, 1, 0.1, 2
     Slider "$MENU_STILL_BOB", "stillbob", 0, 1, 0.1, 2

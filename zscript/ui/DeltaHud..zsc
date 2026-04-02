@@ -380,20 +380,25 @@ class DeltaHud : BaseStatusBar
 		//  DRAWING OFFHAND INFORMATION
 		// =============================
 		double offhandPanelHeight = 36 * _universalScale.y;
-		bool canUse = ply.CanUseOffhand();
+		bool canUse = ply.CanUseOffhand()
+			&& ply.GetTension(ply.GetOffhandTpCost()) != TP_FAIL;
 		curY -= offhandPanelHeight + panelYSpacing*2;
-		Fill(0x80000000, _hBorder, curY, (panelXSpacing * 3) + (48 * _universalScale.x),
-			offhandPanelHeight);
+		Fill(0x80000000, _hBorder, curY, (panelXSpacing * 3) +
+			(48 * _universalScale.x), offhandPanelHeight);
 		// control icons should all be 16px x 16px (or equivalent if scaled)
-		DisplayBinding("+offhand", (_hBorder + panelXSpacing, curY + offhandPanelHeight/2),
-			DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT | DI_ITEM_VCENTER, _universalScale);
+		DisplayBinding("+offhand", (_hBorder + panelXSpacing,
+			curY + offhandPanelHeight/2), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT
+			| DI_ITEM_VCENTER, _universalScale);
 		// offhand icons should all be 32px x 32px (or equivalent if scaled)
-		DrawTexture(ply.GetOffhandIconID(), (_hBorder + panelXSpacing*2 + 16*_universalScale.x,
-			curY + 2*_universalScale.y), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_TOP,
-			scale: _universalScale, col: canUse ? (ply.GetIsUsingOffhand() ?
-			Color(255, 255, 160, 64) : 0xffffffff) : 0x80606060);
+		DrawTexture(ply.GetOffhandIconID(), (_hBorder + panelXSpacing*2 +
+			16*_universalScale.x, curY + 2*_universalScale.y),
+			DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_TOP, scale: _universalScale,
+			col: canUse ? (ply.GetIsUsingOffhand() ?
+				Color(255, 255, 160, 64) : 0xffffffff) : 0x80606060);
 		
-		DrawDamagePopups((_hBorder + faceXSize/2 + panelXSpacing*2, panelY + faceYSize/2 - panelYSize + (24*_universalScale.y)), ticFrac);
+		DrawDamagePopups((_hBorder + faceXSize/2 + panelXSpacing*2,
+			panelY + faceYSize/2 - panelYSize + (24*_universalScale.y)),
+			ticFrac);
 	}
 	
 	protected void DrawRightPanel(bool infiniteAmmo)

@@ -142,14 +142,7 @@ class KrisShotgun : DeltaWeapon
 		
 		A_OwnerPlayAttack();
 		A_ZoomFactor(0.97, ZOOM_INSTANT | ZOOM_NOSCALETURNING);
-		
-		if (player.crouchOffset ~== 0)
-		{
-			Vector2 forward = AngleToVector(player.mo.angle);
-			Vector2 up = AngleToVector(player.mo.pitch);
-			player.mo.vel -= (forward.x * up.x, forward.y * up.x, -up.y)
-				* (player.onGround ? 5 : 10);
-		}
+		A_OwnerKnockback(5, 10);
 		
 		return ResolveState(null);
 	}

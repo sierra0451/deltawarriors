@@ -100,14 +100,10 @@ class DeltaWeaponPickup : Weapon
 }
 
 // Doom replacers
-class DeltaChainsaw : Inventory replaces Chainsaw
+class DeltaChainsaw : Weapon replaces Chainsaw
 {
 	Default
 	{
-		Inventory.PickupMessage "";
-		Inventory.PickupSound "misc/w_pkup";
-		Inventory.MaxAmount 1;
-		
 		+INVENTORY.UNTOSSABLE
 	}
 	
@@ -116,6 +112,22 @@ class DeltaChainsaw : Inventory replaces Chainsaw
 		Spawn:
 			CSAW A -1;
 			Stop;
+		Select:
+			TNT1 A 0;
+			Goto Ready;
+		Deselect:
+			TNT1 A 0;
+			Stop;
+		Ready:
+			TNT1 A 1;
+			Loop;
+		Fire:
+			Goto Ready;
+	}
+	
+	override void AttachToOwner(Actor other)
+	{
+		BecomeItem();
 	}
 	
 	override string PickupMessage()

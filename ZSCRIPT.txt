@@ -10,9 +10,6 @@ version "4.14.3"
 #include "zscript/effects/DeltaBadExplosion.zsc"
 #include "zscript/effects/DeltaSoul.zsc"
 
-// enemies
-#include "zscript/enemies/DeltaEnemy.zsc"
-
 // items
 #include "zscript/items/HealthReplacements.zsc"
 #include "zscript/items/TensionItems.zsc"

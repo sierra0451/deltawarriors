@@ -328,12 +328,7 @@ class KrisRevolver : DeltaWeapon
 		invoker.cocked = false;
 		invoker.chargeTics = 0;
 		
-		if (!player.onGround && player.crouchOffset ~== 0)
-		{
-			Vector2 forward = AngleToVector(player.mo.angle);
-			Vector2 up = AngleToVector(player.mo.pitch);
-			player.mo.vel -= (forward.x * up.x, forward.y * up.x, -up.y) * 7.5;
-		}
+		A_OwnerKnockback(0, 7.5);
 	}
 }
 
@@ -341,7 +336,7 @@ class KrisRevolverPuff : BulletPuff
 {
 	Default
 	{
-		ProjectileKickBack 20;
+		ProjectileKickBack 25;
 		Obituary "$OBIT_DELTA_REVOLVER";
 		+NOEXTREMEDEATH
 	}

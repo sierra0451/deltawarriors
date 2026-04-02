@@ -371,6 +371,20 @@ class DeltaWeapon : Weapon
 		return ResolveState(null);
 	}
 	
+	action void A_OwnerKnockback(double groundKnockback, double airKnockback,
+		bool crouchNullifies = true)
+	{
+		double kb = player.onGround ? groundKnockback : airKnockback;
+		
+		if (crouchNullifies && player.crouchOffset != 0)
+			return;
+		if (kb ~== 0)
+			return;
+		
+		let kbVec = DeltaUtil.GetActorForward(player.mo) * kb;
+		player.mo.vel -= kbVec;
+	}
+	
 	action void A_StartOffhand()
 	{
 		

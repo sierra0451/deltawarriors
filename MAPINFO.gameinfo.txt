@@ -27,7 +27,7 @@ GameInfo
 					"SusiePlayer",
 					"RalseiPlayer",
 					"NoellePlayer"*/
-	NoRandomPlayerClass = true
+	NoRandomPlayerClass = false
 	
 	Intro
 	{
