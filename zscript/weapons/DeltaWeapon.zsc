@@ -291,10 +291,10 @@ class DeltaWeapon : Weapon
 			return;
 		
 		let psp = player.GetPSprite(PSP_WEAPON);
-		
 		if (!psp)
 			return;
 		
+		A_ClearDynamicLights();
 		ResetPSprite(psp);
 		player.mo.BringUpWeapon();
 		return;
@@ -426,6 +426,16 @@ class DeltaWeapon : Weapon
 			return;
 		
 		deltaPly.A_RemoveDynamicLight(lightId);
+	}
+	
+	action void A_ClearDynamicLights()
+	{
+		let deltaPly = DeltaPlayer(invoker.owner);
+		
+		if (!deltaPly)
+			return;
+		
+		deltaPly.A_ClearDynamicLights();
 	}
 	
 	void MarkReadyToStopLunging()

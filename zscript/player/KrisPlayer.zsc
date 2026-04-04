@@ -49,6 +49,7 @@ class KrisPlayer : DeltaPlayer
 		DeltaPlayer.OffhandTpCost floor(0.4 * 250);
 		
 		DeltaPlayer.CharacterIcon "graphics/krisIcon.png";
+		DeltaPlayer.NameTag "sprites/hud/krisTag.png";
 		DeltaPlayer.GunStandSprite "KRSG";
 		DeltaPlayer.MeleeStandSprite "KRSW";
 		DeltaPlayer.GunCrouchSprite "KCGN";
@@ -788,7 +789,7 @@ class KrisPlayer : DeltaPlayer
 			double explodeChance = 0.3;
 			
 			if (frandom[explodeChance](0, 1) <= explodeChance && 
-				parried.curState.InStateSequence(parried.ResolveState("XDeath")))
+				parried.health < parried.GetGibHealth())
 			{
 				Spawn("DeltaBadExplosion", parried.pos);
 			}

@@ -104,7 +104,8 @@ class DeltaChainsaw : Weapon replaces Chainsaw
 {
 	Default
 	{
-		+INVENTORY.UNTOSSABLE
+		+WEAPON.NO_AUTO_SWITCH
+		+WEAPON.NOAUTOSWITCHTO
 	}
 	
 	States
@@ -123,11 +124,6 @@ class DeltaChainsaw : Weapon replaces Chainsaw
 			Loop;
 		Fire:
 			Goto Ready;
-	}
-	
-	override void AttachToOwner(Actor other)
-	{
-		BecomeItem();
 	}
 	
 	override string PickupMessage()

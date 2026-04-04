@@ -67,8 +67,9 @@ class DeltaSoul : Actor
 	override void Tick()
 	{
 		Super.Tick();
-		SetSoulColor();
 		
+		if (playerParent && playerInGame[PlayerNumber()])
+			SetSoulColor();
 		if (curState && curState.InStateSequence(SpawnState))
 			CheckSoulCrush();
 	}
@@ -76,8 +77,19 @@ class DeltaSoul : Actor
 	virtual void SetSoulColor()
 	{
 		Color col = defaultColor;
+		
 		if (playerParent && cl_delta_changeSoulColor)
-			col = Cvar.GetCvar("user_delta_soulColor", playerParent).GetInt();
+		{
+			if (playerParent.bot)
+				col = playerParent.GetColor();
+			else
+			{
+				let consoleVar = CVar.GetCvar("user_delta_soulColor", playerParent);
+				if (consoleVar)
+					col = consoleVar.GetInt();
+				else return; // if a player dies and then leaves, don't overwrite soul color to default
+			}
+		}
 		
 		SetShade(col);
 	}

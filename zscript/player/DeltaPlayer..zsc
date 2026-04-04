@@ -7,7 +7,7 @@ struct RecoilEvent
 
 class DeltaPlayer : PlayerPawn abstract
 {
-	const COYOTE_TIME = 3;
+	const COYOTE_TIME = 5;
 	const MAX_AIR_BOB_TICS = 7;
 	const DELTA_AIR_CONTROL = 0.6;
 	const DAMAGE_IFRAMES = 10;
@@ -37,7 +37,7 @@ class DeltaPlayer : PlayerPawn abstract
 	
 	protected Array<Actor> grazed;
 	
-	protected string characterIcon;
+	protected string characterIcon, nameTag;
 	protected Color characterColor, overhealColor;
 	
 	protected LinearValueInterpolator heartbeat, shakiness;
@@ -58,15 +58,15 @@ class DeltaPlayer : PlayerPawn abstract
 	protected double crouchFactor;
 	
 	private double _targetRoll;
-	private bool _frozenDeath;			// using this for custom ice death that doesn't automatically shatter us lol
+	private bool _frozenDeath;						// using this for custom ice death that doesn't automatically shatter us lol
 	
-	private Vector2 _currentFlinch;		// used for weapon flinching when taking damage
+	private Vector2 _currentFlinch;					// used for weapon flinching when taking damage
 	private int _flinchTics;
 	
 	private double _oldTurn, _turn;
-	private double _originalHeight;		// used for fixing compatibility issues with maps that use voodoo doll scripting
+	private double _originalHeight;					// used for fixing compatibility issues with maps that use voodoo doll scripting
 	
-	private TextureID _characterIconId;	// used for health displays in co-op and team deathmatch
+	private TextureID _characterIconId, _nameTagId;	// used for health displays in co-op and team deathmatch
 	
 	private DeltaCrosshairState _crosshairState;
 	
@@ -96,6 +96,7 @@ class DeltaPlayer : PlayerPawn abstract
 	property OffhandIcon: offhandIcon;
 	property OffhandTpCost: offhandTpCost;
 	property CharacterIcon: characterIcon;
+	property NameTag: nameTag;
 	property GunStandSprite: gunStandSprite;
 	property MeleeStandSprite: meleeStandSprite;
 	property MagicStandSprite: magicStandSprite;
@@ -144,6 +145,7 @@ class DeltaPlayer : PlayerPawn abstract
 		DeltaPlayer.OffhandTpCost 0;
 		
 		DeltaPlayer.CharacterIcon "";
+		DeltaPlayer.NameTag "";
 		DeltaPlayer.GunCrouchSprite "";
 		DeltaPlayer.MeleeCrouchSprite "";
 		DeltaPlayer.MagicCrouchSprite "";
@@ -218,6 +220,7 @@ class DeltaPlayer : PlayerPawn abstract
 		// load icon textures before we do (most of) the rest of our initialization
 		_offhandIconId = TexMan.CheckForTexture(offhandIcon);
 		_characterIconId = TexMan.CheckForTexture(characterIcon);
+		_nameTagId = TexMan.CheckForTexture(nameTag);
 		
 		// grab our states
 		AirGunState = FindState("AirGun");
@@ -345,8 +348,7 @@ class DeltaPlayer : PlayerPawn abstract
 	
 	override void ApplyAirControl(out double moveFactor, out double bobFactor)
 	{
-		let targetAirCtrl = DELTA_AIR_CONTROL,
-			fric = level.airFriction;
+		let targetAirCtrl = DELTA_AIR_CONTROL;
 		
 		if (player && !(player.cmd.buttons & (BT_FORWARD | BT_BACK | BT_MOVELEFT | BT_MOVERIGHT)))
 			targetAirCtrl = 0;
@@ -795,9 +797,13 @@ class DeltaPlayer : PlayerPawn abstract
 		return result;
 	}
 	
-	override void HasReceived(Inventory item)
+	override void HasReceived(Inventory item, class<Inventory> itemCls)
 	{
-		if (item is "Health" && item.GetClass() != "Health" && !item.bQuiet)
+		Super.HasReceived(item, itemCls);
+		
+		if (!item)
+			return;
+		if (item is "Health" && itemCls != "Health" && !item.bQuiet)
 			A_StartSound("delta/heal", CHAN_VOICE);
 	}
 	
@@ -818,7 +824,7 @@ class DeltaPlayer : PlayerPawn abstract
 			s = shakiness ? DeltaUtil.Lerp(oldShakiness, shakiness.GetValue(), ticFrac)/100. : 0,
 			shakeDiff = s - minShakiness,
 			shakeX = sin(t/11.) * 2 - shakeDiff * sin(TICRATE*0.85*t),
-			shakeY = max(0, (0.5+0.5*sin(2*t)) * 5 + shakeDiff * sin(TICRATE/2.*t));
+			shakeY = max(0, (0.5+0.5*sin(1.5*t)) * 12. + shakeDiff * sin(TICRATE/2.*t));
 		Vector2 shake = (shakeX, shakeY * 0.5);
 		
 		return originalBob * perc + bobFlinch + shake * s
@@ -1082,13 +1088,13 @@ class DeltaPlayer : PlayerPawn abstract
 		if (health <= 0)
 			return;
 		
-		bool doingMoveInput = player ?
-			(player.buttons & (BT_MOVERIGHT | BT_MOVELEFT | BT_BACK | BT_FORWARD))
+		bool doingMoveInput = player ? (player.bot ? vel.xy.LengthSquared() > 30 :
+			(player.buttons & (BT_MOVERIGHT | BT_MOVELEFT | BT_BACK | BT_FORWARD)))
 			: false;
 		
 		if (coyoteTimer <= COYOTE_TIME)
 		{
-			if (doingMoveInput && Vel.LengthSquared() > 0)
+			if (doingMoveInput && vel.xy.LengthSquared() > 0)
 				PlayRunning();
 			else
 				PlayIdle();
@@ -1645,6 +1651,11 @@ class DeltaPlayer : PlayerPawn abstract
 	clearscope TextureID GetCharacterIconID()
 	{
 		return _characterIconId;
+	}
+	
+	clearscope TextureID GetNameTagID()
+	{
+		return _nameTagId;
 	}
 	
 	clearscope double GetCrouchFactor()

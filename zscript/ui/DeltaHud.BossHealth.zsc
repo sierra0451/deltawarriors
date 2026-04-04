@@ -33,8 +33,7 @@ extend class DeltaHud
 				continue;
 			}
 			
-			if (curr.curState.InStateSequence(curr.SpawnState)
-				|| curr.health <= 0)
+			if (curr.curState.InStateSequence(curr.SpawnState) || curr.health <= 0)
 				continue;
 			
 			let flags3 = level.info.flags3;
@@ -80,7 +79,7 @@ extend class DeltaHud
 			
 			DrawTexture(_bossBarBack, (curX, curY),
 				DI_ITEM_LEFT_TOP | DI_SCREEN_RIGHT_TOP, scale: _universalScale);
-			Fill(0xff9000a0, curX + 4*_universalScale.x, curY + 4*_universalScale.y,
+			Fill(0xff9000a0, curX + 6*_universalScale.x, curY + 6*_universalScale.y,
 				perc*212*_universalScale.x, 16*_universalScale.y);
 			
 			string _name = curr.GetTag();
@@ -93,13 +92,13 @@ extend class DeltaHud
 			if (kRound && curr is kRound)
 				_name = "K. Round";
 			
-			double fontH = (_consoleFont.mFont.GetHeight() + 3) * _universalScale.y;
+			double fontH = _consoleFont.mFont.GetHeight() * _universalScale.y;
 			DrawString(_consoleFont, _name,
-				(-_hBorder - 6*_universalScale.x, curY + h - fontH/2.),
+				(-_hBorder - 10*_universalScale.x, curY - fontH/2. + h - 5*_universalScale.y),
 				DI_TEXT_ALIGN_RIGHT | DI_SCREEN_RIGHT_TOP,
 				scale: _universalScale/2);
-			DrawString(_drHudFont, String.Format("%.0d", perc*100),
-				(-_hBorder - 6*_universalScale.x, curY + 7*_universalScale.y),
+			DrawString(_drHudFont, String.Format("%d", perc*100),
+				(-_hBorder - 8*_universalScale.x, curY + 9*_universalScale.y),
 				DI_TEXT_ALIGN_RIGHT | DI_SCREEN_RIGHT_TOP,
 				scale: _universalScale*2);
 		}

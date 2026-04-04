@@ -1,12 +1,16 @@
 extend class DeltaHud
 {
-	private TextureID _coopPanelBack, _deathmatchPanelBack,
+	private TextureID _coopPanelBack, _coopPanelBorders, _deathmatchPanelBack,
+		_deathmatchPanelBorders, _deathmatchPanelBarBorders,
 		_deathmatchCurrentPlayer;
 	
 	protected void SetUpMultiplayerTextures()
 	{
 		_coopPanelBack 				= TexMan.CheckForTexture("COOPBACK");
+		_coopPanelBorders			= TexMan.CheckForTexture("sprites/hud/coop panel borders.png");
 		_deathmatchPanelBack 		= TexMan.CheckForTexture("DTHMBACK");
+		_deathmatchPanelBorders		= TexMan.CheckForTexture("sprites/hud/deathmatch score border.png");
+		_deathmatchPanelBarBorders	= TexMan.CheckForTexture("sprites/hud/deathmatch score bar border.png");
 		_deathmatchCurrentPlayer 	= TexMan.CheckForTexture("DTHMCPLY");
 	}
 	
@@ -77,9 +81,16 @@ extend class DeltaHud
 			}
 		}
 		
-		DrawTexture(_deathmatchPanelBack, (0, -_vBorder),
-			DI_SCREEN_CENTER_BOTTOM | DI_ITEM_HCENTER | DI_ITEM_BOTTOM,
-			scale: _universalScale*2);
+		int deathmatchW, deathmatchH;
+		[deathmatchW, deathmatchH] = TexMan.GetSize(_deathmatchPanelBack);
+		let deathmatchPos = (-deathmatchW/2. * _universalScale.x,
+			-_vBorder - deathmatchH * _universalScale.y);
+		
+		DrawTexture(_deathmatchPanelBack, deathmatchPos,
+			DI_SCREEN_CENTER_BOTTOM | DI_ITEM_LEFT_TOP, scale: _universalScale);
+		DrawTexture(_deathmatchPanelBorders, deathmatchPos,
+			DI_SCREEN_CENTER_BOTTOM | DI_ITEM_LEFT_TOP | DI_ITEM_OFFSETS,
+			col: ply.GetCharacterColor(), scale: _universalScale);
 		
 		/// ------------
 		/// DRAWING TIME
@@ -105,23 +116,26 @@ extend class DeltaHud
 				timeMinutes++;
 			}
 			
-			double fontHeight = _consoleFont.mFont.GetHeight();
 			String timeStr;
 			
-			if (timeHours)
-				timeStr = String.Format("%u", timeHours);
-			if (timeHours || timeMinutes)
-				timeStr = String.Format(timeHours ? "%s:%02u" : "%s%u", timeStr, timeMinutes);
-			if (!timeHours)
-				timeStr = String.Format("%s:%02u", timeStr, timeSeconds);
+			if (timeMinutes)
+				timeStr = String.Format("%u:%02u",
+					timeHours? timeHours : timeMinutes, timeHours? timeMinutes : timeSeconds);
+			else
+				timeStr = String.Format("%2.2f", double(timeTics) / TICRATE);
+			
+			let textWidth = _consoleFont.mFont.StringWidth(timeStr)*1.5,
+				fontHeight = _consoleFont.mFont.GetHeight()*1.5;
 			
 			DrawString(_consoleFont, timeStr,
-				(-75*_universalScale.x, -_vBorder - (14+fontHeight)*_universalScale.y),
-				DI_SCREEN_CENTER_BOTTOM | DI_TEXT_ALIGN_CENTER, scale: _universalScale);
+				(deathmatchPos.x + (41 - textWidth/2.)*_universalScale.x,
+					deathmatchPos.y + (35 - fontHeight/2.)*_universalScale.y),
+				DI_SCREEN_CENTER_BOTTOM, scale: _universalScale*1.5);
 		}
 		else
-			DrawTexture(_infiniteText, (-72*_universalScale.x, -_vBorder - 14*_universalScale.y),
-				DI_SCREEN_CENTER_BOTTOM | DI_ITEM_CENTER_BOTTOM, scale: _universalScale*2);
+			DrawTexture(_infiniteText,
+				(deathmatchPos.x + 44*_universalScale.x, deathmatchPos.y + 35*_universalScale.y),
+				DI_SCREEN_CENTER_BOTTOM | DI_ITEM_CENTER, scale: _universalScale*3);
 		
 		/// -------------
 		/// DRAWING FRAGS
@@ -130,7 +144,8 @@ extend class DeltaHud
 		let leaderIndex = 0;
 		Color barColor;
 		TextureID characterIcon;
-		double fontHeight = _drHudFont.mFont.GetHeight();
+		double hudFontHeight = _drHudFont.mFont.GetHeight(), sc = 1,
+			consoleFontHeight = _consoleFont.mFont.GetHeight() * sc;
 		string nameShown = "";
 		bool leaderIsUs = false;
 		
@@ -175,25 +190,28 @@ extend class DeltaHud
 				leaderIndex = i;
 				nameShown = players[i].GetUserName();
 				characterIcon = deltaPly.GetCharacterIconId();
-				barColor = deltaPly.GetCharacterColor();
+				barColor = players[i].GetColor();
 				leaderIsUs = CPlayer == players[i];
 			}
 		}
 		
 		barColor |= 0xff000000;
 		nameShown.Truncate(16);
-		Fill(barColor, -32*_universalScale.x, -_vBorder - 36*_universalScale.y,
-			min(1., (max(0., leaderFrags) / max(1., fraglimit))) * 132 * _universalScale.x, -20 * _universalScale.y,
+		
+		Fill(barColor, deathmatchPos.x + 92*_universalScale.x, deathmatchPos.y + 6*_universalScale.y,
+			min(1., (max(0., leaderFrags) / max(1., fraglimit))) * 150 * _universalScale.x, 24 * _universalScale.y,
 			DI_SCREEN_CENTER_BOTTOM);
-		DrawTexture(characterIcon, (-33*_universalScale.x, -_vBorder - 36.5*_universalScale.y),
-			DI_SCREEN_CENTER_BOTTOM | DI_ITEM_LEFT_BOTTOM,
+		DrawTexture(_deathmatchPanelBarBorders, deathmatchPos + (88*_universalScale.x, 2*_universalScale.y),
+			DI_SCREEN_CENTER_BOTTOM | DI_ITEM_LEFT_TOP, col: barColor, scale: _universalScale);
+		DrawTexture(characterIcon, deathmatchPos + (94*_universalScale.x, 8*_universalScale.y),
+			DI_SCREEN_CENTER_BOTTOM | DI_ITEM_LEFT_TOP,
 			box: (25*_universalScale.x, 20*_universalScale.y), scale: _universalScale);
 		DrawString(_drHudFont, "" .. leaderFrags,
-			(98*_universalScale.x, -_vBorder - (fontHeight+43.5)*_universalScale.y),
+			deathmatchPos + ((deathmatchW - 8)*_universalScale.x, (18 - hudFontHeight*0.75)*_universalScale.y),
 			DI_SCREEN_CENTER_BOTTOM | DI_TEXT_ALIGN_RIGHT, scale: _universalScale*3);
 		DrawString(_consoleFont, nameShown,
-			((teamplay ? -33 : -12)*_universalScale.x, -_vBorder - (fontHeight/2+45.5)*_universalScale.y),
-			DI_SCREEN_CENTER_BOTTOM | DI_TEXT_ALIGN_LEFT, scale: _universalScale/2);
+			(deathmatchPos.x + (teamplay ? 94 : 121)*_universalScale.x, deathmatchPos.y + (18 - consoleFontHeight/2.)*_universalScale.y),
+			DI_SCREEN_CENTER_BOTTOM | DI_TEXT_ALIGN_LEFT, scale: _universalScale*sc);
 		
 		// Bottom bar (second place if we're leader, us otherwise)
 		let bottomFrags = -500, bottomIndex = 0;
@@ -265,36 +283,36 @@ extend class DeltaHud
 			}
 		}
 		
-		DrawTexture(_deathmatchCurrentPlayer, (108*_universalScale.x,
-			-_vBorder - (leaderIsUs ? 38 : 6)*_universalScale.y),
-			DI_SCREEN_CENTER_BOTTOM | DI_ITEM_LEFT_BOTTOM,
-			scale: _universalScale*2);
+		DrawTexture(_deathmatchCurrentPlayer, deathmatchPos +
+			(252*_universalScale.x, (leaderIsUs ? 6 : 40)*_universalScale.y),
+			DI_SCREEN_CENTER_BOTTOM | DI_ITEM_LEFT_TOP, col: ply.GetCharacterColor(),
+			scale: _universalScale);
 		
 		if (!characterIcon && (!teamplay || teamsFound.Size() == 1))
 			return;
 		
 		barColor |= 0xff000000;
 		nameShown.Truncate(16);
-		Fill(barColor, -32*_universalScale.x, -_vBorder - 4*_universalScale.y,
-			min(1., (max(0., bottomFrags) / max(1., fraglimit))) * 132 * _universalScale.x, -20 * _universalScale.y,
+		Fill(barColor, deathmatchPos.x + 92*_universalScale.x, deathmatchPos.y + 40*_universalScale.y,
+			min(1., (max(0., bottomFrags) / max(1., fraglimit))) * 150 * _universalScale.x, 24 * _universalScale.y,
 			DI_SCREEN_CENTER_BOTTOM);
-		DrawTexture(characterIcon, (-33*_universalScale.x,
-			-_vBorder - 4.5*_universalScale.y), DI_SCREEN_CENTER_BOTTOM
-			| DI_ITEM_LEFT_BOTTOM, box: (25*_universalScale.x,
-			20*_universalScale.y), scale: _universalScale);
-		DrawString(_drHudFont, "" ..  bottomFrags, (98*_universalScale.x,
-			-_vBorder - (fontHeight+11.5)*_universalScale.y),
-			DI_SCREEN_CENTER_BOTTOM | DI_TEXT_ALIGN_RIGHT,
-			scale: _universalScale*3);
+		DrawTexture(_deathmatchPanelBarBorders, deathmatchPos + (88*_universalScale.x, 36*_universalScale.y),
+			DI_SCREEN_CENTER_BOTTOM | DI_ITEM_LEFT_TOP, col: barColor, scale: _universalScale);
+		DrawTexture(characterIcon, deathmatchPos + (94*_universalScale.x, 42*_universalScale.y),
+			DI_SCREEN_CENTER_BOTTOM | DI_ITEM_LEFT_TOP,
+			box: (25*_universalScale.x, 20*_universalScale.y), scale: _universalScale);
+		DrawString(_drHudFont, "" .. bottomFrags,
+			deathmatchPos + ((deathmatchW - 8)*_universalScale.x, (52 - hudFontHeight*0.75)*_universalScale.y),
+			DI_SCREEN_CENTER_BOTTOM | DI_TEXT_ALIGN_RIGHT, scale: _universalScale*3);
 		DrawString(_consoleFont, nameShown,
-			((teamplay ? -33 : -12)*_universalScale.x, -_vBorder - (fontHeight/2+13.5)*_universalScale.y),
-			DI_SCREEN_CENTER_BOTTOM | DI_TEXT_ALIGN_LEFT, scale: _universalScale/2);
+			(deathmatchPos.x + (teamplay ? 94 : 121)*_universalScale.x, deathmatchPos.y + (52 - consoleFontHeight/2.)*_universalScale.y),
+			DI_SCREEN_CENTER_BOTTOM | DI_TEXT_ALIGN_LEFT, scale: _universalScale*sc);
 	}
 	
 	protected void DrawMultiplayerHealth(DeltaPlayer ply, Vector2 pos)
 	{
 		double barWidth = _universalScale.x * 100,
-		barHeight = _universalScale.y * 8;
+		barHeight = _universalScale.y * 7;
 		Color iconColor = ply.health > 0 ? 0xffffffff : 0x80ff4040;
 		let userStr = ply.player.GetUserName();
 		
@@ -316,18 +334,22 @@ extend class DeltaHud
 		if (ply.health <= 0)
 			userStr = userStr .. " (DEAD)";
 		
-		DrawTexture(_coopPanelBack, (pos.X, pos.Y), DI_SCREEN_LEFT_TOP | DI_ITEM_LEFT_TOP, scale: _universalScale);
-		DrawTexture(ply.GetCharacterIconID(), (pos.X, pos.Y) + _universalScale,
+		DrawTexture(_coopPanelBack, pos, DI_SCREEN_LEFT_TOP | DI_ITEM_LEFT_TOP,
+			scale: _universalScale);
+		DrawTexture(_coopPanelBorders, pos, DI_SCREEN_LEFT_TOP | DI_ITEM_LEFT_TOP,
+			col: ply.GetCharacterColor(), scale: _universalScale);
+		DrawTexture(ply.GetCharacterIconID(), pos + _universalScale*6,
 			DI_SCREEN_LEFT_TOP | DI_ITEM_LEFT_TOP, box: (25*_universalScale.x, 20*_universalScale.y),
 			col: iconColor);
-		DrawString(_consoleFont, userStr, (pos.X + 26*_universalScale.x, pos.Y + 2*_universalScale.y),
+		DrawString(_consoleFont, userStr, pos + (32*_universalScale.x, 8*_universalScale.y),
 			scale: _universalScale/2);
+		
 		double healthPerc = DeltaUtil.Clamp(float(ply.Health) / ply.GetMaxHealth(), 0, 2);
-		Fill(ply.GetCharacterColor(), pos.X + (28.3*_universalScale.x), pos.Y + 13*_universalScale.y,
+		Fill(ply.GetCharacterColor(), pos.X + 34*_universalScale.x, pos.Y + 19*_universalScale.y,
 			barWidth * min(1, healthPerc), barHeight, DI_SCREEN_LEFT_TOP);
-		Fill(ply.GetOverhealColor(), pos.X + (28.3*_universalScale.x), pos.Y + 13*_universalScale.y,
+		Fill(ply.GetOverhealColor(), pos.X + 34*_universalScale.x, pos.Y + 19*_universalScale.y,
 			barWidth * max(0, healthPerc - 1), barHeight, DI_SCREEN_LEFT_TOP);
-		DrawString(_drHudFont, "" .. max(0, ply.Health), (pos.X + 126*_universalScale.x, pos.Y + 14.5*_universalScale.y),
+		DrawString(_drHudFont, "" .. max(0, ply.Health), (pos.X + 147*_universalScale.x, pos.Y + 20*_universalScale.y),
 			DI_SCREEN_LEFT_TOP | DI_TEXT_ALIGN_RIGHT, scale: _universalScale);
 	}
 	
