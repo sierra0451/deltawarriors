@@ -265,29 +265,29 @@ class DeltaHud : BaseStatusBar
 	{
 		let ply = DeltaPlayer(CPlayer.mo);
 		double
-			barHeight = 12 * _universalScale.y,
 			barWidth = 120 * _universalScale.x,
+			barHeight = 12 * _universalScale.y,
 			healthInterpValue = DeltaUtil.Lerp(_oldHealth,
 				_healthInterp.GetValue(), ticFrac) * 0.01;
 		
 		Fill(0xffff0000, _hBorder + 63*_universalScale.x,
-			-_vBorder - 22*_universalScale.x, barWidth * min(1, healthInterpValue),
+			-_vBorder - 22*_universalScale.y, barWidth * min(1, healthInterpValue),
 			barHeight, DI_SCREEN_LEFT_BOTTOM);
 		
 		let hpPerc = GetHealthPerc();
 		
 		Fill(ply.GetCharacterColor(), _hBorder + 63*_universalScale.x,
-			-_vBorder - 22*_universalScale.x, barWidth * min(1, hpPerc),
+			-_vBorder - 22*_universalScale.y, barWidth * min(1, hpPerc),
 			barHeight, DI_SCREEN_LEFT_BOTTOM);
 		
 		if (hpPerc > 1)
 		{
 			Fill(0xffff0000, _hBorder + 63*_universalScale.x,
-				-_vBorder - 22*_universalScale.x,
+				-_vBorder - 22*_universalScale.y,
 				barWidth * max(0, healthInterpValue-1), barHeight,
 				DI_SCREEN_LEFT_BOTTOM);
 			Fill(ply.GetOverhealColor(), _hBorder + 63*_universalScale.x,
-				-_vBorder - 22*_universalScale.x, barWidth * (hpPerc-1),
+				-_vBorder - 22*_universalScale.y, barWidth * (hpPerc-1),
 				barHeight, DI_SCREEN_LEFT_BOTTOM);
 		}
 		
@@ -340,7 +340,7 @@ class DeltaHud : BaseStatusBar
 		// using stencil mask
 		double
 			tpLerp = DeltaUtil.Lerp(_oldTp, _tpInterp.GetValue(), ticFrac),
-			tpBarHeight = 167 * sc * _universalScale.y;
+			tpBarHeight = 167 * sc * _universalScale.x;
 		
 		let lerpPerc = infiniteAmmo? 1. : (tpLerp / ply.maxTensionPoints);
 		
@@ -391,7 +391,7 @@ class DeltaHud : BaseStatusBar
 			tpTextWidth -= tpText.CodePointCount() * 2;
 		
 		DrawString(tpFont, tpText,
-			(tpPos.x + (80 - tpTextWidth)*_universalScale.x, tpPos.y - 4*_universalScale.x),
+			(tpPos.x + (80 - tpTextWidth)*_universalScale.x, tpPos.y - 4*_universalScale.y),
 			DI_SCREEN_LEFT_BOTTOM, alpha: 1., scale: _universalScale*sc);
 	}
 	

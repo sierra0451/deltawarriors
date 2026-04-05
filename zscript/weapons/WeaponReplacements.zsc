@@ -105,7 +105,6 @@ class DeltaChainsaw : Weapon replaces Chainsaw
 	Default
 	{
 		+WEAPON.NO_AUTO_SWITCH
-		+WEAPON.NOAUTOSWITCHTO
 	}
 	
 	States
@@ -124,6 +123,11 @@ class DeltaChainsaw : Weapon replaces Chainsaw
 			Loop;
 		Fire:
 			Goto Ready;
+	}
+	
+	override bool CheckAmmo(int fireMode, bool autoSwitch, bool requireAmmo, int ammoCount)
+	{
+		return false;
 	}
 	
 	override string PickupMessage()
