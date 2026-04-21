@@ -31,6 +31,7 @@ class DeltaSoul : Actor
 			{
 				invoker.prevZ = prev.z;
 			}
+			Goto SoulBreak;
 		SoulBreak:
 			TNT1 A 0
 			{
