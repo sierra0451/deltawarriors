@@ -237,8 +237,8 @@ class KrisPlayer : DeltaPlayer
 			KDTH D 3;
 			KDTH E 3 A_DeathImpact;
 			KDTH F 7;
-			#### # 1 A_SpawnDeathSoul;
-			#### # -1;
+			KDTH F 1 A_SpawnDeathSoul;
+			KDTH F -1;
 			Stop;
 		AirDeath:
 			KDTH GHIJK -1;
