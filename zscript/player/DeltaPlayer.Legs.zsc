@@ -105,8 +105,7 @@ extend class DeltaPlayer
 			int targetFrame = 0;
 			double diff = viewHeight - player.viewHeight;
 			
-			targetFrame = DeltaUtil.Clamp(floor(diff / 4.),
-				int(player.deltaViewHeight < 0), 4);
+			targetFrame = clamp(floor(diff / 4.), int(player.deltaViewHeight < 0), 4);
 			psp.frame = targetFrame;
 		}
 	}

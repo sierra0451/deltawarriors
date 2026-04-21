@@ -1,0 +1,97 @@
+extend class DeltaPlayer
+{
+	const VOICE_CHANNEL = CHAN_VOICE;
+	const PAIN_TIMER_START = DAMAGE_IFRAMES + 5;
+	
+	protected DeltaVoicePriority lastPriority;
+	protected string voiceClass;
+	protected double jumpGruntChance;
+	protected int painTimer, painAmount;
+	
+	property VoiceClass : voiceClass;
+	property JumpGruntChance : jumpGruntChance;
+	
+	protected void TickVoice()
+	{
+		if (painTimer == -1)
+		{
+			painTimer = PAIN_TIMER_START;
+			string painSnd = "light_pain";
+			
+			if (painAmount >= 50 || (painAmount >= 20 && health <= GetMaxHealth()/3))
+				painSnd = "severe_pain";
+			else if (painAmount >= 20 || health <= GetMaxHealth()/3)
+				painSnd = "medium_pain";
+			
+			DoSpeak(painSnd, VOX_PAIN);
+			painAmount = 0;
+		}
+		
+		if (painTimer > 0 && (lastPriority != VOX_PAIN || !IsActorPlayingSound(VOICE_CHANNEL)))
+			painTimer--;
+	}
+	
+	bool CanSpeak(int priority)
+	{
+		if (!cl_delta_voice)
+			return false;
+		if (voiceClass == "")
+			return false;
+		if (priority < VOX_LEAST_IMPORTANT || priority > VOX_MOST_IMPORTANT)
+			return false;
+		if (!IsActorPlayingSound(VOICE_CHANNEL))
+			return true;
+		if (lastPriority > priority)
+			return false;
+		
+		// we fallthrough here if our priority is higher or equal to that of
+		// the sound currently being played
+		return true;
+	}
+	
+	void DoSpeak(string snd, int priority = VOX_LEAST_IMPORTANT, int flags = 0)
+	{
+		if (!CanSpeak(priority))
+			return;
+		
+		/*	Example: if Kris needs a jump grunt, our voiceClass would be "kris"
+			and snd passed into this function would be "jump_grunt".
+			
+			Which means targetSnd would be "delta/kris/jump_grunt".	*/
+		string targetSnd = "delta/" .. voiceClass .. "/" .. snd;
+		//A_Log("targetSnd: " .. targetSnd);
+		
+		lastPriority = priority;
+		A_StartSound(targetSnd, CHAN_VOICE, flags);
+	}
+	
+	void VoiceDamage(int damage, Name mod)
+	{
+		if (damage <= 0 || health <= 0)
+			return;
+		if (painTimer > 0)
+			return;
+		
+		if (mod == "Drowning")
+		{
+			DoSpeak(((damage >= 8)? "severe_drown" : "medium_drown"), VOX_PAIN);
+			return;
+		}
+		
+		painAmount += damage;
+		painTimer = -1;
+	}
+	
+	void VoiceDeath(Name mod)
+	{
+		if (health > 0 || mod == "Drowning" || mod == "Falling")
+			return;
+		
+		string deathSnd = "medium_death";
+		
+		if (health <= -GetMaxHealth()/2)
+			deathSnd = "severe_death";
+		
+		DoSpeak(deathSnd, VOX_DEATH);
+	}
+}

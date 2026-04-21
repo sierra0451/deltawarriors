@@ -1,10 +1,14 @@
 extend class DeltaHud
 {
+	Array<int> playersSeen;
+	protected Le_GlScreen gl_proj;
+	protected Le_Viewport viewport;
+	
 	private TextureID _coopPanelBack, _coopPanelBorders, _deathmatchPanelBack,
 		_deathmatchPanelBorders, _deathmatchPanelBarBorders,
 		_deathmatchCurrentPlayer;
 	
-	protected void SetUpMultiplayerTextures()
+	protected void SetUpMultiplayer()
 	{
 		_coopPanelBack 				= TexMan.CheckForTexture("COOPBACK");
 		_coopPanelBorders			= TexMan.CheckForTexture("sprites/hud/coop panel borders.png");
@@ -12,11 +16,81 @@ extend class DeltaHud
 		_deathmatchPanelBorders		= TexMan.CheckForTexture("sprites/hud/deathmatch score border.png");
 		_deathmatchPanelBarBorders	= TexMan.CheckForTexture("sprites/hud/deathmatch score bar border.png");
 		_deathmatchCurrentPlayer 	= TexMan.CheckForTexture("DTHMCPLY");
+		
+		gl_proj						= new("Le_GlScreen");
 	}
 	
-	protected void DrawMultiplayerUnderlay()
+	protected void DrawMultiplayerUnderlay(double ticFrac)
 	{
+		if (!gl_proj || automapActive)
+			return;
 		
+		let landscape = Screen.GetWidth() >= Screen.GetHeight(),
+			window_aspect = 1.0 * Screen.GetWidth() / Screen.GetHeight(),
+			resolution = 960 * (landscape? window_aspect : 1./window_aspect, 1) /
+				(Screen.GetHeight()/480);
+		
+		gl_proj.CacheCustomResolution(resolution);
+		gl_proj.CacheFov(CPlayer.fov);
+		gl_proj.Reorient(_pos, (_angles.z, _angles.x, _angles.y));
+		gl_proj.BeginProjection();
+		
+		for (int i = 0; i < players.Size(); i++)
+		{
+			if (!playerInGame[i] || players[i] == CPlayer)
+				continue;
+			
+			let ply = players[i].mo;
+			if (!ply || !(ply is "DeltaPlayer"))
+				continue;
+			
+			gl_proj.ProjectActorPosPortal(ply, (0, 0, ply.height+3), ticFrac);
+			if (!gl_proj.IsInFront())
+				continue;
+			
+			viewport.FromHud();
+			let draw_pos = viewport.SceneToCustom(gl_proj.ProjectToNormal(),
+					resolution),
+				dist = gl_proj.Distance(),
+				trans = "\c-",
+				deltaPly = DeltaPlayer(ply),
+				maxRenderDist = 1500.,
+				targetAlpha = 1.,
+				targetScale = clamp(1 - (dist/maxRenderDist), 0., 1.);
+			
+			if (playersSeen.Find(i) == playersSeen.Size())
+			{
+				if (!CPlayer.mo.IsTeammate(ply))
+					continue;
+				
+				targetAlpha *= 0.25;
+			}
+			
+			if (deltaPly.IsCrouching())
+				targetAlpha *= 0.5;
+			
+			if (CPlayer.mo.IsTeammate(ply))
+			{
+				if (players[i].damageCount)
+					trans = "\c[DeltaRed]";
+				else if (deltaPly.InMissileState())
+					trans = "\c[DeltaYellow]";
+			}
+			else if (ply.health <= 0)
+				continue;
+			else
+				trans = "\c[DeltaRed]";
+			
+			string username = players[i].GetUserName();
+			let xOffset = smallFont.StringWidth(username, false) * 0.5 * targetScale,
+				yOffset = smallFont.GetHeight() * targetScale;
+			
+			Screen.DrawText(smallFont, Font.CR_UNTRANSLATED, draw_pos.x - xOffset,
+				draw_pos.y - yOffset, trans .. username,
+				DTA_VIRTUALWIDTHF, resolution.x,
+				DTA_VIRTUALHEIGHTF, resolution.y, DTA_KEEPRATIO, true,
+				DTA_Alpha, targetAlpha, DTA_ScaleX, targetScale, DTA_ScaleY, targetScale);
+		}
 	}
 	
 	protected void DrawMultiplayerOverlay()
@@ -41,7 +115,7 @@ extend class DeltaHud
 				continue;
 			
 			DrawMultiplayerHealth(DeltaPlayer(players[i].mo), (curX, curY));
-			curY += 24 * _universalScale.y;
+			curY += 34 * _universalScale.y;
 		}
 	}
 	
@@ -77,7 +151,7 @@ extend class DeltaHud
 					continue;
 				
 				DrawMultiplayerHealth(DeltaPlayer(players[i].mo), (curX, curY));
-				curY += 24 * _universalScale.y;
+				curY += 34 * _universalScale.y;
 			}
 		}
 		
@@ -344,7 +418,7 @@ extend class DeltaHud
 		DrawString(_consoleFont, userStr, pos + (32*_universalScale.x, 8*_universalScale.y),
 			scale: _universalScale/2);
 		
-		double healthPerc = DeltaUtil.Clamp(float(ply.Health) / ply.GetMaxHealth(), 0, 2);
+		double healthPerc = clamp(float(ply.Health) / ply.GetMaxHealth(), 0, 2);
 		Fill(ply.GetCharacterColor(), pos.X + 34*_universalScale.x, pos.Y + 19*_universalScale.y,
 			barWidth * min(1, healthPerc), barHeight, DI_SCREEN_LEFT_TOP);
 		Fill(ply.GetOverhealColor(), pos.X + 34*_universalScale.x, pos.Y + 19*_universalScale.y,

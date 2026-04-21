@@ -30,7 +30,8 @@ class RalseiPlayer : DeltaPlayer
 		DeltaPlayer.CharacterColor Color(0, 255, 0);
 		DeltaPlayer.OverhealColor Color(255, 255, 0);
 		
-		-PLAYERPAWN.MAKEFOOTSTEPS;
+		DeltaPlayer.FootstepType FOOTSTEP_FLUFF;
+		DeltaPlayer.VoiceClass "ralsei";
 	}
 	
 	States

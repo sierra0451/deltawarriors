@@ -9,18 +9,6 @@ class DeltaUtil
 		return a + ((b - a) * t);
 	}
 	
-	clearscope static double Clamp(double value, double min, double max)
-	{
-		if (max < min)
-		{
-			double temp = max;
-			max = min;
-			min = temp;
-		}
-		
-		return max(min, min(max, value));
-	}
-	
 	clearscope static int Sign(double value)
 	{
 		if (value < 0)
@@ -203,10 +191,7 @@ class DeltaHitscanGrazeChecker : LineTracer
 			return TRACE_STOP;
 		
 		let ply = DeltaPlayer(results.HitActor);
-		if (!ply)
-			return TRACE_Skip;
-		
-		if (ply != _actualHit && _grazed.Find(ply) == _grazed.Size())
+		if (ply && ply != _actualHit && _grazed.Find(ply) == _grazed.Size())
 		{
 			_grazed.Push(ply);
 			return TRACE_Continue;

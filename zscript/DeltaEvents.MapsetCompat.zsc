@@ -1,0 +1,62 @@
+extend class DeltaEvents
+{
+	protected string _curMapset; // using a string to make this more easily moddable
+	// Strings we'll be using out of the box:
+	// - default,
+	// - LegacyOfRust,
+	// - AncientAliens,
+	// - BTSX1,
+	// - BTSX2,
+	// - BTSX3,
+	// - Sunlust
+	
+	/*
+		methodology borrowed from SevHUD, code found here:
+		https://github.com/SeventhSentinel/sevhud/blob/master/zscript/SevHUD/SevHUD_mapset.zc
+	*/
+	protected void FetchMapset()
+	{
+		_curMapset = "default";
+		
+		string checksum;
+		
+		if (LevelInfo.MapExists("MAP01"))
+		{
+			checksum = LevelInfo.MapChecksum("MAP01");
+			
+			if (checksum == "bf34c34c5dfc8bb47228cc304f9a6748")
+				_curMapset = "LegacyOfRust";
+			else if (checksum == "ff9c6545037c5e5e27ce0dacd24cdd37")
+				_curMapset = "BTSX1";
+			else if (checksum == "067cf96073db3cc4a8d887ee240f88da")
+				_curMapset = "BTSX2";
+			else if (checksum == "4efe4658dc515d0eac6b5b11e4c98ae5")
+				_curMapset = "AncientAliens";
+		}
+		
+		if (_curMapset == "default")
+			return;
+		
+		SetUpMapStuff();
+	}
+	
+	protected virtual void SetUpMapStuff()
+	{
+		if (!level)
+			return;
+		
+		int num = level.levelNum;
+		
+		if (_curMapset == "AncientAliens" && num == 30)
+			Actor.Spawn("DeltaWeaponsAtEase");
+		else if (_curMapset == "BTSX1" && (num == 8 || num == 16 || num == 23 || num == 25))
+			Actor.Spawn("DeltaWeaponsAtEase");
+		else if (_curMapset == "BTSX2" && (num == 5 || num == 11 || num == 16 || num == 23 || num == 27))
+			Actor.Spawn("DeltaWeaponsAtEase");
+	}
+	
+	string GetCurrentMapset() const
+	{
+		return _curMapset;
+	}
+}

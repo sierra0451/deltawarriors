@@ -19,7 +19,6 @@ class KrisRevolverChargeShot : FastProjectile
 		+RIPPER
 		+NOEXTREMEDEATH
 		+BRIGHT
-		+ZDOOMTRANS
 		+SQUAREPIXELS
 		+FORCEXYBILLBOARD
 	}
@@ -53,9 +52,9 @@ class KrisRevolverChargeShotTrail : Actor
 	Default
 	{
 		Scale 0.5;
+		
 		+NOINTERACTION
 		+BRIGHT
-		+ZDOOMTRANS
 		+SQUAREPIXELS
 		+FORCEXYBILLBOARD
 	}

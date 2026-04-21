@@ -143,7 +143,7 @@ class KrisSmgGrenade : DeltaGrenade
 	{
 		Super.Explode();
 		
-		int dmgTaken = DeltaUtil.Clamp(-hitbox.health, 0, 100);
+		int dmgTaken = clamp(-hitbox.health, 0, 100);
 		double range = 110;
 		RadiusAttack(target, 250 + dmgTaken, range, 'KrisSmgGrenade',
 			RADF_THRUSTZ, range*0.2);
@@ -153,7 +153,7 @@ class KrisSmgGrenade : DeltaGrenade
 		if (dist > range || !CheckSight(target, SF_IGNOREVISIBILITY))
 			return;
 		
-		let damageMult = DeltaUtil.Clamp(1.2 - dist/range, 0, 1),
+		let damageMult = clamp(1.2 - dist/range, 0, 1),
 			dmg = ceil(25 * damageMult);
 		
 		target.DamageMobj(self, target, dmg, 'KrisSmgGrenade', DMG_THRUSTLESS);

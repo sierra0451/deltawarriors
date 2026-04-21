@@ -13,6 +13,17 @@ enum DeltaSoundChannels
 	CHAN_MOVEMENT = 8		// things like grinding sound when kris is sliding
 }
 
+enum DeltaVoicePriority
+{
+	VOX_LEAST_IMPORTANT,
+	VOX_BREATHING,
+	VOX_MOVEMENT,
+	VOX_PAIN,
+	VOX_DIALOGUE,
+	VOX_DEATH,
+	VOX_MOST_IMPORTANT
+}
+
 enum DeltaMessageType
 {
 	MSG_TYPE_NORMAL,		// uses normal border
@@ -21,16 +32,16 @@ enum DeltaMessageType
 
 enum DeltaMessageState
 {
-	MSG_STATE_INITDELAY,	// initial delay before a message shows
-	MSG_STATE_TYPING,		// actively typing
-	MSG_STATE_HOLD			// whole message is shown
+	MSG_STATE_INITDELAY = 0,	// initial delay before a message shows
+	MSG_STATE_TYPING = 1,		// actively typing
+	MSG_STATE_HOLD_INPUT = 2,	// message is finished, awaiting player input
+	MSG_STATE_HOLD_SCRIPT = 3	// message is finished, awaiting dismissal from script
 }
 
 enum DeltaMessageInputResponse
 {
 	MSG_IGNORE,				// ignore input
-	MSG_SKIP,				// skip to end of message
-	MSG_FINISH				// finish message, move on to next thing
+	MSG_SKIP				// skip to end of message
 }
 
 enum DeltaTpResult
@@ -51,6 +62,29 @@ enum HeartbeatSetting
 	HB_OFF,
 	HB_ON,
 	HB_KRIS_ONLY
+}
+
+enum DeathCounterType
+{
+	DC_OFF,
+	DC_LEVEL,
+	DC_ENTIRE_RUN
+}
+
+enum SpeedrunStats
+{
+	SPD_OFF,
+	SPD_TIMER,
+	SPD_SPEED,
+	SPD_BOTH
+}
+
+enum LevelStats
+{
+	LVLSTATS_OFF,
+	LVLSTATS_INFO,
+	LVLSTATS_KILLS_SECRETS,
+	LVLSTATS_ALL,
 }
 
 enum DeltaRecoilType
@@ -79,4 +113,12 @@ enum DeltaWeaponAnimType
 	DELTA_WEAPONANIM_MELEE,
 	DELTA_WEAPONANIM_GUN,
 	DELTA_WEAPONANIM_MAGIC
+}
+
+enum DeltaFootstepType
+{
+	FOOTSTEP_NONE,
+	FOOTSTEP_BOOTS,
+	FOOTSTEP_FLUFF,
+	FOOTSTEP_HOOVES
 }

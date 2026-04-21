@@ -24,6 +24,7 @@ class DeltaPlayer : PlayerPawn abstract
 	protected int jumpBuffer, crouchBuffer, airBobTics, hugTimer;
 	protected double customBobPerc;
 	protected int damageTics; 						// invulnerability frames, essentially
+	protected int lastDamageTaken;
 	protected int deathTimer; 						// used for first person death animation and for "Press E to respawn" prompt
 	protected double deathPitchFP, deathPitchTP;
 	protected DeltaCrouchState crouchState;
@@ -45,11 +46,16 @@ class DeltaPlayer : PlayerPawn abstract
 	protected double angleDiff, oldAngle;
 	
 	protected state
-		SpawnGunState,		SpawnMeleeState,		SpawnMagicState,
-		SeeGunState,		SeeMeleeState, 			SeeMagicState,
-		PainGunState,		PainMeleeState, 		PainMagicState,
-		AirGunState,		AirMeleeState,			AirMagicState,
-		AirPainGunState,	AirPainMeleeState,		AirPainMagicState;
+		SpawnGunState,				SpawnMeleeState,		SpawnMagicState,
+		SeeGunState,				SeeMeleeState, 			SeeMagicState,
+		PainGunState,				PainMeleeState, 		PainMagicState,
+		MissileGunState,			MissileMeleeState, 		MissileMagicState,
+		MissileGunNoFlashState,		FinishMissileGunState,
+		AirGunState,				AirMeleeState,			AirMagicState,
+		AirMissileGunState,			AirMissileMeleeState, 	AirMissileMagicState,
+		AirMissileGunNoFlashState,	AirFinishMissileGunState,
+		AirPainGunState,			AirPainMeleeState,		AirPainMagicState,
+		AirDeathState;
 	protected DeltaWeaponAnimType lastAnimType;
 	
 	protected string
@@ -113,8 +119,11 @@ class DeltaPlayer : PlayerPawn abstract
 	{
 		Health 100;
 		Player.MaxHealth 100;
-		PainChance 256;
+		Radius 16;
+		Speed 0.8;
+		Mass 100;
 		
+		PainChance 256;
 		Player.MugShotMaxHealth -1;
 		
 		Player.DisplayName "DeltaPlayer";
@@ -157,10 +166,17 @@ class DeltaPlayer : PlayerPawn abstract
 		DeltaPlayer.BackAtYouObituary "$OBIT_DELTA_KPARRYBACK";
 		DeltaPlayer.ParryObituary "$OBIT_DELTA_KPARRY";
 		
-		+PLAYERPAWN.NOTHRUSTWHENINVUL
+		DeltaPlayer.FootstepType FOOTSTEP_NONE;
+		DeltaPlayer.FootstepTime 10;
+		DeltaPlayer.VoiceClass "";
+		DeltaPlayer.JumpGruntChance 0.; // 0% chance by default, meant to get
+										// people to change this
+		
 		+NOICEDEATH
 		+FLOORCLIP
-		+DONTGIB					// prevents us from being turned into a pile of flattened meat by crushers
+		+DONTGIB
+		+SQUAREPIXELS
+		+PLAYERPAWN.NOTHRUSTWHENINVUL
 	}
 	
 	States
@@ -217,6 +233,7 @@ class DeltaPlayer : PlayerPawn abstract
 		crouchFactor = 1;
 		
 		Super.BeginPlay();
+		
 		// load icon textures before we do (most of) the rest of our initialization
 		_offhandIconId = TexMan.CheckForTexture(offhandIcon);
 		_characterIconId = TexMan.CheckForTexture(characterIcon);
@@ -232,12 +249,23 @@ class DeltaPlayer : PlayerPawn abstract
 		SeeGunState = FindState("SeeGun");
 		SeeMeleeState = FindState("SeeMelee");
 		SeeMagicState = FindState("SeeMagic");
+		MissileGunState = FindState("MissileGun");
+		MissileMeleeState = FindState("MissileMelee");
+		MissileMagicState = FindState("MissileMagic");
+		MissileGunNoFlashState = FindState("MissileGunNoFlash");
+		FinishMissileGunState = FindState("FinishMissileGun");
+		AirMissileGunState = FindState("AirMissileGun");
+		AirMissileMeleeState = FindState("AirMissileMelee");
+		AirMissileMagicState = FindState("AirMissileMagic");
+		AirMissileGunNoFlashState = FindState("AirMissileGunNoFlash");
+		AirFinishMissileGunState = FindState("AirFinishMissileGun");
 		PainGunState = FindState("PainGun");
 		PainMeleeState = FindState("PainMelee");
 		PainMagicState = FindState("PainMagic");
 		AirPainGunState = FindState("AirPainGun");
 		AirPainMeleeState = FindState("AirPainMelee");
 		AirPainMagicState = FindState("AirPainMagic");
+		AirDeathState = FindState("AirDeath");
 	}
 	
 	override void PostBeginPlay()
@@ -249,6 +277,12 @@ class DeltaPlayer : PlayerPawn abstract
 		{
 			fullHeight = _originalHeight;
 			height = _originalHeight;
+			
+			if (!netgame)
+			{
+				CVar.FindCVar("data_delta_currentDeathsSngSeg").SetInt(0);
+				LevelLocals.MakeAutosave();
+			}
 		}
 		
 		coyoteTimer = 0;
@@ -268,7 +302,6 @@ class DeltaPlayer : PlayerPawn abstract
 		_turn = 0;
 		_oldTurn = 0;
 		_targetRoll = 0;
-		
 		SetUpLegs();
 	}
 	
@@ -293,6 +326,9 @@ class DeltaPlayer : PlayerPawn abstract
 		
 		_targetRoll = 0;
 		A_Overlay(PSP_LEGS, "SpawnLegs");
+		
+		if (!netgame)
+			CVar.FindCVar("data_delta_currentDeathsLevel").SetInt(0);
 	}
 	
 	override void Tick()
@@ -305,6 +341,9 @@ class DeltaPlayer : PlayerPawn abstract
 		if (IsPredicting())
 			return;
 		
+		TickFootsteps();
+		TickVoice();
+		
 		if (player != null && player.mo == self && CanCrouch() && player.playerstate != PST_DEAD)
 			Height = FullHeight * crouchFactor;
 		else if (health > 0)
@@ -313,7 +352,8 @@ class DeltaPlayer : PlayerPawn abstract
 	
 	virtual void AnimateDeath()
 	{
-		let deathState = ResolveState("Death");
+		let deathState = IsGrounded()? ResolveState("Death")
+			: ResolveState("AirDeath");
 		if (curState.InStateSequence(deathState)
 			|| curState.InStateSequence(ResolveState("FinishDeath")))
 			return;
@@ -388,7 +428,7 @@ class DeltaPlayer : PlayerPawn abstract
 			else
 				_turn = 0;
 			
-			_turn = DeltaUtil.Clamp(_turn + angleDiff * 0.2, -MAX_TURN, MAX_TURN);
+			_turn = clamp(_turn + angleDiff * 0.2, -MAX_TURN, MAX_TURN);
 		}
 		
 		player.onGround = (pos.z <= floorz) || bOnMobj || bMBFBouncer || (player.cheats & CF_NOCLIP2);
@@ -454,21 +494,38 @@ class DeltaPlayer : PlayerPawn abstract
 		}
 	}
 	
+	override int TakeSpecialDamage(Actor inflictor, Actor source, int damage, Name mod)
+	{
+		let oldDmg = Super.TakeSpecialDamage(inflictor, source, damage, mod);
+		
+		if (!source || source.player)
+			return oldDmg;
+		
+		let dmg = damage * 1.,
+			healthBeforeDmg = Health + lastDamageTaken,
+			perc = healthBeforeDmg * 1. / GetMaxHealth(),
+			maxScalePerc = 0.667;
+		
+		if (perc <= maxScalePerc)
+			dmg *= DeltaUtil.Lerp(0.5, 1, perc / maxScalePerc);
+		if (perc >= 0.5 && dmg >= Health)
+			dmg = Health - 1;
+		
+		return floor(dmg);
+	}
+	
 	override int DamageMobj(Actor inflictor, Actor source, int damage, Name mod, int flags, double angle)
 	{
 		bool ignoreIFrames = false;
 		
 		if (source && source.player)
 			ignoreIFrames = true;
-		else
+		else foreach (damageType : DAMAGE_TYPES_IGNORE_IFRAMES)
 		{
-			foreach (damageType : DAMAGE_TYPES_IGNORE_IFRAMES)
+			if (mod == damageType)
 			{
-				if (mod == damageType)
-				{
-					ignoreIFrames = true;
-					break;
-				}
+				ignoreIFrames = true;
+				break;
 			}
 		}
 		
@@ -481,12 +538,13 @@ class DeltaPlayer : PlayerPawn abstract
 		if (damageTics > 0 && !ignoreIFrames)
 			return 0;
 		
-		int oldHealth = health;
 		int finalDamage = Super.DamageMobj(inflictor, source, damage, mod, flags, angle);
+		lastDamageTaken += finalDamage;
 		
 		if (finalDamage > 0 && Health > 0)
 		{
 			A_StartSound("delta/hurt", CHAN_HEALTH_SOUNDS, 0, 1, 0.5);
+			VoiceDamage(finalDamage, mod);
 			
 			if (!ignoreIFrames)
 				damageTics = (inflictor && (inflictor.bIsPuff || inflictor.bIsMonster)) ? -1 : DAMAGE_IFRAMES;
@@ -496,20 +554,26 @@ class DeltaPlayer : PlayerPawn abstract
 			else if (mod == 'Drowning')
 				A_StartSound("delta/drown", CHAN_AUTO);
 			
-			double ang = (source && inflictor != self) ?
+			double ang = (source && inflictor && inflictor != self) ?
 				DeltaAngle(self.angle, AngleTo(inflictor)) + cfrandom(-15, 15)
 				: 0;
 			DamageFlinch(ang, finalDamage, flags);
 		}
 		
 		if (finalDamage > 0 && player)
-			player.damageCount = DeltaUtil.Clamp(player.damageCount, 10, 25);
+			player.damageCount = clamp(player.damageCount, 10, 25);
 		return finalDamage;
 	}
 	
 	override void Die(Actor source, Actor inflictor, int dmgFlags, Name MeansOfDeath)
 	{
 		Super.Die(source, inflictor, dmgFlags, MeansOfDeath);
+		
+		if (!netgame)
+		{
+			CVar.FindCVar("data_delta_currentDeathsLevel").SetInt(data_delta_currentDeathsLevel + 1);
+			CVar.FindCVar("data_delta_currentDeathsSngSeg").SetInt(data_delta_currentDeathsSngSeg + 1);
+		}
 		
 		DeltaExtraDeathStuff(); // any extra death functions can be called here
 		A_StartDeath();
@@ -530,6 +594,7 @@ class DeltaPlayer : PlayerPawn abstract
 		{
 			A_StopSound();
 			A_StartSound("delta/hurt", CHAN_HEALTH_SOUNDS);
+			VoiceDeath(MeansOfDeath);
 		}
 		else
 		{
@@ -539,7 +604,6 @@ class DeltaPlayer : PlayerPawn abstract
 			vel.z += frandom[explodeLaunch](10, 15);
 		}
 		
-		//A_Log("vel: " .. Vel);
 		deathTimer = 0;
 		deathPitchFP = deathPitchTP = Pitch;
 	}
@@ -675,7 +739,12 @@ class DeltaPlayer : PlayerPawn abstract
 				coyoteTimer = COYOTE_TIME + 1;
 				
 				if (!IsPredicting())
+				{
 					A_StartSound("*jump", CHAN_BODY);
+					
+					if (frandom(0., 1.) <= jumpGruntChance)
+						DoSpeak("jump_grunt");
+				}
 			}
 		}
 	}
@@ -689,8 +758,7 @@ class DeltaPlayer : PlayerPawn abstract
 		
 		let buttons = player.cmd.buttons;
 		
-		if (CanCrouch() && player.health > 0 && level.IsCrouchingAllowed()
-			&& !totallyfrozen)
+		if (CanCrouch() && player.health > 0 && !totallyFrozen)
 		{
 			int crouchDir = player.crouching;
 			
@@ -712,10 +780,10 @@ class DeltaPlayer : PlayerPawn abstract
 				CrouchMove(-2);
 			}
 		}
-		else if (!totallyfrozen)
+		else if (!totallyFrozen)
 			DeltaUncrouch();
 		
-		player.crouchOffset = -(ViewHeight) * (1 - crouchFactor);
+		player.crouchOffset = ViewHeight * (crouchFactor - 1);
 	}
 	
 	virtual void DeltaUncrouch()
@@ -773,8 +841,6 @@ class DeltaPlayer : PlayerPawn abstract
 	override bool CanCollideWith(Actor other, bool passive)
 	{
 		if (other.bIsMonster && lunging && other != lungeTarget)
-			return false;
-		if (other.bMissile && damageTics)
 			return false;
 		if (other.player)
 		{
@@ -972,15 +1038,26 @@ class DeltaPlayer : PlayerPawn abstract
 				break;
 		}
 		
-		if (tics != -1)
-			return;
+		let fwd = min(1, abs(player.cmd.forwardMove / 12800.)),
+			side = min(1, abs(player.cmd.sideMove / 10240.)),
+			move = max(fwd, side);
 		
 		int newTics = 4;
+		double
+			mult = 1,
+			maxMult = 8;
 		
-		if (!(player.cmd.buttons & BT_RUN))
-			newTics *= 2;
+		mult = move ~== 0? maxMult : (1. / move);
+		
 		if (IsCrouching())
-			newTics *= 2;
+			mult *= 2;
+		if (mult > maxMult)
+			mult = maxMult;
+		
+		newTics *= mult;
+		
+		if (tics != -1 && tics <= newTics)
+			return;
 		
 		A_SetTics(newTics);
 	}
@@ -1064,6 +1141,62 @@ class DeltaPlayer : PlayerPawn abstract
 			SetStateSafe(A_DeltaGetState("Air"));
 	}
 	
+	static void SendMapMessage(int playerNum, string message)
+	{
+		EventHandler.SendInterfaceEvent(playerNum, "MessageIs_" .. message);
+	}
+	
+	static void DismissMapMessage(int playerNum)
+	{
+		EventHandler.SendInterfaceEvent(playerNum, "DismissMapMessage");
+	}
+	
+	static void SendCannedMessage(int playerNum, int index)
+	{
+		string message;
+		
+		switch (index)
+		{
+			case 0:
+				//message = StringTable.Localize("$DW_MOVETUTORIAL");
+				message = "Press %s\c- to move.%%%%";
+				
+				int forward = Bindings.GetKeysForCommand("+forward"),
+					left = Bindings.GetKeysForCommand("+moveleft"),
+					back = Bindings.GetKeysForCommand("+back"),
+					right = Bindings.GetKeysForCommand("+moveright");
+				
+				Array<int> keys;
+				keys.Push(forward);
+				keys.Push(left);
+				keys.Push(back);
+				keys.Push(right);
+				
+				let keyStr = KeyBindings.NameAllKeys(keys, false);
+				Array<string> keyStrings;
+				
+				keyStr.Split(keyStrings, ",");
+				keyStr = "";
+				
+				foreach(keyString : keyStrings)
+				{
+					keyString = "\c[DeltaHighlight]" .. keyString .. "\c-";
+					
+					if (keyStr != "")
+						keyStr = keyStr .. "," .. keyString;
+					else
+						keyStr = keyString;
+				}
+				
+				message = String.Format(message, keyStr); 
+				break;
+			default:
+				break;
+		}
+		
+		DeltaPlayer.SendMapMessage(playerNum, message);
+	}
+	
 	action state A_DeltaGetState(string prefix)
 	{
 		return invoker.DeltaGetState(prefix);
@@ -1089,8 +1222,7 @@ class DeltaPlayer : PlayerPawn abstract
 		if (health <= 0)
 			return;
 		
-		bool doingMoveInput = player ? (player.bot ? vel.xy.LengthSquared() > 30 :
-			(player.buttons & (BT_MOVERIGHT | BT_MOVELEFT | BT_BACK | BT_FORWARD)))
+		bool doingMoveInput = player ? (player.cmd.forwardMove || player.cmd.sideMove)
 			: false;
 		
 		if (coyoteTimer <= COYOTE_TIME)
@@ -1112,7 +1244,7 @@ class DeltaPlayer : PlayerPawn abstract
 			amount = 0;
 		
 		double factor = G_SkillPropertyFloat(SKILLP_AmmoFactor) * sv_ammofactor;
-		tensionPoints = DeltaUtil.Clamp(amount, 0, maxTensionPoints);
+		tensionPoints = clamp(amount, 0, maxTensionPoints);
 		
 		if (resetTimer)
 			tensionDrainTimer = ceil(DRAIN_TIMER_START * factor);
@@ -1218,7 +1350,7 @@ class DeltaPlayer : PlayerPawn abstract
 			_maxHealth = GetMaxHealth(),
 			maxForHeartbeat = _maxHealth * 0.4,
 			minForHeartbeat = _maxHealth * 0.2,
-			heartbeatPerc = DeltaUtil.Clamp(
+			heartbeatPerc = clamp(
 				(maxForHeartbeat - Health) / (maxForHeartbeat - minForHeartbeat - 1), 0, 1);
 		bool heartbeatCvar = (cl_delta_heartbeatSound == HB_ON
 			|| (cl_delta_heartbeatSound == HB_KRIS_ONLY && self is "KrisPlayer"));
@@ -1336,8 +1468,13 @@ class DeltaPlayer : PlayerPawn abstract
 	{
 		if (damageTics < 0)
 			damageTics = max(1, DAMAGE_IFRAMES) - 1; // minus one because we take a tic to initialize i-frames
-		else if (damageTics > 0)
-			damageTics--;
+		else 
+		{
+			lastDamageTaken = 0;
+			
+			if (damageTics > 0)
+				damageTics--;
+		}
 	}
 	
 	protected bool RalseiIsHugging()
@@ -1468,7 +1605,9 @@ class DeltaPlayer : PlayerPawn abstract
 		
 		if (IsFriend(ac))
 			_crosshairState = DELTA_XHR_FRIENDLY;
-		else if (IsHostile(ac))
+		else if (IsHostile(ac) && !ac.bShadow)
+			// TODO: do more thorough crosshair check, let trace pass through
+			// shadow enemies instead of just being neutral on them
 			_crosshairState = DELTA_XHR_ENEMY;
 		else
 			_crosshairState = DELTA_XHR_NEUTRAL;
@@ -1604,6 +1743,11 @@ class DeltaPlayer : PlayerPawn abstract
 		return offhandTpCost;
 	}
 	
+	override bool CanCrouch()
+	{
+		return level.IsCrouchingAllowed() && Super.CanCrouch();
+	}
+	
 	clearscope bool IsCrouching(bool fullyOnly = false)
 	{
 		if (!CanCrouch())
@@ -1629,7 +1773,7 @@ class DeltaPlayer : PlayerPawn abstract
 	
 	clearscope virtual bool CanLunge()
 	{
-		return !IsCrouching() && !(player.cmd.buttons & BT_BACK);
+		return !IsCrouching() && (player.cmd.forwardMove >= 0);
 	}
 	
 	clearscope bool IsGrounded()

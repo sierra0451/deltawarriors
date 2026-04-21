@@ -75,7 +75,7 @@ extend class DeltaHud
 			double curX = -w - _hBorder,
 				curY = i*(h + 5*_universalScale.y) + _vBorder,
 				perc = double(curr.Health) / curr.GetMaxHealth();
-			perc = DeltaUtil.Clamp(perc, 0, 1);
+			perc = clamp(perc, 0, 1);
 			
 			DrawTexture(_bossBarBack, (curX, curY),
 				DI_ITEM_LEFT_TOP | DI_SCREEN_RIGHT_TOP, scale: _universalScale);

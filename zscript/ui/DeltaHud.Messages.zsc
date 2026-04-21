@@ -1,0 +1,41 @@
+extend class DeltaHud
+{
+	DeltaMessageHandler messageHandler;
+	
+	virtual void SetUpMessages()
+	{
+		messageHandler = DeltaMessageHandler.Create();
+	}
+	
+	virtual void TickMessages()
+	{
+		messageHandler.OnTick();
+	}
+	
+	virtual void DrawMessages(double ticFrac)
+	{
+		messageHandler.Draw(ticFrac);
+	}
+	
+	virtual void AddMessage(string message)
+	{
+		messageHandler.AddMessage(
+			DeltaMessageBox.Create(message,
+				cornerTex: TexMan.CheckForTexture("DRDWBOR1"),
+				sideTex: TexMan.CheckForTexture("DRDWSIDE"))
+		);
+	}
+	
+	virtual void DismissMessage()
+	{
+		if (!messageHandler || !messageHandler.message)
+			return;
+		
+		string msg = messageHandler.message.GetMessage();
+		
+		if (msg.IndexOf("%%") == -1)
+			return;
+		
+		messageHandler.NextMessage();
+	}
+}

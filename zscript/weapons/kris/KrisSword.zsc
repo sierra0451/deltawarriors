@@ -40,11 +40,8 @@ class KrisSword : DeltaWeapon
 			#### # 0 A_SwapWeapon;
 			Stop;
 		Select:
-			TNT1 A 2
-			{
-				A_StartRaiseWeapon();
-				A_StartSound("delta/sword/deploy", CHAN_WEAPON);
-			}
+			TNT1 A 1 A_StartRaiseWeapon();
+			TNT1 A 1 A_StartSound("delta/sword/deploy", CHAN_WEAPON);
 			DKWD A 2 A_DeltaWeaponReady(WRF_NOBOB | WRF_NOSWITCH);
 			DKWD B 2
 			{

@@ -1,4 +1,4 @@
-Map TITLEMAP lookup "TITLEMAP_LABEL"
+map TITLEMAP lookup "TITLEMAP_LABEL"
 {
 	EventHandlers = "DeltaTitleEvents"
 	Music = "mus_deltaTitle"

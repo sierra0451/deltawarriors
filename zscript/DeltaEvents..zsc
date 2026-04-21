@@ -16,15 +16,25 @@ class DeltaEvents : EventHandler
 	DeltaDamageEvent[300] damageEvents;
 	Actor[100] reviving;
 	
+	protected Le_GlScreen	gl_proj;
+	protected Le_Viewport	viewport;
+	
+	override void OnRegister()
+	{
+		gl_proj = new("Le_GlScreen");
+	}
+	
 	override void WorldLoaded(WorldEvent e)
 	{
 		EnableNetworking(true);
+		FetchMapset();
 	}
 	
 	override void WorldTick()
 	{
 		ReviveTick();
 		DamageEventTick();
+		NametagTick();
 	}
 	
 	protected void DamageEventTick()
@@ -92,39 +102,82 @@ class DeltaEvents : EventHandler
 		}
 	}
 	
-	override void WorldHitscanFired(WorldEvent e)
+	protected void NametagTick()
 	{
-		let diff = level.Vec3Diff(e.attackPos, e.damagePosition),
-			dir = diff.Unit(),
-			dist = diff.Length();
+		int c = consolePlayer;
 		
-		if (!(e.AttackLineFlags & LAF_ISMELEEATTACK))
+		if (!playerInGame[c] || !players[c].camera)
+			return;
+		
+		EventHandler.SendInterfaceEvent(c, "DeltaClearPlayersSeen");
+		
+		for (int j = 0; j < players.Size(); j++)
 		{
-			let fwd = DeltaUtil.GetActorForward(e.thing),
-				right = DeltaUtil.GetActorRight(e.thing, true);
+			if (!playerInGame[j] || c == j || !players[j].mo)
+				continue;
+			if (!players[c].camera.CheckSight(players[j].mo, SF_IGNOREVISIBILITY))
+				continue;
 			
-			let pos = e.attackPos.PlusZ(-2);
-			pos = level.Vec3Offset(pos, right * 2);
-			pos = level.Vec3Offset(pos, fwd * max(0, (e.thing.vel dot fwd) * 2));
-			
-			FSpawnParticleParams p;
-			int count = 0;
-			p.color1 = "ff c0 40";
-			p.flags = SPF_FULLBRIGHT;
-			p.size = 4;
-			p.startAlpha = 1;
-			p.fadeStep = -1;
-			
-			for (double i = e.thing.radius; i < min(dist, PLAYERMISSILERANGE);
-				i += 2.5)
-			{
-				p.pos = level.Vec3Offset(pos, dir * i);
-				p.lifetime = 3 + (count/50);
-				level.SpawnParticle(p);
-				count++;
-			}
+			EventHandler.SendInterfaceEvent(c, "DeltaSeenPlayer", j);
+		}
+	}
+	
+	override bool WorldHitscanPreFired(WorldEvent e)
+	{
+		if (e.AttackLineFlags & LAF_ISMELEEATTACK)
+			return false;
+		
+		let fwd = DeltaUtil.GetActorForward(e.thing),
+			right = DeltaUtil.GetActorRight(e.thing, true);
+		
+		let ang = e.attackAngle,
+			pitch = e.attackPitch,
+			dir = (cos(pitch) * cos(ang), cos(pitch) * sin(ang), sin(-pitch));
+		
+		let offsetUp = e.thing.height/2. + e.attackZ - 2;
+		if (e.thing.player)
+			offsetUp += PlayerPawn(e.thing).AttackZOffset;
+		
+		let pos = e.thing.pos.PlusZ(offsetUp),
+			offsetRight = e.attackOffsetSide + 2,
+			offsetFwd = (e.attackOffsetForward + max(0, (e.thing.vel dot fwd) * 2));
+		
+		pos = level.Vec3Offset(pos, right * offsetRight);
+		pos = level.Vec3Offset(pos, fwd * offsetFwd);
+		
+		let dist = e.attackDistance;
+		FLineTraceData data;
+		
+		if (e.thing.LineTrace(ang, dist, pitch, offsetZ: offsetUp,
+			offsetForward: offsetFwd, offsetSide: offsetRight, data: data))
+		{
+			dist = data.Distance;
 		}
 		
+		FSpawnParticleParams p;
+		int count = 0;
+		p.color1 = "ff c0 40";
+		p.flags = SPF_FULLBRIGHT;
+		p.size = 4;
+		p.startAlpha = 1;
+		p.fadeStep = -1;
+		
+		for (double i = e.thing.radius; i < dist; i += 2.5)
+		{
+			p.pos = level.Vec3Offset(pos, dir * i);
+			
+			if (!level.IsPointInLevel(p.pos))
+				break;
+			
+			p.lifetime = 3 + (count/50);
+			level.SpawnParticle(p);
+			count++;
+		}
+		return false;
+	}
+	
+	override void WorldHitscanFired(WorldEvent e)
+	{
 		let check = new('DeltaHitscanGrazeChecker');
 		if (!check)
 			return;
@@ -142,6 +195,7 @@ class DeltaEvents : EventHandler
 			check._grazed[i].AddTension(grazeAmount * check._grazed[i].GetGrazeMultiplier(), true);
 			check._grazed[i].A_StartSound("delta/graze", 5, 0);
 		}
+		return;
 	}
 	
 	override void WorldThingRevived(WorldEvent e)
@@ -210,6 +264,7 @@ class DeltaEvents : EventHandler
 		}
 		
 		level.SetFrozen(true);
+		S_ChangeMusic("", force: true);
 		S_StartSound("delta/hurt", CHAN_AUTO);
 		
 		for (int i = 0; i < MAXPLAYERS; i++)
@@ -217,7 +272,7 @@ class DeltaEvents : EventHandler
 			if (!playerInGame[i] || !players[i].mo)
 				continue;
 			
-			EventHandler.SendInterfaceEvent(i, "Died",
+			EventHandler.SendInterfaceEvent(i, "DeltaAllPlayersDead",
 				Cvar.GetCvar("prgr_delta_diedFirstTime").GetBool());
 		}
 	}
@@ -232,10 +287,39 @@ class DeltaEvents : EventHandler
 		EventHandler.SendInterfaceEvent(e.playerNumber, "DeltaResetHUD");
 	}
 	
+	override void CheckReplacement(ReplaceEvent e)
+	{
+		if (_curMapset == "")
+			FetchMapset();
+		
+		if (_curMapset ~== "LegacyOfRust")
+		{
+			if (e.replacee is "PlasmaRifle")
+				e.replacement = "TempIncinerator";
+			else if (e.replacee is "BFG9000")
+				e.replacement = "TempCalamityBlade";
+			else if (e.replacee is "Cell")
+				e.replacement = "ID24Fuel";
+			else if (e.replacee is "CellPack")
+				e.replacement = "ID24FuelTank";
+		}
+		else
+		{
+			if (e.replacee is "PlasmaRifle")
+				e.replacement = "TempPlasmaRifle";
+			else if (e.replacee is "BFG9000")
+				e.replacement = "TempBFG9000";
+		}
+	}
+	
 	override void InterfaceProcess(ConsoleEvent e)
 	{
-		if (e.IsManual || !(statusBar is "DeltaHud")) return;
+		if (e.IsManual)
+			return;
+		
 		let hud = DeltaHud(statusBar);
+		if (!hud)
+			return;
 		
 		if (e.name ~== "DeltaResetHUD")
 			hud.ResetHUD();
@@ -255,8 +339,32 @@ class DeltaEvents : EventHandler
 		}
 		else if (e.name ~== "DeltaAllPlayersDead")
 		{
-			
+			bool firstTime = e.args[0];
+			hud.StartDeathSequence(firstTime);
 		}
+		else if (e.name ~== "DismissMapMessage")
+		{
+			hud.DismissMessage();
+		}
+		else if (e.name.Left(10) == "MessageIs_")
+		{
+			let msg = e.name.Mid(10);
+			hud.AddMessage(msg);
+		}
+		else if (e.name ~== "DeltaSeenPlayer")
+			hud.playersSeen.Push(e.args[0]);
+		else if (e.name ~== "DeltaClearPlayersSeen")
+			hud.playersSeen.Clear();
+	}
+	
+	override void RenderUnderlay(RenderEvent e)
+	{
+		if (!(statusBar is "DeltaHud"))
+			return;
+		
+		let hud = DeltaHud(statusBar);
+		hud._pos = e.viewPos;
+		hud._angles = (e.viewPitch, e.viewRoll, e.viewAngle);
 	}
 	
 	virtual void PlayerGrazed(GrazeEvent e)
@@ -267,6 +375,50 @@ class DeltaEvents : EventHandler
 				"DeltaPlayerGraze",
 				e.grazeSource ? e.grazeSource.GetNetworkID() : 0);
 		}
+	}
+}
+
+class DeltaForceClass : EventHandler
+{
+	class<DeltaPlayer> targetPlayer;
+	
+	override void OnRegister()
+	{
+		targetPlayer = GetPlayerClass();
+		if (!targetPlayer)
+			return;
+		
+		Console.Printf("target player class is " .. targetPlayer.GetClassName());
+	}
+	
+	override void PlayerEntered(PlayerEvent e)
+	{
+		let ply = players[e.playerNumber];
+		
+		if (!ply || ply.cls == targetPlayer)
+			return;
+		
+		Console.Printf("player entering as wrong class!");
+		let newPawn = PlayerPawn(Actor.Spawn(targetPlayer, ply.mo.pos)),
+			oldPawn = ply.mo;
+		newPawn.player = ply;
+		ply.cls = targetPlayer;
+		ply.mo = newPawn;
+		ply.camera = ply.mo;
+		oldPawn.Destroy();
+	}
+	
+	virtual class<DeltaPlayer> GetPlayerClass()
+	{
+		return null;
+	}
+}
+
+class DeltaForceKris : DeltaForceClass
+{
+	override class<DeltaPlayer> GetPlayerClass()
+	{
+		return "KrisPlayer";
 	}
 }
 

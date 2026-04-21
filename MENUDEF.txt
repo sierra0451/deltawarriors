@@ -87,12 +87,14 @@ AddOptionMenu "OptionsMenu"
 AddOptionMenu "SoundOptions"
 {
 	Title "$MENU_AUDIO_HEADER"
+	
+	StaticText ""
+	Option "$MENU_CHAR_VOICES", "cl_delta_voice", "YesNo"
 }
 
 OptionMenu "DeltaOptions"
 {
 	Title "$MENU_OPTIONS_HEADER"
-	
 	StaticText "$MENU_OPTIONS_DESC", "DeltaMenuHeader"
 	StaticText ""
 	
@@ -116,7 +118,6 @@ OptionMenu "DeltaOptions"
 OptionMenu "DeltaControls"
 {
 	Title "$MENU_CTRL_HEADER"
-	
 	StaticText "$MENU_CTRL_DESC", "DeltaMenuHeader"
 	StaticText ""
     
@@ -150,7 +151,6 @@ OptionMenu "DeltaControls"
 OptionMenu "DeltaDisplayOptions"
 {
 	Title "$MENU_DISPLAY_HEADER"
-	
 	StaticText "$MENU_DISPLAY_DESC", "DeltaMenuHeader"
 	StaticText ""
 	
@@ -202,8 +202,10 @@ OptionMenu "DeltaDisplayOptions"
 OptionMenu "DeltaPlayerOptions"
 {
 	Title "$MENU_PLAYER_HEADER"
-	
 	StaticText "$MENU_PLAYER_DESC", "DeltaMenuHeader"
+	StaticText ""
+	
+	TextField "$MENU_PLAYER_NAME", "name"
 	StaticText ""
 	
 	Option "$MENU_CHANGE_SOUL_COLOR", "cl_delta_changeSoulColor", "YesNo"

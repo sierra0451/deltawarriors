@@ -89,14 +89,7 @@ class DeltaWeaponPickup : Weapon
 		return GetDefaultByType(weap).CanPickup(toucher);
 	}
 	
-	override void AttachToOwner(Actor other)
-	{
-		let weap = GetWeapon();
-		if (!weap)
-			return;
-		
-		other.GiveInventoryType(weap);
-	}
+	override void AttachToOwner(Actor other) { }
 }
 
 // Doom replacers
@@ -176,11 +169,13 @@ class TempRocketLauncher : DeltaWeapon replaces RocketLauncher
 {
 	Default
 	{
+		Inventory.PickupMessage "$GOTLAUNCHER";
 		Weapon.SelectionOrder 2500;
 		Weapon.AmmoUse 1;
 		Weapon.AmmoGive 2;
 		Weapon.AmmoType "RocketAmmo";
-		Inventory.PickupMessage "$GOTLAUNCHER";
+		DeltaWeapon.Crosshair "DRRCKRET";
+		
 		Tag "$TAG_ROCKETLAUNCHER";
 		
 		+WEAPON.NOAUTOFIRE
@@ -218,15 +213,17 @@ class TempRocketLauncher : DeltaWeapon replaces RocketLauncher
 	}
 }
 
-class TempPlasmaRifle : DeltaWeapon replaces PlasmaRifle
+class TempPlasmaRifle : DeltaWeapon
 {
 	Default
 	{
+		Inventory.PickupMessage "$GOTPLASMA";
 		Weapon.SelectionOrder 100;
 		Weapon.AmmoUse 1;
 		Weapon.AmmoGive 40;
 		Weapon.AmmoType "Cell";
-		Inventory.PickupMessage "$GOTPLASMA";
+		DeltaWeapon.Crosshair "DRPLSRET";
+		
 		Tag "$TAG_PLASMARIFLE";
 	}
 	
@@ -261,7 +258,7 @@ class TempPlasmaRifle : DeltaWeapon replaces PlasmaRifle
 	}
 }
 
-class TempBFG9000 : DeltaWeapon replaces BFG9000
+class TempBFG9000 : DeltaWeapon
 {
 	Default
 	{

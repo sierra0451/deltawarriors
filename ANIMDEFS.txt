@@ -5,6 +5,7 @@ texture SSRDA0
 	pic SSRDC0 tics 5
 	pic SSRDB0 tics 5
 
+// Title screen
 texture DELTATT1
 	pic DELTATT1 tics 15
 	pic DELTATT2 tics 15
@@ -12,6 +13,7 @@ texture DELTATT1
 	pic DELTATT4 tics 15
 	pic DELTATT5 tics 15
 
+// Dark World message box corners
 texture DRDWBOR1 oscillate
 	pic DRDWBOR1 tics 5
 	pic DRDWBOR2 tics 5

@@ -1,0 +1,49 @@
+extend class DeltaPlayer
+{
+	protected DeltaFootstepType footstepType;
+	protected double footstepTime, curFootstepTimer;
+	
+	property FootstepType : footstepType;
+	property FootstepTime : footstepTime;
+	
+	virtual void TickFootsteps()
+	{
+		if (!player)
+			return;
+		
+		let cmd = player.cmd,
+			velFactor = max(abs(cmd.forwardMove/12800.), abs(cmd.sideMove/10240.));
+		
+		if (velFactor > 1)
+			velFactor = 1;
+		
+		velFactor *= crouchFactor;
+		
+		if (velFactor < 0.05 || reactionTime || !IsGrounded())
+		{
+			curFootstepTimer = 0;
+			return;
+		}
+		
+		curFootstepTimer += velFactor;
+		
+		if (curFootstepTimer >= footstepTime)
+		{
+			curFootstepTimer -= footstepTime;
+			Step(velFactor);
+		}
+	}
+	
+	virtual void Step(double curVel)
+	{
+		let terrain = GetFloorTerrain();
+		if (!terrain)
+			return;
+		
+		let snd = terrain.StepSound;
+		if (!snd)
+			snd = terrain.isLiquid? "delta/step_liquid" : "delta/step_generic";
+		
+		A_StartSound(snd, CHAN_AUTO, volume: min(0.75, curVel));
+	}
+}

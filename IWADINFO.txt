@@ -1,3 +1,8 @@
+/*
+	NOTE: it is NOT recommended to run DeltaWarriors as an IWAD just yet. This is
+	mostly laying foundations for future plans regarding the mod. If it doesn't
+	run as an IWAD yet, that's because it's not meant to at the moment.
+*/
 IWad
 {
 	Name = "DeltaWarriors"

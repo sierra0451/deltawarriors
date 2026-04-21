@@ -32,7 +32,7 @@ The single biggest new mechanic introduced by DeltaWarriors (a mechanic borrowed
     - Good for dealing big bursts of damage up-close, although slightly slow to follow up on. Its alt-fire is an even bigger blast, although it takes two shells and has such strong recoil that it'll physically knock Kris back, which they may need a second to recover from before readying the shotgun for further firing. The alt-fire... also somehow requires some of their TP? Odd-
 - **Slot 4: SMG**
     - Good for dealing a consistent spray of damage, potentially even stunning demons less tolerant to pain. It, however, chews through ammo rather quickly if not used with some level of caution. Kris may also have some difficulty fully controlling the weapon's recoil, given the rapid fire rate. If they happen to have a rocket on hand, the gun's alt-fire can make quick work of crowds of enemies, or soften up a tougher enemy, as well; though watch that splash damage.
-- **Offhand Ability (default keybind is Q):** Shield parry
+- **Character Ability (default keybind is Q):** Shield parry
     - Costing 40% of their TP, Kris can swing their shield out in front of them and parry a single incoming projectile, knocking it back into the direction they're looking in. If the parried projectile hits another demon, it may do some additional damage.
 - **Sliding:**
     - Hold crouch while running to move Kris into a slide. This will preserve some of their momentum (if moving slowly enough, they get a slight speed boost). While sliding, they can slip by smaller enemies and projectiles, and generally be unaffected by outside physical forces like knockback, although friction will slow them down over time.

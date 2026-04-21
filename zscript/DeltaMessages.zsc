@@ -1,8 +1,10 @@
 class DeltaMessageBox : Object ui
 {
+	DeltaMessageBox nextMessage;
+	DeltaMessageHandler handler;
 	protected TextureID cornerTex, sideTex;
-	protected DeltaMessageState messageState;
 	protected string goalMessage, displayedMessage;
+	protected DeltaMessageState messageState;
 	protected sound typeSound;
 	protected int curTics, curCharIndex, soundTimer;
 	
@@ -37,8 +39,9 @@ class DeltaMessageBox : Object ui
 		if (soundTimer)
 			soundTimer--;
 		
-		if (messageState == MSG_STATE_HOLD)
+		if (messageState >= MSG_STATE_HOLD_INPUT)
 			return;
+		
 		if (curTics > 0)
 		{
 			curTics--;
@@ -50,9 +53,7 @@ class DeltaMessageBox : Object ui
 	
 	virtual void ProcessNextCharacter()
 	{
-		if (messageState == MSG_STATE_HOLD)
-			return;
-		else if (messageState == MSG_STATE_INITDELAY)
+		if (messageState == MSG_STATE_INITDELAY)
 			messageState = MSG_STATE_TYPING;
 		
 		bool printed = false,
@@ -66,8 +67,8 @@ class DeltaMessageBox : Object ui
 			int chr, next;
 			[chr, next] = goalMessage.GetNextCodePoint(curCharIndex);
 			
-			if (curCharIndex >= goalMessage.CodePointCount())
-				messageState = MSG_STATE_HOLD;
+			if (curCharIndex >= goalMessage.CodePointCount() && messageState < MSG_STATE_HOLD_INPUT)
+				messageState = MSG_STATE_HOLD_INPUT;
 			
 			switch (chr)
 			{
@@ -85,7 +86,7 @@ class DeltaMessageBox : Object ui
 								curTics = TICRATE;
 								break;
 							case 6:
-								curTics = 40;
+								curTics = TICRATE * 4 / 3;
 								break;
 							case 7:
 								curTics = 2 * TICRATE;
@@ -103,9 +104,11 @@ class DeltaMessageBox : Object ui
 					}
 					
 					curCharIndex++;
+					playSound = false;
+					printed = true;
 					break;
 				case "/":
-					messageState = MSG_STATE_HOLD;
+					messageState = MSG_STATE_HOLD_INPUT;
 					playSound = false;
 					printed = true;
 					break;
@@ -116,6 +119,44 @@ class DeltaMessageBox : Object ui
 						displayedMessage.AppendFormat("  ");
 					
 					printed = true;
+					break;
+				case "%":
+					/*
+						if we use %% instead of just %, message will
+						hang until scripts manually move us on
+						(different from /, which waits for player
+						input)
+					*/
+					
+					playSound = false;
+					printed = true;
+					
+					if (goalMessage.Mid(curCharIndex+1, 1) == "%")
+					{
+						messageState = MSG_STATE_HOLD_SCRIPT;
+						break;
+					}
+					
+					handler.NextMessage();
+					break;
+				case "\c":
+					if (goalMessage.Mid(curCharIndex+1, 1) == "[")
+					{
+						int check = curCharIndex+1,
+							count = 0;
+						
+						while (goalMessage.Mid(check+count, 1) != "]")
+						{
+							count++;
+						}
+						
+						displayedMessage.AppendFormat("\c" .. goalMessage.Mid(check, count));
+						curCharIndex += count;
+						break;
+					}
+					
+					displayedMessage.AppendFormat(goalMessage.Mid(curCharIndex, 2));
+					curCharIndex++;
 					break;
 				default:
 					// don't play typing sound for punctuation
@@ -136,16 +177,10 @@ class DeltaMessageBox : Object ui
 	
 	virtual int TakeInput(InputEvent evt)
 	{
-		switch (messageState)
-		{
-			case MSG_STATE_TYPING:
-				return MSG_SKIP;
-			case MSG_STATE_HOLD:
-				return MSG_FINISH;
-			case MSG_STATE_INITDELAY:
-			default:
-				return MSG_IGNORE;
-		}
+		if (messageState == MSG_STATE_TYPING)
+			return MSG_SKIP;
+		
+		return MSG_IGNORE;
 	}
 	
 	virtual void PlayTypeSound()
@@ -224,71 +259,113 @@ class DeltaMessageBox : Object ui
 		
 		return false;
 	}
+	
+	string GetMessage()
+	{
+		return goalMessage;
+	}
+	
+	DeltaMessageState GetMessageState()
+	{
+		return messageState;
+	}
 }
 
-class DeltaCutscene : ScreenJob
+class DeltaMessageHandler : ScreenJob
 {
-	int msgIndex;
 	string debugString;
-	Array<DeltaMessageBox> messages;
+	DeltaMessageBox message;
 	
-	static DeltaCutscene Create()
+	static DeltaMessageHandler Create()
 	{
-		return new("DeltaCutscene").Init();
+		return new("DeltaMessageHandler").Init();
 	}
 	
-	virtual DeltaCutscene Init(int flags = 0, double fadeT = 250.)
+	virtual DeltaMessageHandler Init(DeltaMessageBox msg = null, int flags = 0,
+		double fadeT = 250.)
 	{
 		Super.Init(flags, fadeT);
-		msgIndex = -1;
 		noWipe = true;
-		return self;
-	}
-	
-	virtual void NextMessage()
-	{
-		if (msgIndex >= messages.Size() - 1)
-		{
-			jobState = finished;
-			return;
-		}
 		
-		msgIndex++;
+		AddMessage(msg);
+		return self;
 	}
 	
 	override void OnTick()
 	{
-		if (msgIndex < 0)
-		{
-			NextMessage();
-			return;
-		}
-		
 		Super.OnTick();
-		messages[msgIndex].Tick();
+		
+		if (!message)
+			return;
+		
+		message.Tick();
 	}
 	
 	override bool OnEvent(InputEvent evt)
 	{
-		if (msgIndex < 0)
+		if (!message)
 			return true;
+		
 		if (evt.type == InputEvent.Type_KeyDown && !System.SpecialKeyEvent(evt))
 		{
-			messages[msgIndex].TakeInput(evt);
+			message.TakeInput(evt);
 			return true;
 		}
 		
 		return true;
 	}
 	
+	virtual void NextMessage()
+	{
+		if (!message.nextMessage)
+		{
+			jobState = finished;
+			message = null;
+			return;
+		}
+		
+		message = message.nextMessage;
+	}
+	
+	virtual void AddMessage(DeltaMessageBox targetMessage)
+	{
+		if (!targetMessage)
+			return;
+		
+		targetMessage.handler = self;
+		
+		if (!message)
+		{
+			message = targetMessage;
+			return;
+		}
+		
+		let msg = message;
+		
+		while (msg.nextMessage != null)
+		{
+			msg = msg.nextMessage;
+		}
+		msg.nextMessage = targetMessage;
+	}
+	
 	override void Draw(double smoothRatio)
 	{
 		Super.Draw(smoothRatio);
+		Screen.DrawText(smallFont, Font.CR_UNTRANSLATED, 0, 0, debugString);
 		
-		Screen.DrawText(smallFont, Font.CR_RED, 0, 30, debugString);
+		if (!message)
+			return;
 		
-		if (msgIndex >= 0)
-			messages[msgIndex].Draw(smoothRatio);
+		message.Draw(smoothRatio);
+	}
+	
+	DeltaMessageState GetMessageState()
+	{
+		if (!message)
+			return -1;
+		
+		return message.GetMessageState();
 	}
 }
 

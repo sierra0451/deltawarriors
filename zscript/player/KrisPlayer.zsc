@@ -5,6 +5,14 @@ class KrisPlayer : DeltaPlayer
 	protected double slideAdjustSpeed;	// speed at which strafing will move you while sliding
 	protected double slideSlowing;		// time it takes sliding to slow to a stop on flat surface
 	
+	protected state
+		ParryState,				ParryMissState,
+		AirParryState,			AirParryMissState,
+		SlideMeleeState,		SlideGunState,
+		SlideMissileMeleeState, SlideMissileGunState,
+		SlideMissileGunNoFlashState, SlideFinishMissileGunState,
+		SlidePainMeleeState, SlidePainGunState;
+	
 	private double _currentSlideSpeed, _savedSlideSpeed;
 	private int _savedSlideSpeedTimer;
 	private bool _lastCrouchedWhileAirborne, _lastCrouchedWhileGrounded;
@@ -21,8 +29,8 @@ class KrisPlayer : DeltaPlayer
 		Speed 0.8;
 		Mass 100;
 		
-		Health 200;
-		Player.MaxHealth 200;
+		Health 100;
+		Player.MaxHealth 100;
 		
 		Player.DisplayName "$DELTA_CHAR_KRIS";
 		Player.ViewHeight 35.0;
@@ -55,7 +63,9 @@ class KrisPlayer : DeltaPlayer
 		DeltaPlayer.GunCrouchSprite "KCGN";
 		DeltaPlayer.MeleeCrouchSprite "KCSW";
 		
-		+SQUAREPIXELS;
+		DeltaPlayer.FootstepType FOOTSTEP_BOOTS;
+		DeltaPlayer.VoiceClass "kris";
+		DeltaPlayer.JumpGruntChance 0.6;
 	}
 	
 	States
@@ -90,15 +100,15 @@ class KrisPlayer : DeltaPlayer
 				A_UseMeleeSprite();
 				
 				if (invoker.crouchState == CS_SLIDING)
-					return A_Sync(ResolveState("MissileMelee"), ResolveState("SlideMissileMelee"));
+					return A_Sync(MissileMeleeState, SlideMissileMeleeState);
 				
-				return A_SyncIf(!invoker.IsGrounded(), ResolveState("MissileMelee"), ResolveState("AirMissileMelee"));
+				return A_SyncIf(!invoker.IsGrounded(), MissileMeleeState, AirMissileMeleeState);
 			}
 			Goto SpawnMelee;
 		AirMissileMelee:
 			KRSW NNOOPPPQQQ 1
 			{
-				return A_SyncIf(invoker.IsGrounded(), ResolveState("AirMissileMelee"), ResolveState("MissileMelee"));
+				return A_SyncIf(invoker.IsGrounded(), AirMissileMeleeState, MissileMeleeState);
 			}
 			Goto AirMelee;
 		MissileGun:
@@ -106,9 +116,9 @@ class KrisPlayer : DeltaPlayer
 			{
 				A_UseGunSprite();
 				if (invoker.crouchState == CS_SLIDING)
-					return A_Sync(ResolveState("MissileGun"), ResolveState("SlideMissileGun"));
+					return A_Sync(MissileGunState, SlideMissileGunState);
 				
-				return A_SyncIf(!invoker.IsGrounded(), ResolveState("MissileGun"), ResolveState("AirMissileGun"));
+				return A_SyncIf(!invoker.IsGrounded(), MissileGunState, AirMissileGunState);
 			}
 			Goto FinishMissileGun;
 		MissileGunNoFlash:
@@ -116,53 +126,58 @@ class KrisPlayer : DeltaPlayer
 			{
 				A_UseGunSprite();
 				if (invoker.crouchState == CS_SLIDING)
-					return A_Sync(ResolveState("MissileGun"), ResolveState("SlideMissileGun"));
+					return A_Sync(MissileGunNoFlashState, SlideMissileGunNoFlashState);
 				
-				return A_SyncIf(!invoker.IsGrounded(), ResolveState("MissileGun"), ResolveState("AirMissileGun"));
+				return A_SyncIf(!invoker.IsGrounded(), MissileGunNoFlashState, AirMissileGunNoFlashState);
 			}
 		FinishMissileGun:
 			#### EEEEEEEE 1
 			{
 				A_UseGunSprite();
 				if (invoker.crouchState == CS_SLIDING)
-					return A_Sync(ResolveState("MissileGun"), ResolveState("SlideMissileGun"));
+					return A_Sync(FinishMissileGunState, SlideFinishMissileGunState);
 				
-				return A_SyncIf(!invoker.IsGrounded(), ResolveState("MissileGun"), ResolveState("AirMissileGun"));
+				return A_SyncIf(!invoker.IsGrounded(), FinishMissileGunState, AirFinishMissileGunState);
 			}
 			Goto SpawnGun;
 		AirMissileGun:
-			KRSG NNNNOOOOOOOO 1
+			KRSG NNNN 1
 			{
-				return A_SyncIf(invoker.IsGrounded(), ResolveState("AirMissileGun"), ResolveState("MissileGun"));
+				A_UseGunSprite();
+				return A_SyncIf(invoker.IsGrounded(), AirMissileGunState, MissileGunState);
+			}
+			Goto AirFinishMissileGun;
+		AirMissileGunNoFlash:
+			KRSG OOOO 1
+			{
+				A_UseGunSprite();return A_SyncIf(invoker.IsGrounded(), AirMissileGunState, MissileGunState);
+			}
+		AirFinishMissileGun:
+			KRSG OOOOOOOO 1
+			{
+				A_UseGunSprite();
+				return A_SyncIf(invoker.IsGrounded(), AirFinishMissileGunState, FinishMissileGunState);
 			}
 			Goto AirGun;
 		Slide:
 			TNT1 A 0 A_DeltaGetState("Slide");
 			Goto Spawn;
 		SlideMelee:
-			KSLD AAABBBCCC 1
-			{
-				return A_JumpIf(invoker.crouchState != CS_SLIDING, "Spawn");
-			}
+			KSLD ABC 3;
 			Loop;
 		SlideGun:
-			KSLG AAABBBCCC 1
-			{
-				return A_JumpIf(invoker.crouchState != CS_SLIDING, "Spawn");
-			}
+			KSLG ABC 3;
 			Loop;
 		SlideMissileMelee:
-			KSLD DDEEFFFGGG 1
-			{
-				return A_SyncIf(invoker.crouchState != CS_SLIDING, ResolveState("SlideMissileMelee"), ResolveState("MissileMelee"));
-			}
+			KSLD DDEEFFFGGG 1 A_SyncIf(invoker.crouchState != CS_SLIDING, SlideMissileMeleeState, MissileMeleeState);
 			Goto SlideMelee;
 		SlideMissileGun:
-			KSLG EEEEFFFFFFFF 1
-			{
-				return A_SyncIf(invoker.crouchState != CS_SLIDING, ResolveState("SlideMissileGun"), ResolveState("MissileGun"));
-			}
-			Goto SlideGun;
+			KSLG EEEE 1 A_SyncIf(invoker.crouchState != CS_SLIDING, SlideMissileGunState, MissileGunState);
+			Goto SlideFinishMissileGun;
+		SlideMissileGunNoFlash:
+			KSLG FFFF 1 A_SyncIf(invoker.crouchState != CS_SLIDING, SlideMissileGunNoFlashState, MissileGunNoFlashState);
+		SlideFinishMissileGun:
+			KSLG FFFFFFFF 1 A_SyncIf(invoker.crouchState != CS_SLIDING, SlideFinishMissileGunState, FinishMissileGunState);
 		Pain:
 			TNT1 A 1 A_DeltaGetState("Pain");
 			Goto Spawn;
@@ -172,9 +187,9 @@ class KrisPlayer : DeltaPlayer
 				A_UseMeleeSprite();
 				
 				if (invoker.crouchState == CS_SLIDING)
-					return A_Sync(ResolveState("PainMelee"), ResolveState("SlidePainMelee"));
+					return A_Sync(PainMeleeState, SlidePainMeleeState);
 				
-				return A_SyncIf(!invoker.IsGrounded(), ResolveState("PainMelee"), ResolveState("AirPainMelee"));
+				return A_SyncIf(!invoker.IsGrounded(), PainMeleeState, AirPainMeleeState);
 			}
 			Goto SpawnMelee;
 		PainGun:
@@ -183,54 +198,53 @@ class KrisPlayer : DeltaPlayer
 				A_UseGunSprite();
 				
 				if (invoker.crouchState == CS_SLIDING)
-					return A_Sync(ResolveState("PainGun"), ResolveState("SlidePainGun"));
+					return A_Sync(PainGunState, SlidePainGunState);
 				
-				return A_SyncIf(!invoker.IsGrounded(), ResolveState("PainGun"), ResolveState("AirPainGun"));
+				return A_SyncIf(!invoker.IsGrounded(), PainGunState, AirPainGunState);
 			}
 			Goto SpawnGun;
 		AirPainMelee:
 			KRSW RRRRRRRR 1
 			{
 				A_UseMeleeSprite();
-				return A_SyncIf(invoker.IsGrounded(), ResolveState("AirPainMelee"), ResolveState("PainMelee"));
+				return A_SyncIf(invoker.IsGrounded(), AirPainMeleeState, PainMeleeState);
 			}
 			Goto AirMelee;
 		AirPainGun:
 			KRSG RRRRRRRR 1
 			{
 				A_UseGunSprite();
-				return A_SyncIf(invoker.IsGrounded(), ResolveState("AirPainGun"), ResolveState("PainGun"));;
+				return A_SyncIf(invoker.IsGrounded(), AirPainGunState, PainGunState);
 			}
 			Goto AirGun;
 		SlidePainMelee:
 			KSLD AAAAAAAA 1
 			{
-				return A_SyncIf(invoker.crouchState != CS_SLIDING, ResolveState("SlidePainMelee"), ResolveState("PainMelee"));
+				return A_SyncIf(invoker.crouchState != CS_SLIDING, SlidePainMeleeState, PainMeleeState);
 			}
 			Goto SlideMelee;
 		SlidePainGun:
 			KSLG AAAAAAAA 1
 			{
-				return A_SyncIf(invoker.crouchState != CS_SLIDING, ResolveState("SlidePainGun"), ResolveState("PainGun"));
+				return A_SyncIf(invoker.crouchState != CS_SLIDING, SlidePainGunState, PainGunState);
 			}
 			Goto SlideGun;
 		Parry:
-			KPRY AABBCCCCDDDD 1 A_SyncIf(!invoker.IsGrounded(), ResolveState("Parry"), ResolveState("AirParry"));
+			KPRY AABBCCCCDDDD 1 A_SyncIf(!invoker.IsGrounded(), ParryState, AirParryState);
 			Goto Spawn;
 		AirParry:
-			KPRY FFGGHHHHIIII 1 A_SyncIf(invoker.IsGrounded(), ResolveState("AirParry"), ResolveState("Parry"));
+			KPRY FFGGHHHHIIII 1 A_SyncIf(invoker.IsGrounded(), AirParryState, ParryState);
 			Goto Spawn;
 		ParryMiss:
-			KPRY AA 1 A_SyncIf(!invoker.IsGrounded(), ResolveState("ParryMiss"), ResolveState("AirParryMiss"));
+			KPRY AA 1 A_SyncIf(!invoker.IsGrounded(), ParryMissState, AirParryMissState);
 			Goto Parry+2;
 		AirParryMiss:
-			KPRY JJ 1 A_SyncIf(invoker.IsGrounded(), ResolveState("AirParryMiss"), ResolveState("ParryMiss"));
+			KPRY JJ 1 A_SyncIf(invoker.IsGrounded(), AirParryMissState, ParryMissState);
 			Goto AirParry+2;
 		Death:
-			KDTH A 1 A_JumpIfAirborne(ResolveState("AirDeath"));
-			KDTH A 5 A_JumpIfAirborne(ResolveState("AirDeath"));
+			KDTH A 6;
 			KDTH B 9;
-			KDTH C 3 A_JumpIfAirborne(ResolveState("AirDeath"));
+			KDTH C 3;
 		Death.Falling:
 		Death.Crush:
 		FinishDeath:
@@ -302,6 +316,9 @@ class KrisPlayer : DeltaPlayer
 			Wait;
 		StopSlideLegs:
 			KRSL EFGH 1;
+			Goto FinishSlideLegs;
+		FinishSlideLegs:
+			KRSL H 1;
 			Goto IdleLegs;
 		AirLegs:
 			KLGA # 1;
@@ -318,14 +335,32 @@ class KrisPlayer : DeltaPlayer
 		
 		int minTics = 3,
 			maxTics = 15,
-			targetTics = abs(Vel.Z) ~== 0 ? maxTics
-				: DeltaUtil.Clamp(maxTics / abs(Vel.Z), minTics, maxTics);
+			targetTics = (abs(Vel.Z) ~== 0 || curSector.gravity ~== 0) ? maxTics
+				: clamp(maxTics / curSector.gravity / abs(Vel.Z), minTics, maxTics);
 		if (tics == -1 || tics > targetTics)
 			tics = targetTics;
 		
 		let dest = A_CheckDeathLand();
 		if (dest)
 			SetStateSafe(dest);
+	}
+	
+	override void BeginPlay()
+	{
+		Super.BeginPlay();
+		
+		ParryState = FindState("Parry");
+		ParryMissState = FindState("ParryMiss");
+		AirParryState = FindState("AirParry");
+		AirParryMissState = FindState("AirParryMiss");
+		SlideMeleeState = FindState("SlideMelee");
+		SlideGunState = FindState("SlideGun");
+		SlideMissileMeleeState = FindState("SlideMissileMelee");
+		SlideMissileGunState = FindState("SlideMissileGun");
+		SlideMissileGunNoFlashState = FindState("SlideMissileGunNoFlash");
+		SlideFinishMissileGunState = FindState("SlideFinishMissileGun");
+		SlidePainMeleeState = FindState("SlidePainMelee");
+		SlidePainGunState = FindState("SlidePainGun");
 	}
 	
 	override void PostBeginPlay()
@@ -405,7 +440,7 @@ class KrisPlayer : DeltaPlayer
 		{
 			let dir = (GetPlayerInput(INPUT_FORWARDMOVE) / 12800., GetPlayerInput(INPUT_SIDEMOVE) / 10240.);
 			
-			if (abs(dir.x) > 0.1 || abs(dir.y) > 0.1)
+			if (buttons & BT_RUN && (abs(dir.x) > 0.1 || abs(dir.y) > 0.1))
 				StartSlide(-VectorAngle(dir.x, dir.y));
 		}
 		else if (crouchDir == -1 && crouchState == CS_SLIDING)
@@ -456,12 +491,12 @@ class KrisPlayer : DeltaPlayer
 		return Super.CanCollideWith(other, passive);
 	}
 	
-	override void MakeFootsteps()
+	override void Step(double curVel)
 	{
 		if (crouchState == CS_SLIDING)
 			return;
 		
-		Super.MakeFootsteps();
+		Super.Step(curVel);
 	}
 	
 	override void PlayerLandedMakeGruntSound(actor onmobj)
@@ -651,9 +686,10 @@ class KrisPlayer : DeltaPlayer
 		A_StartSound("delta/kris/shield_swing", CHAN_AUTO);
 		AddRecoil(RECOIL_WEAPON, 10, 1, p: -1, y: 5);
 		
-		double distance = 120;
 		Array<Actor> targets;
-		double dotThreshold = 0.85; // dot product must be larger than this to count as parried
+		double
+			distance = 120,
+			dotThreshold = 0.85; // dot product must be larger than this to count as parried
 		
 		ThinkerIterator it = ThinkerIterator.Create("Actor", STAT_DEFAULT);
 		Actor mis;
@@ -844,25 +880,38 @@ class KrisPlayer : DeltaPlayer
 	
 	override Vector2 GetLegsOffset()
 	{
-		if (crouchState != CS_SLIDING)
+		let psp = player.FindPSprite(PSP_LEGS);
+		if (!psp)
 			return Super.GetLegsOffset();
 		
-		return CalculateLegsOffset(pitch + viewPitch - 29);
+		if (psp.curState.InStateSequence(ResolveState("SlideLegs"))
+			|| (psp.curState.InStateSequence(ResolveState("StopSlideLegs")) && 
+				!psp.curState.InStateSequence(ResolveState("FinishSlideLegs"))))
+			return CalculateLegsOffset(pitch + viewPitch - 29);
+		
+		return Super.GetLegsOffset();
 	}
 	
-	bool InParryState()
+	clearscope bool InParryState()
 	{
-		return curState.InStateSequence(ResolveState("Parry"))
-			|| curState.InStateSequence(ResolveState("ParryMiss"))
-			|| curState.InStateSequence(ResolveState("AirParry"))
-			|| curState.InStateSequence(ResolveState("AirParryMiss"));
+		return curState.InStateSequence(ParryState) ||
+			curState.InStateSequence(ParryMissState) ||
+			curState.InStateSequence(AirParryState) ||
+			curState.InStateSequence(AirParryMissState);
 	}
 	
-	bool InSlideState()
+	clearscope bool InSlideState()
 	{
-		return CurState.InStateSequence(ResolveState("SlideMelee"))
-			|| CurState.InStateSequence(ResolveState("SlideGun"))
-			|| CurState.InStateSequence(ResolveState("SlideMissileMelee"))
-			|| CurState.InStateSequence(ResolveState("SlideMissileGun"));
+		return CurState.InStateSequence(SlideMeleeState) ||
+			CurState.InStateSequence(SlideGunState);
+	}
+	
+	override bool InMissileState()
+	{
+		return Super.InMissileState() ||
+			CurState.InStateSequence(SlideMissileMeleeState) ||
+			CurState.InStateSequence(SlideMissileGunState) ||
+			CurState.InStateSequence(SlideMissileGunNoFlashState) ||
+			CurState.InStateSequence(SlideFinishMissileGunState);
 	}
 }

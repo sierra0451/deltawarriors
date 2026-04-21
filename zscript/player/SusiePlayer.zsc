@@ -28,11 +28,9 @@ class SusiePlayer : DeltaPlayer
 		DeltaPlayer.CharacterColor Color(234, 121, 200);
 		DeltaPlayer.OffhandIcon "";
 		DeltaPlayer.CharacterIcon "graphics/susieIcon.png";
-	}
-	
-	override void DeltaExtraDeathStuff()
-	{
-		A_StartSound("delta/susie/gasp", CHAN_VOICE, CHANF_OVERLAP, attenuation: 0.2);
+		
+		DeltaPlayer.FootstepType FOOTSTEP_BOOTS;
+		DeltaPlayer.VoiceClass "susie";
 	}
 	
 	States

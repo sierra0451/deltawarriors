@@ -84,7 +84,6 @@ $pitchshiftrange 0
 			// Liquids
 			delta/step_liquid1 = "sounds/player/shared/footsteps/liquid/footstep_liquid01.wav"
 			delta/step_liquid2 = "sounds/player/shared/footsteps/liquid/footstep_liquid02.wav"
-			
 			$random delta/step_liquid
 			{
 				delta/step_liquid1
@@ -92,6 +91,103 @@ $pitchshiftrange 0
 			}
 	
 	// Kris
+		// VOX
+			// Jumping
+			delta/kris/jump_grunt1 = "sounds/player/kris/vox/kris_jumpGrunt1.wav"
+			delta/kris/jump_grunt2 = "sounds/player/kris/vox/kris_jumpGrunt2.wav"
+			delta/kris/jump_grunt3 = "sounds/player/kris/vox/kris_jumpGrunt3.wav"
+			delta/kris/jump_grunt4 = "sounds/player/kris/vox/kris_jumpGrunt4.wav"
+			$random delta/kris/jump_grunt
+			{
+				delta/kris/jump_grunt1
+				delta/kris/jump_grunt2
+				delta/kris/jump_grunt3
+				delta/kris/jump_grunt4
+			}
+			
+			// Pain
+				// Light
+				delta/kris/light_pain1 = "sounds/player/kris/vox/kris_lightPain1.wav"
+				delta/kris/light_pain2 = "sounds/player/kris/vox/kris_lightPain2.wav"
+				delta/kris/light_pain3 = "sounds/player/kris/vox/kris_lightPain3.wav"
+				delta/kris/light_pain4 = "sounds/player/kris/vox/kris_lightPain4.wav"
+				delta/kris/light_pain5 = "sounds/player/kris/vox/kris_lightPain5.wav"
+				delta/kris/light_pain6 = "sounds/player/kris/vox/kris_lightPain6.wav"
+				delta/kris/light_pain7 = "sounds/player/kris/vox/kris_lightPain7.wav"
+				$random delta/kris/light_pain
+				{
+					delta/kris/light_pain1
+					delta/kris/light_pain2
+					delta/kris/light_pain3
+					delta/kris/light_pain4
+					delta/kris/light_pain5
+					delta/kris/light_pain6
+					delta/kris/light_pain7
+				}
+				
+				// Medium
+				delta/kris/medium_pain1 = "sounds/player/kris/vox/kris_mediumPain1.wav"
+				delta/kris/medium_pain2 = "sounds/player/kris/vox/kris_mediumPain2.wav"
+				delta/kris/medium_pain3 = "sounds/player/kris/vox/kris_mediumPain3.wav"
+				delta/kris/medium_pain4 = "sounds/player/kris/vox/kris_mediumPain4.wav"
+				$random delta/kris/medium_pain
+				{
+					delta/kris/medium_pain1
+					delta/kris/medium_pain2
+					delta/kris/medium_pain3
+					delta/kris/medium_pain4
+				}
+				
+				// Severe
+				delta/kris/severe_pain1 = "sounds/player/kris/vox/kris_severePain1.wav"
+				delta/kris/severe_pain2 = "sounds/player/kris/vox/kris_severePain2.wav"
+				delta/kris/severe_pain3 = "sounds/player/kris/vox/kris_severePain3.wav"
+				delta/kris/severe_pain4 = "sounds/player/kris/vox/kris_severePain4.wav"
+				delta/kris/severe_pain5 = "sounds/player/kris/vox/kris_severePain5.wav"
+				delta/kris/severe_pain6 = "sounds/player/kris/vox/kris_severePain6.wav"
+				delta/kris/severe_pain7 = "sounds/player/kris/vox/kris_severePain7.wav"
+				$random delta/kris/severe_pain
+				{
+					delta/kris/severe_pain1
+					delta/kris/severe_pain2
+					delta/kris/severe_pain3
+					delta/kris/severe_pain4
+					delta/kris/severe_pain5
+					delta/kris/severe_pain6
+					delta/kris/severe_pain7
+				}
+			
+			// Death
+				// Medium
+				delta/kris/medium_death1 = "sounds/player/kris/vox/kris_mediumDeath1.wav"
+				delta/kris/medium_death2 = "sounds/player/kris/vox/kris_mediumDeath2.wav"
+				delta/kris/medium_death3 = "sounds/player/kris/vox/kris_mediumDeath3.wav"
+				delta/kris/medium_death4 = "sounds/player/kris/vox/kris_mediumDeath4.wav"
+				delta/kris/medium_death5 = "sounds/player/kris/vox/kris_mediumDeath5.wav"
+				delta/kris/medium_death6 = "sounds/player/kris/vox/kris_mediumDeath6.wav"
+				$random delta/kris/medium_death
+				{
+					delta/kris/medium_death1
+					delta/kris/medium_death2
+					delta/kris/medium_death3
+					delta/kris/medium_death4
+					delta/kris/medium_death5
+					delta/kris/medium_death6
+				}
+				
+				// Severe
+				delta/kris/severe_death1 = "sounds/player/kris/vox/kris_severeDeath1.wav"
+				delta/kris/severe_death2 = "sounds/player/kris/vox/kris_severeDeath2.wav"
+				delta/kris/severe_death3 = "sounds/player/kris/vox/kris_severeDeath3.wav"
+				delta/kris/severe_death4 = "sounds/player/kris/vox/kris_severeDeath4.wav"
+				$random delta/kris/severe_death
+				{
+					delta/kris/severe_death1
+					delta/kris/severe_death2
+					delta/kris/severe_death3
+					delta/kris/severe_death4
+				}
+		
 		// Sliding
 		delta/kris/slide_loop = "sounds/player/kris/kris_slideLoop.wav"
 		$alias delta/kris/slide_start delta/impact

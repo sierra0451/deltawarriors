@@ -1,44 +1,58 @@
 extend class DeltaPlayer
 {
-	virtual bool InAirState()
+	clearscope virtual bool InAirState()
 	{
-		return InStateSequence(CurState, AirGunState) ||
-			InStateSequence(CurState, AirMeleeState) ||
-			InStateSequence(CurState, AirMagicState);
+		return CurState.InStateSequence(AirGunState) ||
+			CurState.InStateSequence(AirMeleeState) ||
+			CurState.InStateSequence(AirMagicState);
 	}
 	
-	virtual bool InSeeState()
+	clearscope virtual bool InSeeState()
 	{
-		return InStateSequence(CurState, SeeGunState) ||
-			InStateSequence(CurState, SeeMeleeState) ||
-			InStateSequence(CurState, SeeMagicState);
+		return CurState.InStateSequence(SeeGunState) ||
+			CurState.InStateSequence(SeeMeleeState) ||
+			CurState.InStateSequence(SeeMagicState);
 	}
 	
-	virtual bool InSpawnState()
+	clearscope virtual bool InSpawnState()
 	{
-		return InStateSequence(CurState, SpawnState) ||
-			InStateSequence(CurState, SpawnGunState) ||
-			InStateSequence(CurState, SpawnMeleeState) ||
-			InStateSequence(CurState, SpawnMagicState);
+		return CurState.InStateSequence(SpawnState) ||
+			CurState.InStateSequence(SpawnGunState) ||
+			CurState.InStateSequence(SpawnMeleeState) ||
+			CurState.InStateSequence(SpawnMagicState);
 	}
 	
-	virtual bool InPainState()
+	clearscope virtual bool InMissileState()
 	{
-		return InStateSequence(CurState, PainGunState) ||
-			InStateSequence(CurState, PainMeleeState) ||
-			InStateSequence(CurState, PainMagicState);
+		return CurState.InStateSequence(MissileGunState) ||
+			CurState.InStateSequence(MissileMeleeState) ||
+			CurState.InStateSequence(MissileMagicState) ||
+			CurState.InStateSequence(MissileGunNoFlashState) ||
+			CurState.InStateSequence(FinishMissileGunState) ||
+			CurState.InStateSequence(AirMissileGunState) ||
+			CurState.InStateSequence(AirMissileMeleeState) ||
+			CurState.InStateSequence(AirMissileMagicState) ||
+			CurState.InStateSequence(AirMissileGunNoFlashState) ||
+			CurState.InStateSequence(AirFinishMissileGunState);
 	}
 	
-	virtual bool InAirPainState()
+	clearscope virtual bool InPainState()
 	{
-		return InStateSequence(CurState, AirPainGunState) ||
-			InStateSequence(CurState, AirPainMeleeState) ||
-			InStateSequence(CurState, AirPainMagicState);
+		return CurState.InStateSequence(PainGunState) ||
+			CurState.InStateSequence(PainMeleeState) ||
+			CurState.InStateSequence(PainMagicState);
 	}
 	
-	virtual bool InAirDeathState()
+	clearscope virtual bool InAirPainState()
 	{
-		return InStateSequence(CurState, ResolveState("AirDeath"));
+		return CurState.InStateSequence(AirPainGunState) ||
+			CurState.InStateSequence(AirPainMeleeState) ||
+			CurState.InStateSequence(AirPainMagicState);
+	}
+	
+	clearscope virtual bool InAirDeathState()
+	{
+		return CurState.InStateSequence(AirDeathState);
 	}
 	
 	// exists purely to be overridden with any clean-up, or any events that

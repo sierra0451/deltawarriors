@@ -36,11 +36,6 @@ extend class DeltaHud
 		if (!CPlayer || !CPlayer.camera)
 			return;
 		
-		_oldAngle = _currAngle;
-		_currAngle = CPlayer.camera.Angle;
-		_oldPos = _currPos;
-		_currPos = CPlayer.camera.Pos;
-		
 		for (int i = 0; i < _damageIndicators.Size(); i++)
 		{
 			if (_damageIndicators[i].timer)
@@ -76,10 +71,8 @@ extend class DeltaHud
 			
 			Vector3 targetPos = _damageIndicators[i].sourcePos;
 			let player = CPlayer.mo;
-			Vector3 playerPos = DeltaUtil.Vector3Lerp(_oldPos, _currPos, ticFrac);
-			float refAng = DeltaUtil.Lerp(_oldAngle, _currAngle, ticFrac);
-			Vector3 diff = level.Vec3Diff(playerPos, targetPos);
-			float ang = player.DeltaAngle(refAng, VectorAngle(diff.x, diff.y));
+			Vector3 diff = level.Vec3Diff(_pos, targetPos);
+			float ang = player.DeltaAngle(_angles.z, VectorAngle(diff.x, diff.y));
 			float alpha = min(1, (_damageIndicators[i].timer - ticFrac) / DAMAGE_INDICATOR_FADE_TIME);
 			
 			DrawTextureRotated (
@@ -131,10 +124,8 @@ extend class DeltaHud
 			
 			Vector3 targetPos = _grazeIndicators[i].sourcePos;
 			let player = CPlayer.mo;
-			Vector3 playerPos = DeltaUtil.Vector3Lerp(_oldPos, _currPos, ticFrac);
-			float refAng = DeltaUtil.Lerp(_oldAngle, _currAngle, ticFrac);
-			Vector3 diff = level.Vec3Diff(playerPos, targetPos);
-			float ang = player.DeltaAngle(refAng, VectorAngle(diff.x, diff.y));
+			Vector3 diff = level.Vec3Diff(_pos, targetPos);
+			float ang = player.DeltaAngle(_angles.z, VectorAngle(diff.x, diff.y));
 			float alpha = min(1, (_grazeIndicators[i].timer - ticFrac) / GRAZE_INDICATOR_TIME);
 			
 			DrawTextureRotated(
@@ -153,9 +144,13 @@ extend class DeltaHud
 	
 	void CreateDamageIndicator(Actor source, Actor inflictor)
 	{
+		if (!CPlayer || !CPlayer.mo)
+			return;
 		if (!source)
 			return;
 		if (inflictor && source == inflictor && source == CPlayer.mo)
+			return;
+		if (!inflictor && source == CPlayer.mo)
 			return;
 		
 		int smallestTimer = -1;
@@ -175,8 +170,10 @@ extend class DeltaHud
 			if (_damageIndicators[i].timer <= 0)
 			{
 				_damageIndicators[i].timer = DAMAGE_INDICATOR_TIME;
-				_damageIndicators[i].sourcePos = (source == CPlayer.mo) ?
-					inflictor.pos : source.pos;
+				
+				_damageIndicators[i].sourcePos = (source == CPlayer.mo)?
+					(inflictor ? inflictor.pos : source.pos)
+					: source.pos;
 				return;
 			}
 			

@@ -1,0 +1,7 @@
+extend class DeltaHud
+{
+	virtual void StartDeathSequence(bool firstTime)
+	{
+		
+	}
+}
