@@ -388,14 +388,8 @@ class DeltaPlayer : PlayerPawn abstract
 	
 	override void ApplyAirControl(out double moveFactor, out double bobFactor)
 	{
-		let targetAirCtrl = DELTA_AIR_CONTROL;
-		
-		if (false && player && !(player.cmd.forwardMove || player.cmd.sideMove))
-			targetAirCtrl = 0;
-		
-		level.airFriction = 1.0004 - (targetAirCtrl*0.0941);
-		moveFactor *= targetAirCtrl;
-		bobFactor *= targetAirCtrl;
+		moveFactor *= DELTA_AIR_CONTROL;
+		bobFactor *= DELTA_AIR_CONTROL;
 	}
 	
 	// grabbing code from uzdoom.pk3 and retooling for more preferred feeling

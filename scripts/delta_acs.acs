@@ -1,5 +1,10 @@
 #include "zcommon.acs"
 
+script "Delta_AirControl" ENTER
+{
+	SetAirControl(0.6);
+}
+
 script "Delta_FirstTimeDeath" (void)
 {
 	SetCvar("data_delta_diedFirstTime", true);
