@@ -147,12 +147,15 @@ class DeltaHitscanGrazeChecker : LineTracer
 {
 	double fireLength;
 	bool firstFire;
-	DeltaPlayer _actualHit; // used to ensure if the hitscan deals damage, it doesn't also graze that same player
 	Array<DeltaPlayer> _grazed;
+	
+	protected Actor _source;
+	protected DeltaPlayer _actualHit;
 	
 	virtual void CheckHitscanGraze(Actor source, Vector3 attackPos,
 		Vector3 hitPos)
 	{
+		_source = source;
 		let diff = level.Vec3Diff(attackPos, hitPos),
 			dir = diff.Unit();
 		fireLength = diff.Length();
@@ -191,7 +194,7 @@ class DeltaHitscanGrazeChecker : LineTracer
 			return TRACE_STOP;
 		
 		let ply = DeltaPlayer(results.HitActor);
-		if (ply && ply != _actualHit && _grazed.Find(ply) == _grazed.Size())
+		if (ply && ply != _actualHit && !_source.IsFriend(ply) && _grazed.Find(ply) == _grazed.Size())
 		{
 			_grazed.Push(ply);
 			return TRACE_Continue;

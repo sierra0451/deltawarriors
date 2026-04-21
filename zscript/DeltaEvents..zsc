@@ -142,6 +142,10 @@ class DeltaEvents : EventHandler
 			offsetRight = e.attackOffsetSide + 2,
 			offsetFwd = (e.attackOffsetForward + max(0, (e.thing.vel dot fwd) * 2));
 		
+		// hitscan tracers should show up on left side if we're lefthanded
+		if (e.thing == players[consolePlayer].mo && cl_delta_weaponHandedness)
+			offsetRight -= 4;
+		
 		pos = level.Vec3Offset(pos, right * offsetRight);
 		pos = level.Vec3Offset(pos, fwd * offsetFwd);
 		

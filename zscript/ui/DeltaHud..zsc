@@ -420,11 +420,32 @@ class DeltaHud : BaseStatusBar
 			curY = -_vBorder - 7*_universalScale.y,
 			infoX = _hBorder + 195*_universalScale.x;
 		
+		bool showStats = false;
+		bool stats[4] =
+		{
+			levelStats >= LVLSTATS_KILLS_SECRETS,	// kills
+			levelStats >= LVLSTATS_KILLS_SECRETS,	// secrets
+			levelStats == LVLSTATS_ALL,				// items
+			deathCounter && !netgame				// deaths
+		};
+		
+		let h = 10 * _universalScale.y;
+		for (int i = 0; i < stats.Size(); i++)
+		{
+			if (!stats[i])
+				continue;
+			
+			h += 17 * _universalScale.y;
+			
+			if (showStats)
+				continue;
+			
+			infoX += 100 * _universalScale.x;
+			showStats = true;
+		}
+		
 		if (levelStats >= LVLSTATS_INFO)
 		{
-			if (levelStats > LVLSTATS_INFO)
-				infoX += 100 * _universalScale.x;
-			
 			let author = level.authorName,
 				fontH = _consoleFont.mFont.GetHeight(),
 				infoY = -_vBorder - fontH*_universalScale.y;
@@ -440,31 +461,18 @@ class DeltaHud : BaseStatusBar
 			DrawString(_consoleFont, level.levelName, (infoX, infoY),
 				DI_SCREEN_LEFT_BOTTOM | DI_TEXT_ALIGN_LEFT, scale: _universalScale);
 		}
-		else if (!deathCounter)
+		
+		if (!showStats)
 			return;
 		
-		bool stats[4] =
-		{
-			levelStats >= LVLSTATS_KILLS_SECRETS,	// kills
-			levelStats >= LVLSTATS_KILLS_SECRETS,	// secrets
-			levelStats == LVLSTATS_ALL,				// items
-			deathCounter && !netgame				// deaths
-		};
-		
-		let h = 10 * _universalScale.y;
-		for (int i = 0; i < stats.Size(); i++)
-		{
-			if (stats[i])
-				h += 17 * _universalScale.y;
-		}
-		
-		DrawTexture(_statsBackground, (_hBorder + 195*_universalScale.x, curY),
-			DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_TOP, scale: _universalScale);
-		DrawTexture(_statsBorders, (_hBorder + 195*_universalScale.x, curY),
-			DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_TOP, scale: _universalScale,
-			col: ply.GetCharacterColor());
-		Fill(Color(170, 0, 0, 0), _hBorder + 195*_universalScale.x, curY - h,
-			100 * _universalScale.x, h, DI_SCREEN_LEFT_BOTTOM);
+		DrawTexture(_statsBackground, (_hBorder + 195*_universalScale.x,
+			curY), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_TOP,
+			scale: _universalScale);
+		DrawTexture(_statsBorders, (_hBorder + 195*_universalScale.x,
+			curY), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_TOP,
+			scale: _universalScale, col: ply.GetCharacterColor());
+		Fill(Color(170, 0, 0, 0), _hBorder + 195*_universalScale.x,
+			curY - h, 100 * _universalScale.x, h, DI_SCREEN_LEFT_BOTTOM);
 		Fill(ply.GetCharacterColor(), _hBorder + 197*_universalScale.x,
 			curY - h + 2*_universalScale.y, 2 * _universalScale.x,
 			h - 2*_universalScale.y, DI_SCREEN_LEFT_BOTTOM);

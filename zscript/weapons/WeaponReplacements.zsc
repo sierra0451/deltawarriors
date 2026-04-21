@@ -169,6 +169,8 @@ class TempRocketLauncher : DeltaWeapon replaces RocketLauncher
 {
 	Default
 	{
+		Tag "$TAG_ROCKETLAUNCHER";
+		
 		Inventory.PickupMessage "$GOTLAUNCHER";
 		Weapon.SelectionOrder 2500;
 		Weapon.AmmoUse 1;
@@ -176,10 +178,8 @@ class TempRocketLauncher : DeltaWeapon replaces RocketLauncher
 		Weapon.AmmoType "RocketAmmo";
 		DeltaWeapon.Crosshair "DRRCKRET";
 		
-		Tag "$TAG_ROCKETLAUNCHER";
-		
-		+WEAPON.NOAUTOFIRE
-		+WEAPON.EXPLOSIVE
+		+WEAPON.NOAUTOFIRE;
+		+WEAPON.EXPLOSIVE;
 	}
 	
 	States
@@ -217,14 +217,14 @@ class TempPlasmaRifle : DeltaWeapon
 {
 	Default
 	{
+		Tag "$TAG_PLASMARIFLE";
+		
 		Inventory.PickupMessage "$GOTPLASMA";
 		Weapon.SelectionOrder 100;
 		Weapon.AmmoUse 1;
 		Weapon.AmmoGive 40;
 		Weapon.AmmoType "Cell";
 		DeltaWeapon.Crosshair "DRPLSRET";
-		
-		Tag "$TAG_PLASMARIFLE";
 	}
 	
 	States
@@ -263,14 +263,17 @@ class TempBFG9000 : DeltaWeapon
 	Default
 	{
 		Height 20;
+		Tag "$TAG_BFG9000";
+		
+		Inventory.PickupMessage "$GOTBFG9000";
 		Weapon.SelectionOrder 2800;
 		Weapon.AmmoUse 40;
 		Weapon.AmmoGive 40;
 		Weapon.AmmoType "Cell";
+		DeltaWeapon.Crosshair "DRPLSRET";
+		
 		+WEAPON.NOAUTOFIRE;
 		+WEAPON.BFG;
-		Inventory.PickupMessage "$GOTBFG9000";
-		Tag "$TAG_BFG9000";
 	}
 	
 	States
@@ -321,12 +324,14 @@ class TempIncinerator : DeltaWeapon replaces ID24Incinerator
 {
 	Default
 	{
+		Tag "$TAG_ID24INCINERATOR";
+		
+		Inventory.PickupMessage "$ID24_GOTINCINERATOR";
 		Weapon.SelectionOrder 120;
 		Weapon.AmmoUse 1;
 		Weapon.AmmoGive 20;
 		Weapon.AmmoType "ID24Fuel";
-		Inventory.PickupMessage "$ID24_GOTINCINERATOR";
-		Tag "$TAG_ID24INCINERATOR";
+		DeltaWeapon.Crosshair "DRPLSRET";
 	}
 	
 	States
@@ -370,13 +375,16 @@ class TempCalamityBlade : DeltaWeapon replaces ID24CalamityBlade
 {
 	Default
 	{
+		Tag "$TAG_ID24CALAMITYBLADE";
+		
+		Inventory.PickupMessage "$ID24_GOTCALAMITYBLADE";
 		Weapon.SelectionOrder 1000;
 		Weapon.AmmoUse 10;
 		Weapon.AmmoGive 20;
 		Weapon.AmmoType "ID24Fuel";
-		+Weapon.NoAutoAim;
-		Inventory.PickupMessage "$ID24_GOTCALAMITYBLADE";
-		Tag "$TAG_ID24CALAMITYBLADE";
+		DeltaWeapon.Crosshair "DRPLSRET";
+		
+		+WEAPON.NOAUTOAIM;
 	}
 	
 	action void A_CheckAmmo(StateLabel st, int amount)
