@@ -557,9 +557,10 @@ class DeltaPlayer : PlayerPawn abstract
 	// taking implementation from uzdoom.pk3, slightly retooling for different look on death
 	override void DeathThink()
 	{
-		if (!IsPredicting())
-			deathTimer++;
+		if (IsPredicting())
+			return;
 		
+		deathTimer++;
 		if (crouchFactor != 1)
 			DeltaUncrouch();
 		
