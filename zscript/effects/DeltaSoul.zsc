@@ -37,7 +37,6 @@ class DeltaSoul : Actor
 			{
 				A_StartSound("delta/soul_shatter", attenuation: 0.5);
 				
-				/*
 				let ang = frandom(0, 89);
 				for (int i = 0; i < 360; i += 360. / SOUL_SHARD_COUNT)
 				{
@@ -55,7 +54,7 @@ class DeltaSoul : Actor
 							frandom(3, 4) + pos.z - invoker.prevZ,			// Initial velocity
 						0, 0, -.5											// Acceleration
 					);
-				}*/
+				}
 			}
 			Stop;
 	}

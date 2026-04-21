@@ -23,8 +23,8 @@ GameInfo
 					"$QUIT_DELTA_4", "$QUIT_DELTA_5", "$QUIT_DELTA_6",
 					"$QUIT_DELTA_7", "$QUIT_DELTA_8"
 	
-	PlayerClasses = "KrisPlayer",
-					"SusiePlayer"/*,
+	PlayerClasses = "KrisPlayer"/*,
+					"SusiePlayer",
 					"RalseiPlayer",
 					"NoellePlayer"*/
 	NoRandomPlayerClass = false
