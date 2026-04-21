@@ -36,7 +36,7 @@ class DeltaSoul : Actor
 			{
 				A_StartSound("delta/soul_shatter", attenuation: 0.5);
 				
-				let ang = cfrandom(0, 89);
+				let ang = frandom(0, 89);
 				for (int i = 0; i < 360; i += 360. / SOUL_SHARD_COUNT)
 				{
 					A_SpawnParticleEx(
@@ -47,10 +47,10 @@ class DeltaSoul : Actor
 							SPF_LOCAL_ANIM | SPF_RELVEL | SPF_RELPOS,		// Flags
 						TICRATE * 2,										// Lifetime
 						10, 												// Size
-						ang + i + cfrandom(-3, 3),							// Angle offset
+						ang + i + frandom(-3, 3),							// Angle offset
 						0, 5, 0,											// Position offset
-						cfrandom(-1, 1), cfrandom(-5, -4),
-							cfrandom(3, 4) + pos.z - invoker.prevZ,			// Initial velocity
+						frandom(-1, 1), frandom(-5, -4),
+							frandom(3, 4) + pos.z - invoker.prevZ,			// Initial velocity
 						0, 0, -.5											// Acceleration
 					);
 				}
