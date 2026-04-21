@@ -350,7 +350,7 @@ class DeltaPlayer : PlayerPawn abstract
 	{
 		let targetAirCtrl = DELTA_AIR_CONTROL;
 		
-		if (player && !(player.cmd.buttons & (BT_FORWARD | BT_BACK | BT_MOVELEFT | BT_MOVERIGHT)))
+		if (false && player && !(player.cmd.forwardMove || player.cmd.sideMove))
 			targetAirCtrl = 0;
 		
 		level.airFriction = 1.0004 - (targetAirCtrl*0.0941);
