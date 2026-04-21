@@ -335,16 +335,16 @@ class DeltaPlayer : PlayerPawn abstract
 	{
 		Actor.Tick();
 		
-		if (Health <= 0)
-			AnimateDeath();
+		if (!IsPredicting())
+		{
+			if (Health <= 0)
+				AnimateDeath();
+			
+			TickFootsteps();
+			TickVoice();
+		}
 		
-		if (IsPredicting())
-			return;
-		
-		TickFootsteps();
-		TickVoice();
-		
-		if (player != null && player.mo == self && CanCrouch() && player.playerstate != PST_DEAD)
+		if (!IsVoodooDoll() && CanCrouch() && player.playerstate != PST_DEAD)
 			Height = FullHeight * crouchFactor;
 		else if (health > 0)
 			Height = FullHeight;
@@ -384,12 +384,6 @@ class DeltaPlayer : PlayerPawn abstract
 		HandleRalseiHugs();
 		HandleAirStuff();
 		CheckGraze();
-	}
-	
-	override void ApplyAirControl(out double moveFactor, out double bobFactor)
-	{
-		moveFactor *= DELTA_AIR_CONTROL;
-		bobFactor *= DELTA_AIR_CONTROL;
 	}
 	
 	// grabbing code from uzdoom.pk3 and retooling for more preferred feeling
@@ -615,16 +609,12 @@ class DeltaPlayer : PlayerPawn abstract
 	// taking implementation from uzdoom.pk3, slightly retooling for different look on death
 	override void DeathThink()
 	{
-		if (IsPredicting())
-			return;
-		
-		deathTimer++;
 		if (crouchFactor != 1)
 			DeltaUncrouch();
-		
 		if (!player)
 			return;
 		
+		deathTimer++;
 		player.onGround = (pos.Z <= floorz);
 		
 		if (!_frozenDeath && player.onGround)
@@ -941,16 +931,6 @@ class DeltaPlayer : PlayerPawn abstract
 		}
 		else
 			Super.CheatTake(name, amount);
-	}
-	
-	override void MakeFootsteps()
-	{
-		if (IsPredicting())
-			return;
-		if (reactionTime > 0)
-			return;
-		
-		Super.MakeFootsteps();
 	}
 	
 	// taking from uzdoom.pk3 and retooling, removing grunts entirely
