@@ -4,7 +4,7 @@ GameInfo
 	AltHUDClass = "DeltaAltHud"
 	CorrectPrintBold = true
 	
-	AddEventHandlers = "DeltaEvents"
+	AddEventHandlers = "DeltaEvents", "DeltaMapsetCompat"
 	CursorPic = "CURSOR03"
 	
 	TitlePage = "DELTATT1"

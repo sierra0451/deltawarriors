@@ -55,7 +55,7 @@ extend class DeltaPlayer
 			return;
 		
 		/*	Example: if Kris needs a jump grunt, our voiceClass would be "kris"
-			and snd passed into this function would be "jump_grunt".
+			and snd would be "jump_grunt".
 			
 			Which means targetSnd would be "delta/kris/jump_grunt".	*/
 		string targetSnd = "delta/" .. voiceClass .. "/" .. snd;

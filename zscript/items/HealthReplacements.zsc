@@ -2,7 +2,7 @@ class DeltaHealthBonus : HealthBonus replaces HealthBonus
 {
 	override bool TryPickup(in out Actor toucher)
 	{
-		toucher.GiveBody(5, toucher.GetMaxHealth() * 2);
+		toucher.GiveBody(5, toucher.GetMaxHealth() + 100);
 		GoAwayAndDie();
 		return true;
 	}
@@ -23,7 +23,11 @@ class DeltaSoulsphere : Soulsphere replaces Soulsphere
 {
 	override bool TryPickup(in out Actor toucher)
 	{
-		toucher.GiveBody(toucher.GetMaxHealth(), toucher.GetMaxHealth() * 2);
+		int diff = toucher.GetMaxHealth() - toucher.Health;
+		
+		// if we're more than 100 below max health, we'll always max health out
+		// any closer than 100 points, and we just add 100 up to max + 100
+		toucher.GiveBody(max(diff, 100), toucher.GetMaxHealth() + 100);
 		GoAwayAndDie();
 		return true;
 	}
@@ -60,10 +64,10 @@ class DeltaMegasphereHealth : Health replaces MegasphereHealth
 			Stop;
 	}
 	
-	// making sure no matter who picks this thing up, we always give double their normal max health!
+	// making sure no matter who picks this thing up, we always give max overheal!
 	override bool TryPickup(in out Actor toucher)
 	{
-		if (toucher.GiveBody(toucher.GetMaxHealth() * 2, toucher.GetMaxHealth() * 2))
+		if (toucher.GiveBody(toucher.GetMaxHealth() + 100, toucher.GetMaxHealth() + 100))
 		{
 			GoAwayAndDie();
 			return true;

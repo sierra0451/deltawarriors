@@ -34,6 +34,7 @@ Skill DeltaNormal
 {
     SpawnFilter = Normal
     
+	DefaultSkill
     ACSReturn = 2
     Name = "$DELTA_SKILL_NORMAL"
 }

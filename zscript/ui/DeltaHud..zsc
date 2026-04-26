@@ -1,7 +1,6 @@
 class DeltaHud : BaseStatusBar
 {
 	Vector3 _pos, _angles;
-	
 	protected double _hBorder, _vBorder;
 	protected Vector2 _universalScale, _inverseUniversalScale;
 	protected HUDFont _consoleFont, _drHudFont, _tpFont;
@@ -10,9 +9,10 @@ class DeltaHud : BaseStatusBar
 		_vignette, _vignette2, _infiniteText, _defaultCrosshair,
 		_offhandCrosshair, _reticleBarOverlay, _reticleBar, _ammoBottom,
 		_ammoBottomBorders, _statsBackground, _statsBorders,
-		_statsKillIcon, _statsItemIcon, _statsSecretIcon, _statsDeathIcon;
+		_statsKillIcon, _statsItemIcon, _statsSecretIcon, _statsDeathIcon,
+		_statsTimeIcon, _statsSpeedIcon;
 	
-	protected double _oldTp, _oldHealth, _oldTicFrac, _deltaTime;
+	protected double _oldTp, _oldHealth;
 	protected DynamicValueInterpolator _tpInterp, _healthInterp;
 	
 	private Array<class<Ammo> > _ammos;
@@ -64,6 +64,8 @@ class DeltaHud : BaseStatusBar
 		_statsItemIcon		= TexMan.CheckForTexture("sprites/hud/stats/stats items.png");
 		_statsSecretIcon	= TexMan.CheckForTexture("sprites/hud/stats/stats secrets.png");
 		_statsDeathIcon		= TexMan.CheckForTexture("sprites/hud/stats/stats deaths.png");
+		_statsTimeIcon		= TexMan.CheckForTexture("sprites/hud/stats/stats time.png");
+		_statsSpeedIcon		= TexMan.CheckForTexture("sprites/hud/stats/stats speed.png");
 		
 		SetUpIndicatorTextures();
 		SetUpDamagePopups();
@@ -175,16 +177,20 @@ class DeltaHud : BaseStatusBar
 		if (!CPlayer || !CPlayer.mo)
 			return 0;
 		
-		return CPlayer.mo.GetMaxHealth() == 0 ? 0
-			: min(2, CPlayer.Health / float(CPlayer.mo.GetMaxHealth()));
+		let maxHp = CPlayer.mo.GetMaxHealth(),
+			hp = CPlayer.Health;
+		
+		if (maxHp == 0)
+			return 0;
+		if (hp <= maxHp)
+			return hp * 1. / maxHp;
+		
+		return 1 + min(1, (CPlayer.Health - maxHp) / 100.);
 	}
 	
 	override void Draw(int state, double ticFrac)
 	{
 		Super.Draw(state, ticFrac);
-		
-		_deltaTime = abs(ticFrac - _oldTicFrac);
-		_oldTicFrac = ticFrac;
 		
 		if (state == HUD_None || !cl_delta_showHud)
 			return;
@@ -198,9 +204,13 @@ class DeltaHud : BaseStatusBar
 		
 		if (GetHealthPerc() <= 0.4 && cl_delta_lowHealthVignette && !automapActive)
 		{
-			double alpha = 1 - (GetHealthPerc() / 0.4);
+			double
+				alpha = 1 - (GetHealthPerc() / 0.4),
+				sine = (CPlayer.health>0) ? (sin((level.time+ticFrac) * 5) * 0.125) : 0.25;
+			
+			sine += 0.75;
 			Screen.DrawTexture(_vignette, false, 0, 0, DTA_Fullscreen, true,
-				DTA_FullScreenScale, FSMode_ScaleToScreen, DTA_Alpha, alpha,
+				DTA_FullScreenScale, FSMode_ScaleToScreen, DTA_Alpha, alpha * sine,
 				DTA_Color, CPlayer.mo.GetPainFlash());
 		}
 		
@@ -413,24 +423,29 @@ class DeltaHud : BaseStatusBar
 			DI_SCREEN_LEFT_BOTTOM, alpha: 1., scale: _universalScale*sc);
 	}
 	
+	const STATS_NUM = 6;
+	
 	protected void DrawLevelStats(DeltaPlayer ply)
 	{
 		let levelStats = cl_delta_showLevelStats,
 			deathCounter = cl_delta_showDeathCounter,
+			speedrunStats = cl_delta_showSpeedrunStats,
 			curY = -_vBorder - 7*_universalScale.y,
 			infoX = _hBorder + 195*_universalScale.x;
 		
 		bool showStats = false;
-		bool stats[4] =
+		bool stats[STATS_NUM] =
 		{
-			levelStats >= LVLSTATS_KILLS_SECRETS,	// kills
-			levelStats >= LVLSTATS_KILLS_SECRETS,	// secrets
-			levelStats == LVLSTATS_ALL,				// items
-			deathCounter && !netgame				// deaths
+			levelStats >= LVLSTATS_KILLS_SECRETS,			// kills
+			levelStats >= LVLSTATS_KILLS_SECRETS,			// secrets
+			levelStats == LVLSTATS_ALL,						// items
+			deathCounter && !netgame,						// deaths
+			speedrunStats && speedrunStats != SPD_SPEED,	// time
+			speedrunStats && speedrunStats != SPD_TIMER		// speed
 		};
 		
 		let h = 10 * _universalScale.y;
-		for (int i = 0; i < stats.Size(); i++)
+		for (int i = 0; i < STATS_NUM; i++)
 		{
 			if (!stats[i])
 				continue;
@@ -494,38 +509,59 @@ class DeltaHud : BaseStatusBar
 			
 			TextureID iconTex;
 			string text = "",
-				perfectTrans = "\c[DeltaYellow]";
-			bool perfect = false;
+				perfectTrans = "\c[DeltaYellow]",
+				zeroTrans = "\c[DeltaGrey]";
+			int scoreState = 0; // -1 = none in map, 0 = incomplete, 1 = perfect
 			
 			switch (i)
 			{
-				case 0:
+				case 0: // kills
 					iconTex = _statsKillIcon;
 					text = CPlayer.KillCount .. "/" .. level.Total_Monsters;
-					perfect = level.Killed_Monsters >= level.Total_Monsters;
+					scoreState = (!level.Total_Monsters)? -1 :
+						level.Killed_Monsters >= level.Total_Monsters;
 					break;
 				case 1: // secrets
 					iconTex = _statsSecretIcon;
 					text = CPlayer.SecretCount .. "/" .. level.Total_Secrets;
-					perfect = level.Found_Secrets >= level.Total_Secrets;
+					scoreState = (!level.Total_Secrets)? -1 :
+						level.Found_Secrets >= level.Total_Secrets;
 					break;
 				case 2: // items
 					iconTex = _statsItemIcon;
 					text = CPlayer.ItemCount .. "/" .. level.Total_Items;
-					perfect = level.Found_Items >= level.Total_Items;
+					scoreState = (!level.Total_Items)? -1 :
+						level.Found_Items >= level.Total_Items;
 					break;
 				case 3: // deaths
 					iconTex = _statsDeathIcon;
-					text = "" .. (deathCounter == DC_ENTIRE_RUN?
-						data_delta_currentDeathsSngSeg : data_delta_currentDeathsLevel);
+					int deathCount = deathCounter == DC_ENTIRE_RUN?
+						data_delta_currentDeathsSngSeg : data_delta_currentDeathsLevel;
+					text = String.Format("%d", deathCount);
+					scoreState = deathCount == 0;
+					break;
+				case 4: // time
+					iconTex = _statsTimeIcon;
+					text = DeltaUtil.GetTimeString(level.mapTime, SMT_ALWAYS);
+					int par = level.info.parTime;
+					scoreState = par && (level.mapTime/TICRATE < par);
+					break;
+				case 5: // speed
+					iconTex = _statsSpeedIcon;
+					text = String.Format("%u u/s", ply.vel.Length() * TICRATE);
 					break;
 				default:
 					break;
 			}
 			
+			if (scoreState == -1)
+				text = "--/--";
+			
 			let textW = curFont.mFont.StringWidth(text, false) - text.CodePointCount()*2;
 			
-			if (perfect)
+			if (scoreState == -1)
+				text = zeroTrans .. text;
+			else if (scoreState == 1)
 				text = perfectTrans .. text;
 			
 			curY -= 17 * _universalScale.y;

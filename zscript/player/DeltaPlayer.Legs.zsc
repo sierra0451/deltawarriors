@@ -52,7 +52,7 @@ extend class DeltaPlayer
 			return;
 		}
 		
-		if ((coyoteTimer >= COYOTE_TIME && pos.z != floorz) && inJurisdiction)
+		if ((coyoteTimer >= ANIM_GROUNDED_HANG_TIME && pos.z != floorz) && inJurisdiction)
 			AnimateLegsAir();
 		else
 		{

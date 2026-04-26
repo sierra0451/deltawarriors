@@ -8,6 +8,7 @@ struct RecoilEvent
 class DeltaPlayer : PlayerPawn abstract
 {
 	const COYOTE_TIME = 5;
+	const ANIM_GROUNDED_HANG_TIME = 3;
 	const MAX_AIR_BOB_TICS = 7;
 	const DELTA_AIR_CONTROL = 0.6;
 	const DAMAGE_IFRAMES = 10;
@@ -42,6 +43,7 @@ class DeltaPlayer : PlayerPawn abstract
 	protected Color characterColor, overhealColor;
 	
 	protected LinearValueInterpolator heartbeat, shakiness;
+	protected bool didFirstDeathAnim;
 	
 	protected double angleDiff, oldAngle;
 	
@@ -117,8 +119,8 @@ class DeltaPlayer : PlayerPawn abstract
 	
 	Default
 	{
-		Health 100;
-		Player.MaxHealth 100;
+		Health 200;
+		Player.MaxHealth 200;
 		Radius 16;
 		Speed 0.8;
 		Mass 100;
@@ -137,7 +139,7 @@ class DeltaPlayer : PlayerPawn abstract
 		Player.AttackZOffset 12;
 		Player.JumpZ 12;
 		Player.GruntSpeed 3;
-		Player.ViewBob 0.2;
+		Player.ViewBob 0.3;
 		Player.ViewBobSpeed 12;
 		Player.FlyBob 0;
 		Player.InvulnerabilityMode "Reflective";
@@ -272,19 +274,30 @@ class DeltaPlayer : PlayerPawn abstract
 	{
 		Super.PostBeginPlay();
 		
-		// fixing issues with maps that make use of voodoo dolls and currents
 		if (player != NULL && player.mo == self)
 		{
+			// fixing issues with Boom maps that make use of voodoo dolls and conveyor belts
 			fullHeight = _originalHeight;
 			height = _originalHeight;
 			
-			if (!netgame)
+			if (!netgame && data_delta_respawningFromDeath)
 			{
+				if (data_delta_previousMap != level.mapName)
+				{
+					CVar.FindCVar("data_delta_currentDeathsLevel").SetInt(0);
+					CVar.FindCVar("data_delta_currentDeathsSngSeg").SetInt(0);
+				}
+				
+				CVar.FindCVar("data_delta_respawningFromDeath").SetBool(false);
+			}
+			else
+			{
+				CVar.FindCVar("data_delta_currentDeathsLevel").SetInt(0);
 				CVar.FindCVar("data_delta_currentDeathsSngSeg").SetInt(0);
-				LevelLocals.MakeAutosave();
 			}
 		}
 		
+		CVar.FindCVar("data_delta_previousMap").SetString(level.mapName);
 		coyoteTimer = 0;
 		jumpBuffer = 0;
 		crouchBuffer = 0;
@@ -303,6 +316,9 @@ class DeltaPlayer : PlayerPawn abstract
 		_oldTurn = 0;
 		_targetRoll = 0;
 		SetUpLegs();
+		
+		if (player && player.ReadyWeapon && player.ReadyWeapon is "DeltaWeapon")
+			DeltaWeapon(player.ReadyWeapon).A_ResetAtEase();
 	}
 	
 	override void Travelled()
@@ -329,6 +345,9 @@ class DeltaPlayer : PlayerPawn abstract
 		
 		if (!netgame)
 			CVar.FindCVar("data_delta_currentDeathsLevel").SetInt(0);
+		
+		if (player && player.ReadyWeapon && player.ReadyWeapon is "DeltaWeapon")
+			DeltaWeapon(player.ReadyWeapon).A_ResetAtEase();
 	}
 	
 	override void Tick()
@@ -355,7 +374,7 @@ class DeltaPlayer : PlayerPawn abstract
 		let deathState = IsGrounded()? ResolveState("Death")
 			: ResolveState("AirDeath");
 		if (curState.InStateSequence(deathState)
-			|| curState.InStateSequence(ResolveState("FinishDeath")))
+			|| (IsGrounded() && curState.InStateSequence(ResolveState("FinishDeath"))))
 			return;
 		
 		SetStateSafe(deathState);
@@ -491,11 +510,8 @@ class DeltaPlayer : PlayerPawn abstract
 		
 		let dmg = damage * 1.,
 			healthBeforeDmg = Health + lastDamageTaken,
-			perc = healthBeforeDmg * 1. / GetMaxHealth(),
-			maxScalePerc = 0.667;
+			perc = healthBeforeDmg * 1. / GetMaxHealth();
 		
-		if (perc <= maxScalePerc)
-			dmg *= DeltaUtil.Lerp(0.5, 1, perc / maxScalePerc);
 		if (perc >= 0.5 && dmg >= Health)
 			dmg = Health - 1;
 		
@@ -559,6 +575,7 @@ class DeltaPlayer : PlayerPawn abstract
 		
 		if (!netgame)
 		{
+			CVar.FindCVar("data_delta_respawningFromDeath").SetBool(true);
 			CVar.FindCVar("data_delta_currentDeathsLevel").SetInt(data_delta_currentDeathsLevel + 1);
 			CVar.FindCVar("data_delta_currentDeathsSngSeg").SetInt(data_delta_currentDeathsSngSeg + 1);
 		}
@@ -587,7 +604,7 @@ class DeltaPlayer : PlayerPawn abstract
 		else
 		{
 			let exp = Spawn("DeltaBadExplosion");
-			exp.SetOrigin(pos.PlusZ((exp.height - fullHeight)/2.), false);
+			exp.SetOrigin(pos.PlusZ(-fullHeight / 2.), false);
 			
 			vel.z += frandom[explodeLaunch](10, 15);
 		}
@@ -839,9 +856,8 @@ class DeltaPlayer : PlayerPawn abstract
 	
 	override bool PreTeleport(Vector3 destPos, double destAngle, int flags)
 	{
-		let oldAng = angle;
-		let result = Super.PreTeleport(destPos, destAngle, flags);
-		
+		let oldAng = angle,
+			result = Super.PreTeleport(destPos, destAngle, flags);
 		if (result)
 			oldAngle -= DeltaAngle(destAngle, oldAng);
 		
@@ -1199,7 +1215,7 @@ class DeltaPlayer : PlayerPawn abstract
 		bool doingMoveInput = player ? (player.cmd.forwardMove || player.cmd.sideMove)
 			: false;
 		
-		if (coyoteTimer <= COYOTE_TIME)
+		if (coyoteTimer <= ANIM_GROUNDED_HANG_TIME)
 		{
 			if (doingMoveInput && vel.xy.LengthSquared() > 0)
 				PlayRunning();

@@ -29,8 +29,8 @@ class KrisPlayer : DeltaPlayer
 		Speed 0.8;
 		Mass 100;
 		
-		Health 100;
-		Player.MaxHealth 100;
+		Health 200;
+		Player.MaxHealth 200;
 		
 		Player.DisplayName "$DELTA_CHAR_KRIS";
 		Player.ViewHeight 35.0;
@@ -371,7 +371,7 @@ class KrisPlayer : DeltaPlayer
 		Super.PostBeginPlay();
 		
 		slideSpeed = 18;
-		slideAdjustSpeed = 3;
+		slideAdjustSpeed = 6;
 		_savedSlideSpeed = slideSpeed;
 		slideSlowing = 6.6;
 	}
@@ -594,12 +594,7 @@ class KrisPlayer : DeltaPlayer
 					_savedSlideSpeed = slideSpeed;
 				}
 				else
-				{
-					if (_currentSlideSpeed > 1)
-						_savedSlideSpeed = _currentSlideSpeed;
-					else
-						_savedSlideSpeed = slideSpeed;
-				}
+					_savedSlideSpeed = (_currentSlideSpeed > 1)? _currentSlideSpeed : slideSpeed;
 				
 				_savedSlideSpeedTimer = TICRATE / 10;
 			}
@@ -615,18 +610,10 @@ class KrisPlayer : DeltaPlayer
 			if (IsActorPlayingSound(CHAN_MOVEMENT))
 				A_StopSound(CHAN_MOVEMENT);
 			
-			if (!IsGrounded())
-				_savedSlideSpeed = max(_savedSlideSpeed, -Vel.Z * 0.75);
+			if (-vel.z * 0.75 > _savedSlideSpeed)
+				_savedSlideSpeed = -vel.z * 0.75;
 			else
-			{
-				if (_savedSlideSpeedTimer > 0)
-					_savedSlideSpeedTimer--;
-				else if (_savedSlideSpeedTimer != -1)
-				{
-					_savedSlideSpeed = slideSpeed;
-					_savedSlideSpeedTimer = -1;
-				}
-			}
+				_savedSlideSpeed = max(slideSpeed, _savedSlideSpeed - (slideSlowing / TICRATE));
 		}
 		
 		customBobPerc = 1 - (double(_slideTics) / MAX_SLIDE_TICS);
@@ -677,6 +664,10 @@ class KrisPlayer : DeltaPlayer
 	
 	protected action void A_SpawnDeathSoul(double zOffset = 36)
 	{
+		if (invoker.didFirstDeathAnim)
+			return;
+		
+		invoker.didFirstDeathAnim = true;
 		let soul = DeltaSoul(Spawn("DeltaSoul", Vec3Offset(0, 0, zOffset))),
 			ply = invoker.GetSavedPlayer();
 		
@@ -825,12 +816,13 @@ class KrisPlayer : DeltaPlayer
 		{
 			parried.DamageMobj(self, self, parryDamage, 'Parry', DMG_THRUSTLESS);
 			DeltaUtil.ForceActorPain(parried, 'Parry');
-			double explodeChance = 0.3;
+			double explodeChance = 0.5;
 			
 			if (frandom[explodeChance](0, 1) <= explodeChance && 
-				parried.health < parried.GetGibHealth())
+				parried.health < -20)
 			{
-				Spawn("DeltaBadExplosion", parried.pos);
+				let explodeHeight = GetDefaultByType("DeltaBadExplosion").height;
+				Spawn("DeltaBadExplosion", parried.pos.PlusZ(-parried.height/2));
 			}
 		}
 	}

@@ -84,7 +84,14 @@ enum LevelStats
 	LVLSTATS_OFF,
 	LVLSTATS_INFO,
 	LVLSTATS_KILLS_SECRETS,
-	LVLSTATS_ALL,
+	LVLSTATS_ALL
+}
+
+enum ShowMillisecondsType
+{
+	SMT_ONLY_IF_NO_MINS = -1,
+	SMT_NEVER = 0,
+	SMT_ALWAYS
 }
 
 enum DeltaRecoilType

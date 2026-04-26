@@ -14,6 +14,11 @@ DeltaRed {
 Console:
 	#4F0000 #FF4040 0 256
 }
+DeltaGrey {
+#242400 #808080 0 256
+Console:
+	#242400 #808080 0 256
+}
 
 // Characters
 DeltaKris {

@@ -19,3 +19,24 @@ HardwareShader "DELTATT5"
 {
 	shader "shaders/titleWarp.fp"
 }
+
+HardwareShader "SNLSTTT1"
+{
+	shader "shaders/titleWarp.fp"
+}
+HardwareShader "SNLSTTT2"
+{
+	shader "shaders/titleWarp.fp"
+}
+HardwareShader "SNLSTTT3"
+{
+	shader "shaders/titleWarp.fp"
+}
+HardwareShader "SNLSTTT4"
+{
+	shader "shaders/titleWarp.fp"
+}
+HardwareShader "SNLSTTT5"
+{
+	shader "shaders/titleWarp.fp"
+}

@@ -64,6 +64,44 @@ class DeltaUtil
 		return GetActorForward(a) cross GetActorRight(a, countRoll);
 	}
 	
+	clearscope static string GetTimeString(double tics, int showMsecs = SMT_ONLY_IF_NO_MINS)
+	{
+		int timeHours = tics / TICRATE / 3600;
+		tics -= timeHours * TICRATE * 3600;
+		int timeMinutes = tics / TICRATE / 60;
+		tics -= timeMinutes * TICRATE * 60;
+		int timeSeconds = floor(tics / TICRATE);
+		
+		if (timeMinutes == 60)
+		{
+			timeMinutes = 0;
+			timeHours++;
+		}
+		
+		if (timeSeconds == 60)
+		{
+			timeSeconds = 0;
+			timeMinutes++;
+		}
+		
+		if (showMsecs == SMT_NEVER || (showMsecs == SMT_ONLY_IF_NO_MINS && timeMinutes))
+			return String.Format("%u:%02u", timeHours? timeHours : timeMinutes,
+				timeHours? timeMinutes : timeSeconds);
+		
+		if (showMsecs == SMT_ONLY_IF_NO_MINS && !timeMinutes)
+			return String.Format("%2.2f", tics / TICRATE);
+		
+		if (timeHours)
+			return String.Format("%u:%02u:%02u", timeHours, timeMinutes,
+				floor(tics / TICRATE));
+		
+		let remainder = tics / TICRATE;
+		if (remainder >= 10)
+			return String.Format("%u:%.2f", timeMinutes, tics / TICRATE);
+		
+		return String.Format("%u:0%.2f", timeMinutes, tics / TICRATE);
+	}
+	
 	play static void ForceActorPain(Actor a, Name mod)
 	{
 		if (a.Health <= 0 || a.bNoPain)

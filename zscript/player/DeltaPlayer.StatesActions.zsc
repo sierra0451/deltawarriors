@@ -133,6 +133,7 @@ extend class DeltaPlayer
 		invoker.coyoteTimer = 0;
 		invoker.isUsingOffhand = false;
 		invoker._savedPlayer = invoker.player;
+		invoker.didFirstDeathAnim = false;
 		
 		A_NoBlocking();
 		A_ClearDynamicLights();

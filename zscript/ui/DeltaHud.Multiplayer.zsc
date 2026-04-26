@@ -171,34 +171,8 @@ extend class DeltaHud
 		/// ------------
 		if (timelimit)
 		{
-			double timeTics = ceil(timelimit * 60 * TICRATE) - level.maptime;
-			int timeHours = timeTics / TICRATE / 3600;
-			timeTics -= timeHours * TICRATE * 3600;
-			int timeMinutes = timeTics / TICRATE / 60;
-			timeTics -= timeMinutes * TICRATE * 60;
-			int timeSeconds = ceil(timeTics / TICRATE);
-			
-			if (timeMinutes == 60)
-			{
-				timeMinutes = 0;
-				timeHours++;
-			}
-			
-			if (timeSeconds == 60)
-			{
-				timeSeconds = 0;
-				timeMinutes++;
-			}
-			
-			String timeStr;
-			
-			if (timeMinutes)
-				timeStr = String.Format("%u:%02u",
-					timeHours? timeHours : timeMinutes, timeHours? timeMinutes : timeSeconds);
-			else
-				timeStr = String.Format("%2.2f", double(timeTics) / TICRATE);
-			
-			let textWidth = _consoleFont.mFont.StringWidth(timeStr)*1.5,
+			let timeStr = DeltaUtil.GetTimeString(ceil(timelimit * 60. * TICRATE) - level.maptime),
+				textWidth = _consoleFont.mFont.StringWidth(timeStr)*1.5,
 				fontHeight = _consoleFont.mFont.GetHeight()*1.5;
 			
 			DrawString(_consoleFont, timeStr,
