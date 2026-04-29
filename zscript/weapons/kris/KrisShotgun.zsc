@@ -64,8 +64,7 @@ class KrisShotgun : DeltaWeapon
 				
 				return ResolveState(null);
 			}
-			DKSG A 1 A_FinishRaiseWeapon;
-			Stop;
+			Goto Ready;
 		AtEase:
 			DKSE ABCDE 2 A_DeltaWeaponReady(WRF_NOBOB | WRF_NOSWITCH, true);
 		AtEaseLoop:

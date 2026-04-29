@@ -9,6 +9,13 @@ class DeltaSkillMenu : DeltaListMenu
 	{
 		Super.Init(parent, desc);
 		UpdateDescription();
+		
+		if (DeltaMapsetCompat.Get() ~== "NotEvenRemotelyFair")
+		{
+			desc.mSelectedItem = 7;
+			for (int i = 1; i < 6; i++)
+				desc.mItems[i].Enable(false);
+		}
 	}
 	
 	override bool MenuEvent(int mKey, bool fromController)
@@ -75,6 +82,9 @@ class DeltaSkillMenu : DeltaListMenu
 				break;
 			case 5: // very hard
 				localize = "$DELTA_SKILLDESC_VERYHARD";
+				break;
+			case 6: // nightmare
+				localize = "$DELTA_SKILLDESC_NIGHTMARE";
 				break;
 			default:
 				break;

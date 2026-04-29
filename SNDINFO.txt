@@ -156,7 +156,51 @@ $pitchshiftrange 0
 					delta/kris/severe_pain6
 					delta/kris/severe_pain7
 				}
-			
+			// Drowning
+				// Medium
+				delta/kris/medium_drown1 = "sounds/player/kris/vox/kris_mediumDrown1.wav"
+				delta/kris/medium_drown2 = "sounds/player/kris/vox/kris_mediumDrown2.wav"
+				delta/kris/medium_drown3 = "sounds/player/kris/vox/kris_mediumDrown3.wav"
+				delta/kris/medium_drown4 = "sounds/player/kris/vox/kris_mediumDrown4.wav"
+				delta/kris/medium_drown5 = "sounds/player/kris/vox/kris_mediumDrown5.wav"
+				delta/kris/medium_drown6 = "sounds/player/kris/vox/kris_mediumDrown6.wav"
+				delta/kris/medium_drown7 = "sounds/player/kris/vox/kris_mediumDrown7.wav"
+				delta/kris/medium_drown8 = "sounds/player/kris/vox/kris_mediumDrown8.wav"
+				delta/kris/medium_drown9 = "sounds/player/kris/vox/kris_mediumDrown9.wav"
+				$random delta/kris/medium_drown
+				{
+					delta/kris/medium_drown1
+					delta/kris/medium_drown2
+					delta/kris/medium_drown3
+					delta/kris/medium_drown4
+					delta/kris/medium_drown5
+					delta/kris/medium_drown6
+					delta/kris/medium_drown7
+					delta/kris/medium_drown8
+					delta/kris/medium_drown9
+				}
+				
+				// Severe
+				delta/kris/severe_drown1 = "sounds/player/kris/vox/kris_severeDrown1.wav"
+				delta/kris/severe_drown2 = "sounds/player/kris/vox/kris_severeDrown2.wav"
+				delta/kris/severe_drown3 = "sounds/player/kris/vox/kris_severeDrown3.wav"
+				delta/kris/severe_drown4 = "sounds/player/kris/vox/kris_severeDrown4.wav"
+				delta/kris/severe_drown5 = "sounds/player/kris/vox/kris_severeDrown5.wav"
+				delta/kris/severe_drown6 = "sounds/player/kris/vox/kris_severeDrown6.wav"
+				delta/kris/severe_drown7 = "sounds/player/kris/vox/kris_severeDrown7.wav"
+				delta/kris/severe_drown8 = "sounds/player/kris/vox/kris_severeDrown8.wav"
+				$random delta/kris/severe_drown
+				{
+					delta/kris/severe_drown1
+					delta/kris/severe_drown2
+					delta/kris/severe_drown3
+					delta/kris/severe_drown4
+					delta/kris/severe_drown5
+					delta/kris/severe_drown6
+					delta/kris/severe_drown7
+					delta/kris/severe_drown8
+				}
+				
 			// Death
 				// Medium
 				delta/kris/medium_death1 = "sounds/player/kris/vox/kris_mediumDeath1.wav"
@@ -218,7 +262,7 @@ $pitchshiftrange 0
 		delta/sword/holster = "sounds/weapons/sword/sword_sheathe.wav"
 		$alias delta/sword/swing delta/generic_attack
 		$alias delta/sword/hit delta/generic_hit
-
+		
 		// Revolver
 		delta/revolver/deploy1 = "sounds/weapons/revolver/revolver_deploy1.wav"
 		delta/revolver/deploy2 = "sounds/weapons/revolver/revolver_deploy2.wav"

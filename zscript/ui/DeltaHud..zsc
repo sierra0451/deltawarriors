@@ -172,20 +172,22 @@ class DeltaHud : BaseStatusBar
 		}
 	}
 	
-	protected float GetHealthPerc()
+	protected float GetHealthPerc(DeltaPlayer ply = null)
 	{
-		if (!CPlayer || !CPlayer.mo)
+		if (!ply)
+			ply = DeltaPlayer(CPlayer.mo);
+		if (!ply)
 			return 0;
 		
-		let maxHp = CPlayer.mo.GetMaxHealth(),
-			hp = CPlayer.Health;
+		let maxHp = ply.GetMaxHealth(),
+			hp = ply.health;
 		
 		if (maxHp == 0)
 			return 0;
 		if (hp <= maxHp)
 			return hp * 1. / maxHp;
 		
-		return 1 + min(1, (CPlayer.Health - maxHp) / 100.);
+		return 1 + min(1, (hp - maxHp) / 100.);
 	}
 	
 	override void Draw(int state, double ticFrac)

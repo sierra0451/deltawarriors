@@ -41,8 +41,7 @@ class KrisSmg : DeltaWeapon
 			DKSM K 1 A_StartSound("delta/smg/deploy2", CHAN_WEAPON,
 				CHANF_OVERLAP, pitch: 1.2);
 			DKSM LMN 2 A_DeltaWeaponReady(WRF_NOBOB);
-			DKSM A 2 A_FinishRaiseWeapon;
-			Stop;
+			Goto Ready;
 		AtEase:
 			DKME ABCDE 2 A_DeltaWeaponReady(WRF_NOBOB | WRF_NOSWITCH, true);
 		AtEaseLoop:

@@ -1,6 +1,5 @@
 class KrisSword : DeltaWeapon
 {
-	bool pulledOutFirstTime;
 	int swingCombo;
 	
 	Default
@@ -39,26 +38,23 @@ class KrisSword : DeltaWeapon
 			TNT1 A 0 A_SwapWeapon;
 			Stop;
 		Select:
-			TNT1 A 1 A_StartRaiseWeapon();
+			TNT1 A 1 A_StartRaiseWeapon;
+			TNT1 A 1 A_StartSound("delta/sword/deploy", CHAN_WEAPON);
+			DKWD AB 2 A_DeltaWeaponReady(WRF_NOBOB | WRF_NOSWITCH);
+			Goto FinishSelect;
+		SelectFirst:
+			TNT1 A 1 A_StartRaiseWeapon;
 			TNT1 A 1 A_StartSound("delta/sword/deploy", CHAN_WEAPON);
 			DKWD A 2 A_DeltaWeaponReady(WRF_NOBOB | WRF_NOSWITCH);
-			DKWD B 2
-			{
-				if (!invoker.pulledOutFirstTime)
-				{
-					A_StartSound("delta/sword/deploy_hit", CHAN_WEAPON,
-						CHANF_OVERLAP);
-					invoker.pulledOutFirstTime = true;
-				}
-			}
+			DKWD B 2 A_StartSound("delta/sword/deploy_hit", CHAN_WEAPON, CHANF_OVERLAP);
+		FinishSelect:
 			DKWD C 5;
 			DKWD D 2;
 			DKWD E 2 A_DeltaWeaponReady(WRF_NOBOB);
 			DKWD FGH 2 A_DeltaWeaponReady(WRF_NOBOB);
 			DKWD I 3 A_StartSound("delta/sword/catch", CHAN_WEAPON,
 				CHANF_OVERLAP);
-			DKSW A 1 A_FinishRaiseWeapon;
-			Stop;
+			Goto Ready;
         AtEase:
             DKWH AB 2 A_DeltaWeaponReady(WRF_NOBOB | WRF_NOSWITCH, true);
 			DKWH C 4 A_DeltaWeaponReady(WRF_NOBOB | WRF_NOSWITCH, true);
@@ -104,12 +100,6 @@ class KrisSword : DeltaWeapon
 			Goto Ready;
 	}
 	
-	override void BeginPlay()
-	{
-		Super.BeginPlay();
-		pulledOutFirstTime = false;
-	}
-	
 	action void A_KrisSwordSwing(bool leftSlash = false)
 	{
 		invoker.swingCombo++;
@@ -117,7 +107,6 @@ class KrisSword : DeltaWeapon
 		A_OwnerPlayAttack();
 		A_StartSound("delta/sword/swing", CHAN_WEAPON, CHANF_OVERLAP,
 			pitch: cfrandom(0.95, 1.05));
-		A_AlertMonsters();
 		
 		int dmg, TRACER_COUNT = 16;
 		bool hitSomething = false;

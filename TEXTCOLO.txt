@@ -69,6 +69,8 @@ DeltaHard
 { #804000 #FF8000 0 256 }
 DeltaVeryHard
 { #800000 #FF0000 0 256 }
+DeltaNightmare
+{ #600000 #C02020 0 256 }
 
 // Misc
 DeltaLowHealth

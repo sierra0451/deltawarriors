@@ -67,8 +67,7 @@ class KrisRevolver : DeltaWeapon
 				return ResolveState("Cock");
 			}
 			DKRD J 2 A_ReadyIfCocked(WRF_NOBOB);
-			DKRV A 3 A_FinishRaiseWeapon;
-			Stop;
+			Goto Ready;
 		AtEase:
 			DKRE ABCDE 2 A_DeltaWeaponReady(WRF_NOBOB | WRF_NOSWITCH, true);
 			DKRE F 1 A_DeltaWeaponReady(WRF_NOBOB | WRF_NOSWITCH, true);

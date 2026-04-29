@@ -3,7 +3,7 @@ extend class DeltaHud
 	private Array<Actor> _bosses;
 	private TextureID _bossBarBack;
 	
-	const MAX_BOSS_BARS = 3;
+	const MAX_BOSS_BARS = 5;
 	
 	protected void SetUpBossBars()
 	{
@@ -64,7 +64,9 @@ extend class DeltaHud
 	
 	protected void DrawBossBars()
 	{
-		for (int i = 0; i < _bosses.Size(); i++)
+		int bossCount = _bosses.Size();
+		
+		for (int i = max(0, bossCount-MAX_BOSS_BARS); i < bossCount; i++)
 		{
 			Actor curr = _bosses[i];
 			double w, h;

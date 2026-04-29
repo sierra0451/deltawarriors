@@ -392,7 +392,7 @@ extend class DeltaHud
 		DrawString(_consoleFont, userStr, pos + (32*_universalScale.x, 8*_universalScale.y),
 			scale: _universalScale/2);
 		
-		double healthPerc = clamp(float(ply.Health) / ply.GetMaxHealth(), 0, 2);
+		double healthPerc = GetHealthPerc(ply);
 		Fill(ply.GetCharacterColor(), pos.X + 34*_universalScale.x, pos.Y + 19*_universalScale.y,
 			barWidth * min(1, healthPerc), barHeight, DI_SCREEN_LEFT_TOP);
 		Fill(ply.GetOverhealColor(), pos.X + 34*_universalScale.x, pos.Y + 19*_universalScale.y,

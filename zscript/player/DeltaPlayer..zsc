@@ -712,41 +712,43 @@ class DeltaPlayer : PlayerPawn abstract
 				Vel.Z = 4 * Speed;
 			else if (bNoGravity)
 				Vel.Z = 3.;
-			else if (level.IsJumpingAllowed() && coyoteTimer <= COYOTE_TIME
-				&& Vel.Z <= 0)
+			else if (level.IsJumpingAllowed() && coyoteTimer <= COYOTE_TIME && Vel.Z <= 0)
+				DoJump();
+		}
+	}
+	
+	virtual void DoJump()
+	{
+		if (IsCrouching())
+			player.crouchOffset = 0;
+		
+		double jumpVelZ = JumpZ * 35 / TICRATE;
+		double jumpFac = 0;
+		
+		// [BC] If the player has the high jump power, double their jump velocity.
+		// (actually, pick the best factors from all active items.)
+		for (let p = Inv; p != null; p = p.Inv)
+		{
+			let pp = PowerHighJump(p);
+			if (pp)
 			{
-				if (IsCrouching())
-					player.crouchOffset = 0;
-				
-				double jumpVelZ = JumpZ * 35 / TICRATE;
-				double jumpFac = 0;
-				
-				// [BC] If the player has the high jump power, double their jump velocity.
-				// (actually, pick the best factors from all active items.)
-				for (let p = Inv; p != null; p = p.Inv)
-				{
-					let pp = PowerHighJump(p);
-					if (pp)
-					{
-						double f = pp.Strength;
-						if (f > jumpFac) jumpFac = f;
-					}
-				}
-				if (jumpFac > 0) jumpVelZ *= jumpFac;
-				
-				Vel.Z = jumpVelZ;
-				bOnMobj = false;
-				jumpBuffer = 0;
-				coyoteTimer = COYOTE_TIME + 1;
-				
-				if (!IsPredicting())
-				{
-					A_StartSound("*jump", CHAN_BODY);
-					
-					if (frandom(0., 1.) <= jumpGruntChance)
-						DoSpeak("jump_grunt");
-				}
+				double f = pp.Strength;
+				if (f > jumpFac) jumpFac = f;
 			}
+		}
+		if (jumpFac > 0) jumpVelZ *= jumpFac;
+		
+		Vel.Z = jumpVelZ;
+		bOnMobj = false;
+		jumpBuffer = 0;
+		coyoteTimer = COYOTE_TIME + 1;
+		
+		if (!IsPredicting())
+		{
+			A_StartSound("*jump", CHAN_BODY);
+			
+			if (frandom(0., 1.) <= jumpGruntChance)
+				DoSpeak("jump_grunt");
 		}
 	}
 	
@@ -1298,7 +1300,8 @@ class DeltaPlayer : PlayerPawn abstract
 			SetTension(tensionPoints - DRAIN_AMOUNT/factor, false);
 	}
 	
-	protected state GetStateByAnimType(string prefix, out DeltaWeaponAnimType animType, int defaultAnimType = DELTA_WEAPONANIM_MELEE)
+	protected state GetStateByAnimType(string prefix,
+		out DeltaWeaponAnimType animType, int defaultAnimType = DELTA_WEAPONANIM_MELEE)
 	{
 		let oldAnimType = animType;
 		animType = defaultAnimType;

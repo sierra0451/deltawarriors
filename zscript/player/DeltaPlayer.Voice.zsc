@@ -7,6 +7,7 @@ extend class DeltaPlayer
 	protected string voiceClass;
 	protected double jumpGruntChance;
 	protected int painTimer, painAmount;
+	protected name painMod;
 	
 	property VoiceClass : voiceClass;
 	property JumpGruntChance : jumpGruntChance;
@@ -17,13 +18,24 @@ extend class DeltaPlayer
 		{
 			painTimer = PAIN_TIMER_START;
 			string painSnd = "light_pain";
+			int priorityOffset = 0,
+				lowHpThreshold = GetMaxHealth()*0.333,
+				medThreshold = GetMaxHealth()*0.2,
+				severeThreshold = GetMaxHealth()*0.5;
 			
-			if (painAmount >= 50 || (painAmount >= 20 && health <= GetMaxHealth()/3))
+			if (painAmount >= severeThreshold
+				|| (painAmount >= medThreshold && health <= lowHpThreshold))
+			{
 				painSnd = "severe_pain";
-			else if (painAmount >= 20 || health <= GetMaxHealth()/3)
+				priorityOffset = 2;
+			}
+			else if (painAmount >= medThreshold || health <= lowHpThreshold)
+			{
 				painSnd = "medium_pain";
+				priorityOffset = 1;
+			}
 			
-			DoSpeak(painSnd, VOX_PAIN);
+			DoSpeak(painSnd, VOX_PAIN + priorityOffset);
 			painAmount = 0;
 		}
 		
@@ -71,14 +83,11 @@ extend class DeltaPlayer
 			return;
 		if (painTimer > 0)
 			return;
-		
 		if (mod == "Drowning")
-		{
-			DoSpeak(((damage >= 8)? "severe_drown" : "medium_drown"), VOX_PAIN);
 			return;
-		}
 		
 		painAmount += damage;
+		painMod = mod;
 		painTimer = -1;
 	}
 	

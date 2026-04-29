@@ -37,6 +37,8 @@ class DeltaMapsetCompat : StaticEventHandler
 				_curMapset = "AncientAliens";
 			else if (checksum == "56f7ec7f82136186fd133d644d36c28d")
 				_curMapset = "Sunlust";
+			else if (checksum == "6d1c95a2b07af77823c42500d96277c3")
+				_curMapset = "NotEvenRemotelyFair";
 		}
 		
 		Console.Printf("\n\c[DeltaRalsei]Mapset is " .. _curMapset
@@ -85,7 +87,7 @@ class DeltaMapsetCompat : StaticEventHandler
 		}
 	}
 	
-	static string Get()
+	clearscope static string Get()
 	{
 		let compat = StaticEventHandler.Find("DeltaMapsetCompat");
 		if (!compat)

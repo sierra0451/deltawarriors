@@ -204,7 +204,6 @@ class DeltaEvents : EventHandler
 			check._grazed[i].AddTension(grazeAmount * check._grazed[i].GetGrazeMultiplier(), true);
 			check._grazed[i].A_StartSound("delta/graze", 5, 0);
 		}
-		return;
 	}
 	
 	override void WorldThingRevived(WorldEvent e)
@@ -372,7 +371,7 @@ class DeltaForceClass : EventHandler
 		if (!targetPlayer)
 			return;
 		
-		Console.Printf("target player class is " .. targetPlayer.GetClassName());
+		//Console.Printf("target player class is " .. targetPlayer.GetClassName());
 	}
 	
 	override void PlayerEntered(PlayerEvent e)
@@ -382,7 +381,7 @@ class DeltaForceClass : EventHandler
 		if (!ply || ply.cls == targetPlayer)
 			return;
 		
-		Console.Printf("player entering as wrong class!");
+		//Console.Printf("player entering as wrong class!");
 		let newPawn = PlayerPawn(Actor.Spawn(targetPlayer, ply.mo.pos)),
 			oldPawn = ply.mo;
 		newPawn.player = ply;
@@ -427,7 +426,6 @@ class DeltaTitleEvents : EventHandler
 		{
 			_titleBackgrounds.Push(TexMan.CheckForTexture(titlePrefix .. i));
 		}
-		
 		S_ChangeMusic(music, force: true);
 	}
 	

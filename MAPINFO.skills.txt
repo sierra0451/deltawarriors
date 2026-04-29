@@ -1,7 +1,7 @@
 ClearSkills
 
 // i don't like calling it baby mode lol
-Skill DeltaVeryEasy
+skill DeltaVeryEasy
 {
     AmmoFactor = 2
     HealthFactor = 2
@@ -18,7 +18,7 @@ Skill DeltaVeryEasy
     Name = "$DELTA_SKILL_VERYEASY"
 }
 
-Skill DeltaEasy
+skill DeltaEasy
 {
     DamageFactor = 0.75
     SpawnFilter = Easy
@@ -30,7 +30,7 @@ Skill DeltaEasy
     Name = "$DELTA_SKILL_EASY"
 }
 
-Skill DeltaNormal
+skill DeltaNormal
 {
     SpawnFilter = Normal
     
@@ -39,7 +39,7 @@ Skill DeltaNormal
     Name = "$DELTA_SKILL_NORMAL"
 }
 
-Skill DeltaHard
+skill DeltaHard
 {
     SpawnFilter = Hard
     
@@ -48,15 +48,30 @@ Skill DeltaHard
     Name = "$DELTA_SKILL_HARD"
 }
 
-// not calling it nightmare cuz we won't have instant reactions or respawning
-Skill DeltaVeryHard
+skill DeltaVeryHard
 {
-    DamageFactor = 1.25
-    
     SpawnFilter = Nightmare
+    DamageFactor = 1.25
     FastMonsters
     
     ACSReturn = 4
     TextColor = "DeltaVeryHard"
     Name = "$DELTA_SKILL_VERYHARD"
+	MustConfirm = "$DELTA_SKILLWARN_VERYHARD"
+}
+
+skill DeltaNightmare
+{
+	SpawnFilter = Nightmare
+	AmmoFactor = 2
+	DamageFactor = 1.25
+	FastMonsters
+	InstantReaction
+	DisableCheats
+	RespawnTime = 12
+	
+	ACSReturn = 4
+	TextColor = "DeltaNightmare"
+	Name = "$DELTA_SKILL_NIGHTMARE"
+	MustConfirm = "$DELTA_SKILLWARN_NIGHTMARE"
 }
