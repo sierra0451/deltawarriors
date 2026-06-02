@@ -26,7 +26,6 @@ extend class DeltaHud
 	protected void SetUpIndicatorTextures()
 	{
 		_damageIndicator 	= TexMan.CheckForTexture("DRDMGIND");
-		_grazeIndicator 	= TexMan.CheckForTexture("DRGRZIND");
 		_grazeStencil		= TexMan.CheckForTexture("sprites/hud/grazeStencil.png");
 		_grazeMarker		= TexMan.CheckForTexture("sprites/hud/grazeMarker.png");
 	}
@@ -71,8 +70,8 @@ extend class DeltaHud
 			
 			Vector3 targetPos = _damageIndicators[i].sourcePos;
 			let player = CPlayer.mo;
-			Vector3 diff = level.Vec3Diff(_pos, targetPos);
-			float ang = player.DeltaAngle(_angles.z, VectorAngle(diff.x, diff.y));
+			Vector3 diff = level.Vec3Diff(pos, targetPos);
+			float ang = player.DeltaAngle(angles.z, VectorAngle(diff.x, diff.y));
 			float alpha = min(1, (_damageIndicators[i].timer - ticFrac) / DAMAGE_INDICATOR_FADE_TIME);
 			
 			DrawTextureRotated (
@@ -104,13 +103,12 @@ extend class DeltaHud
 		
 		Screen.SetStencil(1, SOP_Keep, SF_AllOn);
 		
-		if (ply.ticLastGrazed >= 0)
+		if (ply.grazeTics)
 		{
-			int timePassed = level.time - ply.ticLastGrazed;
-			int alpha = 48 * (1 - (timePassed / 5.));
+			let alpha = 48. * ply.grazeTics / DeltaPlayer.MAX_GRAZE_TICS;
 			
 			DrawTexture(_grazeStencil, (0, 0), DI_SCREEN_CENTER | DI_ITEM_OFFSETS,
-				scale: _universalScale * 2, col: Color(alpha, 160, 160, 160));
+				scale: _universalScale * 2, col: Color(int(alpha), 160, 160, 160));
 		}
 		
 		float indicatorSize = 2;
@@ -124,12 +122,12 @@ extend class DeltaHud
 			
 			Vector3 targetPos = _grazeIndicators[i].sourcePos;
 			let player = CPlayer.mo;
-			Vector3 diff = level.Vec3Diff(_pos, targetPos);
-			float ang = player.DeltaAngle(_angles.z, VectorAngle(diff.x, diff.y));
+			Vector3 diff = level.Vec3Diff(pos, targetPos);
+			float ang = player.DeltaAngle(angles.z, VectorAngle(diff.x, diff.y));
 			float alpha = min(1, (_grazeIndicators[i].timer - ticFrac) / GRAZE_INDICATOR_TIME);
 			
 			DrawTextureRotated(
-				_grazeMarker,//_grazeIndicator,
+				_grazeMarker,
 				(distance * sin(-ang) * _universalScale.x, -distance * cos(ang) * _universalScale.y),
 				DI_SCREEN_CENTER | DI_ITEM_OFFSETS,
 				ang,

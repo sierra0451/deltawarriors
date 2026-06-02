@@ -2,9 +2,10 @@ class DeltaMessageBox : Object ui
 {
 	DeltaMessageBox nextMessage;
 	DeltaMessageHandler handler;
+	DeltaMessageState messageState;
+	
 	protected TextureID cornerTex, sideTex;
 	protected string goalMessage, displayedMessage;
-	protected DeltaMessageState messageState;
 	protected sound typeSound;
 	protected int curTics, curCharIndex, soundTimer;
 	
@@ -28,7 +29,7 @@ class DeltaMessageBox : Object ui
 		curTics = delayTics;
 		self.typeSound = typeSound;
 		
-		curCharIndex = -1;
+		curCharIndex = 0;
 		displayedMessage = "";
 		messageState = MSG_STATE_INITDELAY;
 		return self;
@@ -60,20 +61,20 @@ class DeltaMessageBox : Object ui
 			playSound = true,
 			usesAsterisk = goalMessage.GetNextCodePoint(0) == int("*");
 		
-		while (!printed)
+		while (!printed || messageState == MSG_STATE_SKIPPING)
 		{
-			curCharIndex++;
-			
-			int chr, next;
-			[chr, next] = goalMessage.GetNextCodePoint(curCharIndex);
+			let [chr, nextIndex] = goalMessage.GetNextCodePoint(curCharIndex);
+			int next = goalMessage.GetNextCodePoint(nextIndex);
 			
 			if (curCharIndex >= goalMessage.CodePointCount() && messageState < MSG_STATE_HOLD_INPUT)
 				messageState = MSG_STATE_HOLD_INPUT;
 			
+			int temp;
+			
 			switch (chr)
 			{
 				case "^":
-					string str = goalMessage.Mid(curCharIndex+1, 1);
+					string str = goalMessage.Mid(nextIndex, 1);
 					int timer = str.ToInt(10);
 					
 					if (timer < 5)
@@ -103,7 +104,7 @@ class DeltaMessageBox : Object ui
 						}
 					}
 					
-					curCharIndex++;
+					[temp, nextIndex] = goalMessage.GetNextCodePoint(nextIndex);
 					playSound = false;
 					printed = true;
 					break;
@@ -115,7 +116,7 @@ class DeltaMessageBox : Object ui
 				case "&":
 					displayedMessage.AppendCharacter("\n");
 					
-					if (usesAsterisk && goalMessage.Mid(curCharIndex+1, 1) != "*")
+					if (usesAsterisk && goalMessage.Mid(nextIndex, 1) != "*")
 						displayedMessage.AppendFormat("  ");
 					
 					printed = true;
@@ -131,32 +132,38 @@ class DeltaMessageBox : Object ui
 					playSound = false;
 					printed = true;
 					
-					if (goalMessage.Mid(curCharIndex+1, 1) == "%")
+					if (goalMessage.Mid(nextIndex, 1) == "%")
 					{
 						messageState = MSG_STATE_HOLD_SCRIPT;
+						[temp, nextIndex] = goalMessage.GetNextCodePoint(nextIndex);
 						break;
 					}
 					
 					handler.NextMessage();
 					break;
 				case "\c":
-					if (goalMessage.Mid(curCharIndex+1, 1) == "[")
+					if (goalMessage.Mid(nextIndex, 1) == "[")
 					{
-						int check = curCharIndex+1,
-							count = 0;
+						int i;
 						
-						while (goalMessage.Mid(check+count, 1) != "]")
+						// we're casting this shit cuz fuuuuck actually working with this </3
+						for (i = nextIndex; i < int(goalMessage.Length());)
 						{
-							count++;
+							int _chr, _next;
+							[_chr, _next] = goalMessage.GetNextCodePoint(i);
+							i = _next;
+							
+							if (_chr == int("]"))
+								break;
 						}
 						
-						displayedMessage.AppendFormat("\c" .. goalMessage.Mid(check, count));
-						curCharIndex += count;
+						displayedMessage.AppendFormat("\c" .. goalMessage.Mid(nextIndex, i-nextIndex));
+						nextIndex = i;
 						break;
 					}
 					
 					displayedMessage.AppendFormat(goalMessage.Mid(curCharIndex, 2));
-					curCharIndex++;
+					[temp, nextIndex] = goalMessage.GetNextCodePoint(nextIndex);
 					break;
 				default:
 					// don't play typing sound for punctuation
@@ -169,18 +176,35 @@ class DeltaMessageBox : Object ui
 					printed = true;
 					break;
 			}
+			
+			curCharIndex = nextIndex;
 		}
 		
 		if (playSound)
 			PlayTypeSound();
 	}
 	
-	virtual int TakeInput(InputEvent evt)
+	bool NextCharacterExists()
+	{
+		let [chr, nextIndex] = goalMessage.GetNextCodePoint(curCharIndex);
+		let [next, secondNextIndex] = goalMessage.GetNextCodePoint(nextIndex);
+		
+		if (curCharIndex+1 >= goalMessage.CodePointCount())
+			return false;
+		if (goalMessage.Mid(chr, nextIndex - curCharIndex) == "/")
+			return false;
+		if (goalMessage.Mid(chr, secondNextIndex - curCharIndex) == "%%")
+			return false;
+		
+		return true;
+	}
+	
+	virtual void TakeInput(InputEvent evt)
 	{
 		if (messageState == MSG_STATE_TYPING)
-			return MSG_SKIP;
-		
-		return MSG_IGNORE;
+			messageState = MSG_STATE_SKIPPING;
+		else if (messageState == MSG_STATE_HOLD_INPUT)
+			handler.NextMessage();
 	}
 	
 	virtual void PlayTypeSound()
@@ -207,8 +231,8 @@ class DeltaMessageBox : Object ui
 		
 		if (cornerTex && sideTex)
 		{
-			Screen.Dim(0xff000000, 1, boxPos.x, boxPos.y,
-				boxSize.x, boxSize.y);
+			Screen.Dim(0xff000000, 1, int(boxPos.x), int(boxPos.y),
+				int(boxSize.x), int(boxSize.y));
 			
 			Screen.DrawTexture(cornerTex, true, boxPos.x, boxPos.y, DTA_ScaleX,
 				boxScale, DTA_ScaleY, boxScale);
@@ -235,11 +259,11 @@ class DeltaMessageBox : Object ui
 		}
 		else
 		{
-			double thicc = 3 * boxScale;
-			Screen.Dim(0xff000000, 1, boxPos.x - thicc*2, boxPos.y - thicc*2,
-				boxSize.x + thicc*4, boxSize.y + thicc*4);
-			Screen.DrawLineFrame(0xffffffff, boxPos.x - thicc*2, boxPos.y - thicc*2,
-				boxSize.x + thicc*4, boxSize.y + thicc*4, thicc);
+			int thicc = int(3 * boxScale);
+			Screen.Dim(0xff000000, 1, int(boxPos.x) - thicc*2, int(boxPos.y) - thicc*2,
+				int(boxSize.x) + thicc*4, int(boxSize.y) + thicc*4);
+			Screen.DrawLineFrame(0xffffffff, int(boxPos.x) - thicc*2, int(boxPos.y) - thicc*2,
+				int(boxSize.x) + thicc*4, int(boxSize.y) + thicc*4, thicc);
 		}
 		
 		Screen.DrawText(smallFont, Font.CR_UNTRANSLATED, boxPos.x, boxPos.y,
@@ -260,12 +284,17 @@ class DeltaMessageBox : Object ui
 		return false;
 	}
 	
-	string GetMessage()
+	string GetMessage() const
 	{
 		return goalMessage;
 	}
 	
-	DeltaMessageState GetMessageState()
+	string GetDisplayedMessage() const
+	{
+		return displayedMessage;
+	}
+	
+	DeltaMessageState GetMessageState() const
 	{
 		return messageState;
 	}
@@ -275,10 +304,11 @@ class DeltaMessageHandler : ScreenJob
 {
 	string debugString;
 	DeltaMessageBox message;
+	bool keyCurrentlyPressed; // used to prevent repeat inputs
 	
-	static DeltaMessageHandler Create()
+	static DeltaMessageHandler Create(DeltaMessageBox msg = null)
 	{
-		return new("DeltaMessageHandler").Init();
+		return new("DeltaMessageHandler").Init(msg);
 	}
 	
 	virtual DeltaMessageHandler Init(DeltaMessageBox msg = null, int flags = 0,
@@ -306,9 +336,19 @@ class DeltaMessageHandler : ScreenJob
 		if (!message)
 			return true;
 		
+		if (evt.type == InputEvent.Type_KeyUp)
+		{
+			keyCurrentlyPressed = false;
+			return true;
+		}
+		
 		if (evt.type == InputEvent.Type_KeyDown && !System.SpecialKeyEvent(evt))
 		{
+			if (keyCurrentlyPressed)
+				return true;
+			
 			message.TakeInput(evt);
+			keyCurrentlyPressed = true;
 			return true;
 		}
 		
@@ -317,6 +357,13 @@ class DeltaMessageHandler : ScreenJob
 	
 	virtual void NextMessage()
 	{
+		if (message.GetMessageState() == MSG_STATE_HOLD_SCRIPT && message.NextCharacterExists())
+		{
+			message.messageState = MSG_STATE_TYPING;
+			message.ProcessNextCharacter();
+			return;
+		}
+		
 		if (!message.nextMessage)
 		{
 			jobState = finished;
@@ -366,153 +413,5 @@ class DeltaMessageHandler : ScreenJob
 			return -1;
 		
 		return message.GetMessageState();
-	}
-}
-
-class DeltaWarriorsIntro : ScreenJob
-{
-	TextureID bySierraTex, heartTex;
-	int introState;
-	/*
-		-1 = uninitialized
-		 0 = "Made by" card fade in
-		 1 = "Made by" card hold
-		 2 = "Made by" card hold, fade in "made with love"
-		 3 = "Made by" card hold, hold "made with love"
-		 4 = Fade out
-		 5 = black screen
-	*/
-	
-	int curTics, targetTics;
-	
-	static DeltaWarriorsIntro Create(int flags)
-	{
-		return new("DeltaWarriorsIntro").Init(flags);
-	}
-	
-	DeltaWarriorsIntro Init(int flags = 0)
-	{
-		bySierraTex = TexMan.CheckForTexture("graphics/sierraSign.png");
-		heartTex = TexMan.CheckForTexture("graphics/love.png");
-		introState = curTics = targetTics = -1;
-		noWipe = true;
-		Super.Init(flags);
-		return self;
-	}
-	
-	override void OnTick()
-	{
-		Super.OnTick();
-		
-		if (curTics >= 0)
-			curTics++;
-		
-		if (curTics == targetTics)
-		{
-			introState++;
-			curTics = 0;
-			
-			switch (introState)
-			{
-				case 0: 	// "Made by" card fade in
-					targetTics = TICRATE;
-					break;
-				case 1: 	// "Made by" card hold
-					targetTics = TICRATE;
-					break;
-				case 2: 	// "Made by" card hold, fade in "made with love"
-					targetTics = TICRATE;
-					break;
-				case 3: 	// "Made by" card hold, hold "made with love"
-					targetTics = TICRATE * 3;
-					break;
-				case 4: 	// Fade out
-					targetTics = TICRATE;
-					break;
-				case 5: 	// Black screen
-					targetTics = TICRATE / 2;
-					break;
-				default:
-					jobState = finished;
-					break;
-			}
-		}
-	}
-	
-	override bool OnEvent(InputEvent evt)
-	{
-		if (introState == 5)
-			return true;
-		
-		if (evt.type == InputEvent.Type_KeyDown && !System.SpecialKeyEvent(evt))
-		{
-			introState = 5;
-			curTics = 0;
-			targetTics = 5;
-		}
-		return true;
-	}
-	
-	override void Draw(double smoothRatio)
-	{
-		Super.Draw(smoothRatio);
-		Screen.Dim(0xff000000, 1, 0, 0, Screen.GetWidth(), Screen.GetHeight());
-		
-		if (introState == 5)
-			return;
-		
-		double targetAlpha = 1.,
-			sc = max(1, min(Screen.GetWidth()/1920, Screen.GetHeight()/1080));
-		
-		if (introState < 1 || introState > 3)
-		{
-			targetAlpha = double(curTics) / targetTics;
-			
-			if (introState == 4)
-				targetAlpha = 1 - targetAlpha;
-		}
-		
-		string str = StringTable.Localize("$DELTAWARRIORS_FAN_PROJECT");
-		double signW, signH, heartW, heartH,
-			stringW = smallFont.StringWidth(str) * sc * 2;
-		[signW, signH] = TexMan.GetSize(bySierraTex);
-		signW *= sc*0.5;
-		signH *= sc*0.5;
-		[heartW, heartH] = TexMan.GetSize(heartTex);
-		heartW *= sc*2;
-		heartH *= sc*2;
-		
-		Screen.DrawText(smallFont, Font.CR_UNTRANSLATED,
-			(Screen.GetWidth() - stringW)/2, (Screen.GetHeight() - signH - heartH)/2,
-			str, DTA_Alpha, targetAlpha, DTA_ScaleX, sc*2, DTA_ScaleY, sc*2);
-		Screen.DrawTexture(bySierraTex, false, Screen.GetWidth()/2,
-			(Screen.GetHeight())/2, DTA_Alpha, targetAlpha,
-			DTA_ScaleX, sc*0.5, DTA_ScaleY, sc*0.5);
-		
-		if (introState < 2)
-			return;
-		
-		str = StringTable.Localize("$DELTAWARRIORS_MADE_WITH");
-		stringW = smallFont.StringWidth(str) * sc * 2;
-		
-		if (introState == 2)
-			targetAlpha = double(curTics) / targetTics;
-		
-		Screen.DrawText(smallFont, Font.CR_UNTRANSLATED,
-			(Screen.GetWidth() - (stringW + heartW))/2, (Screen.GetHeight() + signH)/2,
-			str, DTA_Alpha, targetAlpha, DTA_ScaleX, sc*2, DTA_ScaleY, sc*2);
-		Screen.DrawTexture(heartTex, false, (Screen.GetWidth() + stringW - heartW/2)/2,
-			(Screen.GetHeight() + signH)/2, DTA_Alpha, targetAlpha,
-			DTA_ScaleX, sc*2, DTA_ScaleY, sc*2);
-	}
-}
-
-class DeltaCutsceneManager ui
-{
-	static void IntroCutscene(ScreenJobRunner runner)
-	{
-		let csn = DeltaWarriorsIntro.Create(ScreenJob.transition_crossfade);
-		runner.Append(csn);
-		runner.Init(false, true);
 	}
 }

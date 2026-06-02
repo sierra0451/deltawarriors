@@ -1,5 +1,7 @@
 class DeltaBadExplosion : Actor
 {
+	protected Vector3 ofs;
+	
 	Default
 	{
 		+NOINTERACTION;
@@ -16,5 +18,23 @@ class DeltaBadExplosion : Actor
 				flags: CHANF_OVERLAP, attenuation: ATTN_NONE);
 			BDEX BCDEFGHIJKLMNOPQ 3;
 			Stop;
+	}
+	
+	override void PostBeginPlay()
+	{
+		Super.PostBeginPlay();
+		
+		if (master)
+			ofs = level.Vec3Diff(master.pos, pos);
+	}
+	
+	override void Tick()
+	{
+		Super.Tick();
+		
+		if (!master)
+			return;
+		
+		SetOrigin(level.Vec3Offset(master.pos, ofs), true);
 	}
 }

@@ -1,10 +1,5 @@
 class DeltaDamagePopup : DeltaPopup
 {
-	Default
-	{
-		+MASTERNOSEE;
-	}
-	
 	States
 	{
 		Spawn:

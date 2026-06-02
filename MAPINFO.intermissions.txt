@@ -1,69 +1,31 @@
 /*
-cluster 1
-{
-	flat = "$BGFLATE1"
-	exitText = lookup, "E1TEXT"
-}
+// DOOM I episode 1 (or Ancient Aliens episode 1 part 1)
+cluster 1 {}
 
-cluster 2
-{
-	flat = "$BGFLATE2"
-	exitText = lookup, "E2TEXT"
-}
+// DOOM I episode 2 (or Ancient Aliens episode 1 part 2)
+cluster 2 {}
 
-cluster 3
-{
-	flat = "$BGFLATE3"
-	exitText = lookup, "E3TEXT"
-}
+// DOOM I episode 3 (or Ancient Aliens episode 2 part 1)
+cluster 3 {}
 
-cluster 4
-{
-	flat = "$BGFLATE4"
-	exitText = lookup, "E4TEXT"
-}
+// DOOM I episode 4 (or Ancient Aliens episode 2 part 2)
+cluster 4 {}
 
-// DOOM II first cluster (up thru level 6)
-cluster 5
-{
-	flat = "$BGFLAT06"
-	exitText = lookup, "C1TEXT"
-	
-}
+// DOOM II first cluster (exiting map06) (or Ancient Aliens episode 3 part 1)
+cluster 5 {}
 
-// DOOM II second cluster (up thru level 11)
-cluster 6
-{
-	flat = "$BGFLAT11"
-	exitText = lookup, "C2TEXT"
+// DOOM II second cluster (exiting map11) (or Ancient Aliens ending)
+cluster 6 {}
 
-}
+// DOOM II third cluster (exiting map20)
+cluster 7 {}
 
-// DOOM II third cluster (up thru level 20)
-cluster 7
-{
-	flat = "$BGFLAT20"
-	exitText = lookup, "C3TEXT"
-}
+// DOOM II fourth cluster (beating map30, DOOM II ending)
+cluster 8 {}
 
-// DOOM II fourth cluster (up thru level 30)
-cluster 8
-{
-	flat = "$BGFLAT30"
-	exitText = lookup, "C4TEXT"
-}
+// DOOM II fifth cluster (finding secret level)
+cluster 9 {}
 
-// DOOM II fifth cluster (level 31)
-cluster 9
-{
-	flat = "$BGFLAT15"
-	enterText = lookup, "C5TEXT"
-}
-
-// DOOM II sixth cluster (level 32)
-cluster 10
-{
-	flat = "$BGFLAT31"
-	enterText = lookup, "C6TEXT"
-}
+// DOOM II sixth cluster (finding super-secret level)
+cluster 10 {}
 */

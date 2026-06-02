@@ -32,7 +32,7 @@ extend class DeltaHud
 		
 		gl_proj.CacheCustomResolution(resolution);
 		gl_proj.CacheFov(CPlayer.fov);
-		gl_proj.Reorient(_pos, (_angles.z, _angles.x, _angles.y));
+		gl_proj.Reorient(pos, (angles.z, angles.x, angles.y));
 		gl_proj.BeginProjection();
 		
 		for (int i = 0; i < players.Size(); i++)
@@ -40,11 +40,11 @@ extend class DeltaHud
 			if (!playerInGame[i] || players[i] == CPlayer)
 				continue;
 			
-			let ply = players[i].mo;
+			let ply = PlayerPawn(players[i].mo);
 			if (!ply || !(ply is "DeltaPlayer"))
 				continue;
 			
-			gl_proj.ProjectActorPosPortal(ply, (0, 0, ply.height+3), ticFrac);
+			gl_proj.ProjectActorPosPortal(ply, (0, 0, ply.fullHeight + 3), ticFrac);
 			if (!gl_proj.IsInFront())
 				continue;
 			

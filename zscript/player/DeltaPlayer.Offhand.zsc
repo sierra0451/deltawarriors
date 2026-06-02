@@ -34,6 +34,7 @@ extend class DeltaPlayer
 	action void A_EndOffhand()
 	{
 		invoker.isUsingOffhand = false;
+		A_OverlayOffset(PSP_WEAPON, 0, WEAPONBOTTOM);
 	}
 	
 	clearscope virtual bool CanUseOffhand()

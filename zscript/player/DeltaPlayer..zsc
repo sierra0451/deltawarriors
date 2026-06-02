@@ -2,23 +2,85 @@ struct RecoilEvent
 {
 	Vector3 recoil;
 	int startTime, curTime, leadInTime;
-	DeltaRecoilType recoilType;
+	int recoilType; // DeltaRecoilType
 }
 
 class DeltaPlayer : PlayerPawn abstract
 {
-	const COYOTE_TIME = 5;
+	enum DeltaCrosshairState
+	{
+		DELTA_XHR_NEUTRAL,
+		DELTA_XHR_FRIENDLY,
+		DELTA_XHR_ENEMY
+	}
+	enum DeltaCrouchState
+	{
+		CS_STANDING,
+		CS_CROUCHING,
+		CS_SLAMMING,
+		CS_SLIDING
+	}
+	enum DeltaTpResult
+	{
+		TP_FAIL,
+		TP_USE,
+		TP_INFINITE
+	}
+	enum DeltaPsp
+	{
+		PSP_LEGS = -100,
+		PSP_OFFHAND = -50
+	}
+	enum HeartbeatSetting
+	{
+		HB_OFF,
+		HB_ON,
+		HB_LIGHTNERS_ONLY
+	}
+	enum DeltaRecoilType
+	{
+		RECOIL_LAND,
+		RECOIL_WEAPON,
+		RECOIL_DAMAGE
+	}
+	enum DeltaWeaponAnimType
+	{
+		DELTA_WEAPONANIM_MELEE,
+		DELTA_WEAPONANIM_GUN,
+		DELTA_WEAPONANIM_MAGIC
+	}
+	enum DeltaFootstepType
+	{
+		FOOTSTEP_NONE,
+		FOOTSTEP_BOOTS,
+		FOOTSTEP_FLUFF,
+		FOOTSTEP_HOOVES
+	}
+	enum DeltaVoicePriority
+	{
+		VOX_LEAST_IMPORTANT = -1,
+		VOX_BREATHING = 0,
+		VOX_MOVEMENT = 10,
+		VOX_PAIN = 20,
+		VOX_DIALOGUE = 30,
+		VOX_DEATH = 40,
+		VOX_MOST_IMPORTANT
+	}
+	
+	const COYOTE_TIME = 3;
 	const ANIM_GROUNDED_HANG_TIME = 3;
 	const MAX_AIR_BOB_TICS = 7;
-	const DELTA_AIR_CONTROL = 0.6;
+	const DELTA_AIR_CONTROL = 0.4;
 	const DAMAGE_IFRAMES = 10;
 	const DRAIN_TIMER_START = TICRATE * 12;			// tp lasts for 12 seconds before we start draining it
 	const DRAIN_AMOUNT = 5./TICRATE;
+	const MAX_GRAZE_TICS = 5;
 	const DEFAULT_RED_CROSSHAIR_RANGE = 500;
 	const MAX_TURN = 10;
+	const DEATH_HANG_FRAMES = TICRATE;
 	
-	double tensionPoints, maxTensionPoints;
-	int ticLastGrazed, tensionDrainTimer, hugReactionTime;
+	double tensionPoints, maxTensionPoints, bobTimer;
+	int grazeTics, tensionDrainTimer, hugReactionTime;
 	bool beingHugged;
 	
 	protected int coyoteTimer; 						// used to handle coyote time
@@ -39,13 +101,13 @@ class DeltaPlayer : PlayerPawn abstract
 	
 	protected Array<Actor> grazed;
 	
-	protected string characterIcon, nameTag;
+	protected string characterIcon, nameTag, automapIcon;
 	protected Color characterColor, overhealColor;
 	
 	protected LinearValueInterpolator heartbeat, shakiness;
-	protected bool didFirstDeathAnim;
+	protected bool didFirstDeathAnim, blind;
 	
-	protected double angleDiff, oldAngle;
+	protected double angleDiff;
 	
 	protected state
 		SpawnGunState,				SpawnMeleeState,		SpawnMagicState,
@@ -66,15 +128,21 @@ class DeltaPlayer : PlayerPawn abstract
 	protected double crouchFactor;
 	
 	private double _targetRoll;
-	private bool _frozenDeath;						// using this for custom ice death that doesn't automatically shatter us lol
+	private bool _frozenDeath;				// using this for custom ice death that doesn't automatically shatter us lol
 	
-	private Vector2 _currentFlinch;					// used for weapon flinching when taking damage
+	private Vector2 _desiredMove, _move;
+	
+	private Vector2 _currentFlinch;			// used for weapon flinching when taking damage
 	private int _flinchTics;
 	
-	private double _oldTurn, _turn;
-	private double _originalHeight;					// used for fixing compatibility issues with maps that use voodoo doll scripting
+	private Vector2 _lastBob;				// saving weapon position for hitstops or when we die
 	
-	private TextureID _characterIconId, _nameTagId;	// used for health displays in co-op and team deathmatch
+	private double _oldTurn, _turn;
+	private double _originalHeight;			// used for fixing compatibility issues with maps (mainly Boom maps) that use voodoo doll scripting
+	
+	private TextureID _characterIconId;		// used for health displays in co-op and team deathmatch
+	private TextureID _nameTagId;			// used for character name display in HUD
+	private int _automapIcon;
 	
 	private DeltaCrosshairState _crosshairState;
 	
@@ -83,6 +151,7 @@ class DeltaPlayer : PlayerPawn abstract
 	
 	private Array<Name> _dynamicLights;
 	private PlayerInfo _savedPlayer;
+	private Weapon _savedPending;
 	
 	// Damage types that ignore I-frames.
 	static const Name DAMAGE_TYPES_IGNORE_IFRAMES[] =
@@ -105,6 +174,7 @@ class DeltaPlayer : PlayerPawn abstract
 	property OffhandTpCost: offhandTpCost;
 	property CharacterIcon: characterIcon;
 	property NameTag: nameTag;
+	property AutomapIcon: automapIcon;
 	property GunStandSprite: gunStandSprite;
 	property MeleeStandSprite: meleeStandSprite;
 	property MagicStandSprite: magicStandSprite;
@@ -134,7 +204,7 @@ class DeltaPlayer : PlayerPawn abstract
 		
 		// strafing should be same speed as moving forward
 		Player.ForwardMove 1, 1;
-		Player.SideMove 1.25, 1.25;
+		Player.SideMove 1.0416667, 1.25;
 		
 		Player.AttackZOffset 12;
 		Player.JumpZ 12;
@@ -142,7 +212,6 @@ class DeltaPlayer : PlayerPawn abstract
 		Player.ViewBob 0.3;
 		Player.ViewBobSpeed 12;
 		Player.FlyBob 0;
-		Player.InvulnerabilityMode "Reflective";
 		
 		DeltaPlayer.HugReactionTime 20;
 		DeltaPlayer.CharacterColor Color(127, 127, 127);
@@ -157,6 +226,7 @@ class DeltaPlayer : PlayerPawn abstract
 		
 		DeltaPlayer.CharacterIcon "";
 		DeltaPlayer.NameTag "";
+		DeltaPlayer.AutomapIcon "";
 		DeltaPlayer.GunCrouchSprite "";
 		DeltaPlayer.MeleeCrouchSprite "";
 		DeltaPlayer.MagicCrouchSprite "";
@@ -174,11 +244,11 @@ class DeltaPlayer : PlayerPawn abstract
 		DeltaPlayer.JumpGruntChance 0.; // 0% chance by default, meant to get
 										// people to change this
 		
-		+NOICEDEATH
-		+FLOORCLIP
-		+DONTGIB
-		+SQUAREPIXELS
-		+PLAYERPAWN.NOTHRUSTWHENINVUL
+		+NOICEDEATH;
+		+FLOORCLIP;
+		+DONTGIB;
+		+SQUAREPIXELS;
+		+PLAYERPAWN.NOTHRUSTWHENINVUL;
 	}
 	
 	States
@@ -233,13 +303,16 @@ class DeltaPlayer : PlayerPawn abstract
 		_originalHeight = height;
 		height = 56;
 		crouchFactor = 1;
+		_savedPending = WP_NOCHANGE;
 		
 		Super.BeginPlay();
+		ApplyDifficultyModifiers();
 		
 		// load icon textures before we do (most of) the rest of our initialization
 		_offhandIconId = TexMan.CheckForTexture(offhandIcon);
 		_characterIconId = TexMan.CheckForTexture(characterIcon);
 		_nameTagId = TexMan.CheckForTexture(nameTag);
+		_automapIcon = GetSpriteIndex(automapIcon);
 		
 		// grab our states
 		AirGunState = FindState("AirGun");
@@ -301,7 +374,7 @@ class DeltaPlayer : PlayerPawn abstract
 		coyoteTimer = 0;
 		jumpBuffer = 0;
 		crouchBuffer = 0;
-		ticLastGrazed = -1;
+		grazeTics = 0;
 		hugTimer = 0;
 		deathTimer = -1;
 		tensionPoints = 0;
@@ -319,6 +392,9 @@ class DeltaPlayer : PlayerPawn abstract
 		
 		if (player && player.ReadyWeapon && player.ReadyWeapon is "DeltaWeapon")
 			DeltaWeapon(player.ReadyWeapon).A_ResetAtEase();
+		
+		if (_automapIcon != -1 && !IsVoodooDoll())
+			DeltaPlayerMarker.Create(self);
 	}
 	
 	override void Travelled()
@@ -328,7 +404,7 @@ class DeltaPlayer : PlayerPawn abstract
 		coyoteTimer = 0;
 		jumpBuffer = 0;
 		crouchBuffer = 0;
-		ticLastGrazed = -1;
+		grazeTics = 0;
 		hugTimer = 0;
 		tensionPoints = 0;
 		tensionDrainTimer = 0;
@@ -336,23 +412,28 @@ class DeltaPlayer : PlayerPawn abstract
 		beingHugged = false;
 		lunging = false;
 		isUsingOffhand = false;
-		oldAngle = angle;
 		_turn = 0;
 		_oldTurn = 0;
 		
 		_targetRoll = 0;
-		A_Overlay(PSP_LEGS, "SpawnLegs");
+		SetUpLegs();
 		
 		if (!netgame)
 			CVar.FindCVar("data_delta_currentDeathsLevel").SetInt(0);
 		
 		if (player && player.ReadyWeapon && player.ReadyWeapon is "DeltaWeapon")
 			DeltaWeapon(player.ReadyWeapon).A_ResetAtEase();
+		
+		if (_automapIcon != -1)
+			DeltaPlayerMarker.Create(self);
 	}
 	
 	override void Tick()
 	{
 		Actor.Tick();
+		
+		if (IsFrozen())
+			return;
 		
 		if (!IsPredicting())
 		{
@@ -382,8 +463,13 @@ class DeltaPlayer : PlayerPawn abstract
 	
 	override void PlayerThink()
 	{
+		if (player.inventoryTics == 5*TICRATE)
+			player.inventoryTics = 1;
+		
 		Super.PlayerThink();
 		HandleViewAngles();
+		HandleLegs();
+		HandlePowerupEffects();
 		
 		if (IsPredicting())
 			return;
@@ -392,6 +478,10 @@ class DeltaPlayer : PlayerPawn abstract
 		
 		if (player.PlayerState == PST_DEAD)
 			return;
+		if (deathTimer >= 0)
+			deathTimer = -1;
+		if (grazeTics)
+			grazeTics--;
 		
 		AnimatePlayer();
 		HandleFlinch();
@@ -405,6 +495,16 @@ class DeltaPlayer : PlayerPawn abstract
 		CheckGraze();
 	}
 	
+	// grabbing code from uzdoom.pk3 and retooling some of it
+	override void TickPSprites()
+	{
+		if (IsFrozen())
+			return;
+		
+		Super.TickPSprites();
+		HandleBlindness();
+	}
+	
 	// grabbing code from uzdoom.pk3 and retooling for more preferred feeling
 	override void MovePlayer()
 	{
@@ -416,9 +516,9 @@ class DeltaPlayer : PlayerPawn abstract
 		if (!lunging)
 		{
 			// [RH] 180-degree turn overrides all other yaws
-			if (player.turnticks)
+			if (player.turnTicks)
 			{
-				player.turnticks--;
+				player.turnTicks--;
 				angleDiff = (180. / TURN180_TICKS);
 				A_SetAngle(Angle + angleDiff, SPF_INTERPOLATE);
 			}
@@ -429,16 +529,16 @@ class DeltaPlayer : PlayerPawn abstract
 			}
 			
 			_oldTurn = _turn;
-			
 			if (abs(_turn) > 0.5)
 				_turn /= 2;
 			else
 				_turn = 0;
 			
-			_turn = clamp(_turn + angleDiff * 0.2, -MAX_TURN, MAX_TURN);
+			_turn = clamp(_turn + angleDiff*0.2, -MAX_TURN, MAX_TURN);
 		}
 		
-		player.onGround = (pos.z <= floorz) || bOnMobj || bMBFBouncer || (player.cheats & CF_NOCLIP2);
+		player.onGround = !(player.cheats & (CF_NOCLIP2|CF_FLY)) && pos.z <= floorZ;
+		double perc = 1 - airBobTics*1. / MAX_AIR_BOB_TICS;
 		
 		// killough 10/98:
 		//
@@ -446,23 +546,16 @@ class DeltaPlayer : PlayerPawn abstract
 		// anomalies. The thrust applied to bobbing is always the same strength on
 		// ice, because the player still "works just as hard" to move, while the
 		// thrust applied to the movement varies with 'moveFactor'.
-		double forwardMove, sideMove;
-		double bobFactor;
-		double friction, moveFactor;
-		double fm, sm;
-		double perc = 1 - airBobTics / double(MAX_AIR_BOB_TICS);
-		
-		[friction, moveFactor] = GetFriction();
-		bobFactor = friction < ORIG_FRICTION ? moveFactor : ORIG_FRICTION_FACTOR;
+		let [friction, moveFactor] = GetFriction();
+		let bobFactor = friction < ORIG_FRICTION ? moveFactor : ORIG_FRICTION_FACTOR;
 		bobFactor *= perc * perc;
 		
-		fm = cmd.forwardMove;
-		sm = cmd.sideMove;
-		[fm, sm] = TweakSpeeds (fm, sm);
+		let [fm, sm] = TweakSpeeds (cmd.forwardMove, cmd.sideMove);
+		//Console.Printf("fm, sm: (%d, %d)", fm, sm);
 		fm *= Speed / 256;
 		sm *= Speed / 256;
 		
-		if (!player.onground && !bNoGravity && !waterlevel)
+		if (!player.onGround && !bNoGravity && !waterlevel)
 			ApplyAirControl(moveFactor, bobFactor);
 		
 		// When crouching, speed and bobbing have to be reduced
@@ -473,31 +566,68 @@ class DeltaPlayer : PlayerPawn abstract
 			bobFactor *= crouchFactor;
 		}
 		
-		forwardMove = fm * moveFactor * (35. / TICRATE);
-		sideMove = sm * moveFactor * (35. / TICRATE);
+		let forwardMove = fm * moveFactor * (35. / GameTicRate),
+			sideMove = sm * moveFactor * (35. / GameTicRate);
 		
-		if (lunging)
-			player.vel = (0, 0);
-		else
-		{
-			if (forwardMove)
-			{
-				Bob(Angle, cmd.forwardMove * bobFactor / 256., true);
-				ForwardThrust(forwardMove, Angle);
-			}
-			
-			if (sideMove)
-			{
-				let a = Angle - 90;
-				Bob(a, cmd.sideMove * bobFactor / 256., false);
-				Thrust(sideMove, a);
-			}
-		}
-		
-		if (player.cheats & CF_REVERTPLEASE)
+		if ((cmd.forwardMove | cmd.sideMove) && player.cheats & CF_REVERTPLEASE)
 		{
 			player.cheats &= ~CF_REVERTPLEASE;
 			player.camera = player.mo;
+		}
+		
+		if (lunging)
+		{
+			player.vel = (0, 0);
+			return;
+		}
+		
+		let slowFactor = 0.2 * moveFactor/ORIG_FRICTION_FACTOR,
+			applySlowing = player.onGround && vel.Length() <= 10.,
+			spec = curSector.special;
+		
+		if (applySlowing && pos.z == curSector.floorPlane.ZatPoint(pos.xy))
+		{
+			if ((spec >= 40 && spec <= 51) || spec == 84 || spec == 118 ||
+				(spec >= 201 && spec <= 244) || spec == 4096)
+			{
+				applySlowing = false;
+			}
+			else for (int i = 0; i < curSector.CountTags(); i++)
+			{
+				let events = DeltaEvents(EventHandler.Find("DeltaEvents"));
+				if (events.scrollTags.Find(curSector.GetTag(i)) != events.scrollTags.Size())
+				{
+					applySlowing = false;
+					break;
+				}
+			}
+		}
+		
+		if (forwardMove)
+		{
+			Bob(Angle, cmd.forwardMove * bobFactor / 256., true);
+			ForwardThrust(forwardMove, Angle);
+		}
+		else if (applySlowing)
+		{
+			let fwd = DeltaUtil.GetActorForward(self);
+			Bob(Angle, -vel.xy dot fwd.xy * slowFactor, true);
+			ForwardThrust(-vel.xy dot fwd.xy * slowFactor, Angle);
+		}
+		
+		let a = Angle - 90;
+		
+		if (sideMove)
+		{
+			Bob(a, cmd.sideMove * bobFactor / 256., false);
+			Thrust(sideMove, a);
+		}
+		else if (applySlowing)
+		{
+			let right = DeltaUtil.GetActorRight(self);
+			
+			Bob(a, -vel.xy dot right.xy * slowFactor, false);
+			ForwardThrust(-vel.xy dot right.xy * slowFactor, a);
 		}
 	}
 	
@@ -515,14 +645,14 @@ class DeltaPlayer : PlayerPawn abstract
 		if (perc >= 0.5 && dmg >= Health)
 			dmg = Health - 1;
 		
-		return floor(dmg);
+		return int(dmg);
 	}
 	
 	override int DamageMobj(Actor inflictor, Actor source, int damage, Name mod, int flags, double angle)
 	{
-		bool ignoreIFrames = false;
+		bool ignoreIFrames;
 		
-		if (source && source.player)
+		if (flags & DMG_FORCED || (source && source.player))
 			ignoreIFrames = true;
 		else foreach (damageType : DAMAGE_TYPES_IGNORE_IFRAMES)
 		{
@@ -545,27 +675,44 @@ class DeltaPlayer : PlayerPawn abstract
 		int finalDamage = Super.DamageMobj(inflictor, source, damage, mod, flags, angle);
 		lastDamageTaken += finalDamage;
 		
-		if (finalDamage > 0 && Health > 0)
+		if (finalDamage <= 0 && !InPainState())
+			return finalDamage;
+		
+		if (source)
 		{
-			A_StartSound("delta/hurt", CHAN_HEALTH_SOUNDS, 0, 1, 0.5);
-			VoiceDamage(finalDamage, mod);
+			let grazeIndex = inflictor? grazed.Find(inflictor) : grazed.Find(source);
+			if (inflictor && grazeIndex == grazed.Size())
+				grazeIndex = grazed.Find(source);
 			
-			if (!ignoreIFrames)
-				damageTics = (inflictor && (inflictor.bIsPuff || inflictor.bIsMonster)) ? -1 : DAMAGE_IFRAMES;
-			
-			if (mod == 'Falling')
-				A_StartSound("delta/fall_damage", CHAN_AUTO);
-			else if (mod == 'Drowning')
-				A_StartSound("delta/drown", CHAN_AUTO);
-			
-			double ang = (source && inflictor && inflictor != self) ?
-				DeltaAngle(self.angle, AngleTo(inflictor)) + cfrandom(-15, 15)
-				: 0;
-			DamageFlinch(ang, finalDamage, flags);
+			if (grazeIndex != grazed.Size())
+			{
+				grazed.Delete(grazeIndex);
+				if (!grazed.Size())
+					grazeTics = 0;
+			}
 		}
 		
-		if (finalDamage > 0 && player)
+		if (player)
 			player.damageCount = clamp(player.damageCount, 10, 25);
+		
+		if (Health <= 0)
+			return finalDamage;
+		
+		A_StartSound("delta/hurt", CHAN_HEALTH_SOUNDS, 0, 1., 0.5);
+		VoiceDamage(finalDamage, mod);
+		
+		if (!ignoreIFrames)
+			damageTics = (inflictor && (inflictor.bIsPuff || inflictor.bIsMonster)) ? -1 : DAMAGE_IFRAMES;
+		
+		if (mod == 'Falling')
+			A_StartSound("delta/fall_damage", CHAN_AUTO);
+		else if (mod == 'Drowning')
+			A_StartSound("delta/drown", CHAN_AUTO);
+		
+		double ang = (source && inflictor && inflictor != self) ?
+			DeltaAngle(self.angle, AngleTo(inflictor)) + cfrandom(-15, 15)
+			: 0;
+		DamageFlinch(ang, finalDamage, flags);
 		return finalDamage;
 	}
 	
@@ -581,7 +728,8 @@ class DeltaPlayer : PlayerPawn abstract
 		}
 		
 		DeltaExtraDeathStuff(); // any extra death functions can be called here
-		A_StartDeath();
+		if (player)
+			player.bob = 0;
 		
 		if (MeansOfDeath == 'Falling')
 			A_StartSound("delta/fall_damage", CHAN_AUTO);
@@ -596,15 +744,11 @@ class DeltaPlayer : PlayerPawn abstract
 		}
 		
 		if (MeansOfDeath != 'Suicide')
-		{
-			A_StopSound();
-			A_StartSound("delta/hurt", CHAN_HEALTH_SOUNDS);
 			VoiceDeath(MeansOfDeath);
-		}
 		else
 		{
 			let exp = Spawn("DeltaBadExplosion");
-			exp.SetOrigin(pos.PlusZ(-fullHeight / 2.), false);
+			exp.SetOrigin(pos.PlusZ(fullHeight / 2.), false);
 			
 			vel.z += frandom[explodeLaunch](10, 15);
 		}
@@ -626,15 +770,19 @@ class DeltaPlayer : PlayerPawn abstract
 	// taking implementation from uzdoom.pk3, slightly retooling for different look on death
 	override void DeathThink()
 	{
-		if (crouchFactor != 1)
-			DeltaUncrouch();
 		if (!player)
 			return;
+		if (crouchFactor != 1)
+			DeltaUncrouch();
 		
 		deathTimer++;
+		
+		if (IsFrozen() && deathTimer < DEATH_HANG_FRAMES)
+			return;
+		
 		player.onGround = (pos.Z <= floorz);
 		
-		if (!_frozenDeath && player.onGround)
+		if (!_frozenDeath && player.onGround && !level.IsFrozen())
 		{
 			player.deltaViewHeight = 0;
 			if (player.viewHeight > 6)
@@ -673,24 +821,118 @@ class DeltaPlayer : PlayerPawn abstract
 		if (player.poisonCount)
 			player.poisonCount--;
 		
-		bool playerWantsToRespawn = (player.cmd.buttons & BT_USE);
-		bool respawnAllowed = multiplayer || level.AllowRespawn
-			|| sv_singleplayerrespawn
-			|| G_SkillPropertyInt(SKILLP_PlayerRespawn);
+		bool
+			playerWantsToRespawn = (player.cmd.buttons & BT_USE),
+			forcingRespawn = (deathmatch || alwaysApplyDMFlags) && sv_forceRespawn,
+			respawnAllowed = multiplayer || level.AllowRespawn || sv_singlePlayerRespawn
+				|| G_SkillPropertyInt(SKILLP_PlayerRespawn),
+			respawnDisallowed = sv_noRespawn || (!respawnAllowed && !deathmatch);
 		
-		if ((playerWantsToRespawn ||
-			((deathmatch || alwaysapplydmflags) && sv_forcerespawn)) && !sv_norespawn)
+		if (!(playerWantsToRespawn || forcingRespawn) || respawnDisallowed)
+			return;
+		
+		if (level.mapTime >= player.respawn_time
+			|| (playerWantsToRespawn && player.Bot == NULL))
 		{
-			if (Level.maptime >= player.respawn_time
-				|| ((player.cmd.buttons & BT_USE) && player.Bot == NULL))
+			player.cls = NULL; // Force a new class if the player is using a random class
+			player.playerState = respawnAllowed ? PST_REBORN : PST_ENTER;
+			
+			if (special1 > 2)
+				special1 = 0;
+		}
+	}
+	
+	// reworking calc height to account for custom view bobbing
+	override void CalcHeight()
+	{
+		let bobSpeed = 0.,
+			bob = 0.,
+			still = false,
+			perc = 1 - airBobTics*1. / MAX_AIR_BOB_TICS;
+		
+		// Regular movement bobbing
+		// (needs to be calculated for gun swing even if not on ground)
+		
+		// killough 10/98: Make bobbing depend only on player-applied motion.
+		//
+		// Note: don't reduce bobbing here if on ice: if you reduce bobbing here,
+		// it causes bobbing jerkiness when the player moves from ice to non-ice,
+		// and vice-versa.
+		
+		if (player.cheats & CF_NOCLIP2 || player.playerState == PST_DEAD)
+			player.bob = 0;
+		else
+		{
+			player.bob = player.Vel dot player.Vel;
+			still = player.bob == 0;
+			
+			// [Sierra0451] adjusted this to account for weapons bobbing less
+			// when we're in the air, or depending on our player class (Kris
+			// reduces bobbing when they're sliding, for example
+			player.bob *= player.GetMoveBob() * perc * perc * customBobPerc;
+			
+			if (player.bob > MAXBOB)
+				player.bob = MAXBOB;
+			
+			bobTimer += player.bob/MAXBOB;
+		}
+		
+		double defaultViewHeight = ViewHeight + player.crouchViewDelta;
+		
+		if (player.cheats & CF_NOVELOCITY)
+		{
+			player.viewz = pos.Z + defaultviewheight;
+			
+			if (player.viewz > ceilingz-4)
+				player.viewz = ceilingz-4;
+			
+			return;
+		}
+		
+		if (!bFly && !still && player.onGround)
+		{
+			bobSpeed = bobTimer / (ViewBobSpeed * TICRATE / 35.) * 360.;
+			bob = player.bob * sin(bobSpeed) * (waterlevel > 1 ? 0.25f : 0.5f);
+		}
+		
+		// move viewheight
+		if (player.playerstate == PST_LIVE)
+		{
+			player.viewheight += player.deltaviewheight;
+
+			if (player.viewheight > defaultviewheight)
 			{
-				player.cls = NULL; // Force a new class if the player is using a random class
-				player.playerstate = respawnAllowed ? PST_REBORN : PST_ENTER;
-				
-				if (special1 > 2)
-					special1 = 0;
+				player.viewheight = defaultviewheight;
+				player.deltaviewheight = 0;
+			}
+			else if (player.viewheight < (defaultviewheight/2))
+			{
+				player.viewheight = defaultviewheight/2;
+				if (player.deltaviewheight <= 0)
+					player.deltaviewheight = 1 / 65536.;
+			}
+
+			if (player.deltaviewheight)
+			{
+				player.deltaviewheight += 0.25;
+				if (!player.deltaviewheight)
+					player.deltaviewheight = 1/65536.;
 			}
 		}
+
+		if (Alternative)
+			bob = 0;
+		
+		player.viewZ = pos.Z + player.viewHeight + (bob * clamp(ViewBob, 0. , 1.5)); // [SP] Allow DECORATE changes to view bobbing speed.
+
+		if (FloorClip && player.playerState != PST_DEAD && pos.Z <= floorz)
+			player.viewZ -= FloorClip;
+		
+		if (player.viewZ > ceilingZ - 4)
+			player.viewZ = ceilingZ - 4;
+		
+		if (player.viewZ < floorZ + 4)
+			player.viewZ = floorZ + 4;
 	}
 	
 	// Grabbing GZDoom's player code and retooling it to work with coyote time and jump buffering
@@ -722,22 +964,7 @@ class DeltaPlayer : PlayerPawn abstract
 		if (IsCrouching())
 			player.crouchOffset = 0;
 		
-		double jumpVelZ = JumpZ * 35 / TICRATE;
-		double jumpFac = 0;
-		
-		// [BC] If the player has the high jump power, double their jump velocity.
-		// (actually, pick the best factors from all active items.)
-		for (let p = Inv; p != null; p = p.Inv)
-		{
-			let pp = PowerHighJump(p);
-			if (pp)
-			{
-				double f = pp.Strength;
-				if (f > jumpFac) jumpFac = f;
-			}
-		}
-		if (jumpFac > 0) jumpVelZ *= jumpFac;
-		
+		double jumpVelZ = TweakJump(JumpZ * 35 / TICRATE);
 		Vel.Z = jumpVelZ;
 		bOnMobj = false;
 		jumpBuffer = 0;
@@ -750,6 +977,31 @@ class DeltaPlayer : PlayerPawn abstract
 			if (frandom(0., 1.) <= jumpGruntChance)
 				DoSpeak("jump_grunt");
 		}
+	}
+	
+	// [S0451] putting this in a virtual to make it easier to modify player by player <3
+	virtual double TweakJump(double jumpZ)
+	{
+		double jumpFac = 1;
+		// [BC] If the player has the high jump power, double their jump velocity.
+		// (actually, pick the best factors from all active items.)
+		for (let p = Inv; p != null; p = p.Inv)
+		{
+			let pp = PowerHighJump(p);
+			if (pp)
+			{
+				double f = pp.Strength;
+				if (f > jumpFac) jumpFac = f;
+			}
+		}
+		
+		if (!IsGrounded())
+			return jumpZ * jumpFac;
+		
+		let fric = GetFriction();
+		if (fric/ORIG_FRICTION < 1.)
+			jumpFac *= fric/ORIG_FRICTION;
+		return jumpZ * jumpFac;
 	}
 	
 	override void CheckCrouch(bool totallyFrozen)
@@ -810,35 +1062,41 @@ class DeltaPlayer : PlayerPawn abstract
 		double oldHeight = player.viewHeight;
 		
 		player.crouchDir = direction;
-		crouchFactor += crouchspeed;
 		
-		if (!IsGrounded())
-			SetOrigin((pos.x, pos.y, pos.z + crouchspeed), false);
+		if (crouchFactor + crouchSpeed < 0.5 || crouchFactor + crouchSpeed > 1)
+			return;
+		
+		crouchFactor += crouchSpeed;
 		
 		// check whether the move is ok
-		Height = defaultheight * crouchFactor;
+		Height = defaultHeight * crouchFactor;
+		
 		if (!TryMove(Pos.XY, false, NULL))
 		{
-			Height = savedheight;
+			Height = savedHeight;
+			
 			if (direction > 0)
 			{
 				// doesn't fit
-				crouchFactor -= crouchspeed;
+				crouchFactor -= crouchSpeed;
 				
-				if (!player.onGround)
-					SetOrigin((pos.x, pos.y, pos.z - crouchspeed), false);
-		
+				if (!IsGrounded())
+					SetOrigin((pos.x, pos.y, pos.z + ViewHeight*crouchSpeed), false);
 				return;
 			}
 		}
-		Height = savedheight;
-
+		
+		Height = savedHeight;
+		
 		crouchFactor = clamp(crouchFactor, 0.5, 1.);
-		player.viewheight = ViewHeight * crouchFactor;
-		player.crouchviewdelta = player.viewheight - ViewHeight;
-
+		player.viewHeight = ViewHeight * crouchFactor;
+		player.crouchViewDelta = player.viewHeight - ViewHeight;
+		
+		if (!IsGrounded())
+			SetOrigin((pos.x, pos.y, pos.z - ViewHeight*crouchSpeed), true);
+		
 		// Check for eyes going above/below fake floor due to crouching motion.
-		CheckFakeFloorTriggers(pos.Z + oldheight, true);
+		CheckFakeFloorTriggers(pos.Z + oldHeight, true);
 	}
 	
 	override bool CanCollideWith(Actor other, bool passive)
@@ -856,37 +1114,62 @@ class DeltaPlayer : PlayerPawn abstract
 		return Super.CanCollideWith(other, passive);
 	}
 	
-	override bool PreTeleport(Vector3 destPos, double destAngle, int flags)
+	// grabbed from uzdoom.pk3, just removed the sv_degeneration check cuz we
+	// wanna degenerate regardless :3
+	override void CheckDegeneration()
 	{
-		let oldAng = angle,
-			result = Super.PreTeleport(destPos, destAngle, flags);
-		if (result)
-			oldAngle -= DeltaAngle(destAngle, oldAng);
+		int maxHp = GetMaxHealth(true);
+		if (player.health <= maxHp)
+			return;
 		
-		return result;
+		int degenInterval = health > maxHp*1.5 ? TICRATE * 2 : TICRATE;
+		if (Level.maptime % degenInterval)
+			return;
+		
+		health = --player.health;
+	}
+	
+	override void AddInventory(Inventory item)
+	{
+		if (!CountInv(item.GetClass()) && player.PendingWeapon)
+			_savedPending = player.PendingWeapon;
+		else
+			_savedPending = null;
+		
+		Super.AddInventory(item);
 	}
 	
 	override void HasReceived(Inventory item, class<Inventory> itemCls)
 	{
 		Super.HasReceived(item, itemCls);
-		
 		if (!item)
 			return;
+		
 		if (item is "Health" && itemCls != "Health" && !item.bQuiet)
 			A_StartSound("delta/heal", CHAN_VOICE);
+		
+		if (!(item is "Weapon"))
+			return;
+		if (!player || !_savedPending)
+			return;
+		if (player.PendingWeapon == WP_NOCHANGE || !player.ReadyWeapon)
+			return;
+		if (!(player.cmd.buttons & (BT_ATTACK|BT_ALTATTACK)))
+			return;
+		
+		player.PendingWeapon = (_savedPending==player.ReadyWeapon)? WP_NOCHANGE : _savedPending;
 	}
 	
 	override Vector2 BobWeapon(double ticfrac)
 	{
-		let originalBob = lunging ? (0, 0) : Super.BobWeapon(ticfrac);
-		double perc = 1 - airBobTics / double(MAX_AIR_BOB_TICS);
-		perc *= perc * customBobPerc;
+		if (IsFrozen())
+			return _lastBob;
 		
-		Vector2 bobFlinch = (0, 0);
+		let bob = lunging? (0, 0) : Super.BobWeapon(ticFrac),
+			bobFlinch = (0, 0);
+		
 		if (_flinchTics)
 			bobFlinch = _currentFlinch * ((_flinchTics - ticFrac) / startFlinchTics);
-		
-		bobFlinch.y = abs(bobFlinch.y);
 		
 		int t = level.time;
 		double
@@ -895,9 +1178,23 @@ class DeltaPlayer : PlayerPawn abstract
 			shakeX = sin(t/11.) * 2 - shakeDiff * sin(TICRATE*0.85*t),
 			shakeY = max(0, (0.5+0.5*sin(1.5*t)) * 12. + shakeDiff * sin(TICRATE/2.*t));
 		Vector2 shake = (shakeX, shakeY * 0.5);
+		let result = bob + bobFlinch + shake * s + (GetTurn(ticFrac), 0),
+			zVelAdd = vel.z * 0.5 * cos(pitch + viewPitch),
+			zVelFac = clamp((airBobTics*2. / MAX_AIR_BOB_TICS)**2, 0, 1);
 		
-		return originalBob * perc + bobFlinch + shake * s
-			+ (DeltaUtil.Lerp(_oldTurn, _turn, ticFrac), 0);
+		zVelAdd *= zVelFac;
+		double minYOffset = -30, maxYOffset = 30;
+		if (player && player.ReadyWeapon && player.ReadyWeapon is "DeltaWeapon")
+		{
+			let deltaWeap = DeltaWeapon(player.ReadyWeapon);
+			minYOffset = deltaWeap.GetMinYOffset();
+			maxYOffset = deltaWeap.GetMaxYOffset();
+		}
+		
+		result.y = clamp(result.y + zVelAdd + _landPunch, minYOffset, maxYOffset);
+		
+		_lastBob = result;
+		return result;
 	}
 	
 	override void CheatGive(string name, int amount)
@@ -911,7 +1208,7 @@ class DeltaPlayer : PlayerPawn abstract
 				return;
 			
 			if (amount == 0)
-				amount = ceil(maxTensionPoints);
+				amount = int(ceil(maxTensionPoints));
 			
 			tensionPoints = min(maxTensionPoints, tensionPoints + amount);
 			tensionDrainTimer = DRAIN_TIMER_START;
@@ -1046,7 +1343,7 @@ class DeltaPlayer : PlayerPawn abstract
 		if (mult > maxMult)
 			mult = maxMult;
 		
-		newTics *= mult;
+		newTics = int(newTics * mult);
 		
 		if (tics != -1 && tics <= newTics)
 			return;
@@ -1152,7 +1449,6 @@ class DeltaPlayer : PlayerPawn abstract
 			case 0:
 				//message = StringTable.Localize("$DW_MOVETUTORIAL");
 				message = "Press %s\c- to move.%%%%";
-				
 				int forward = Bindings.GetKeysForCommand("+forward"),
 					left = Bindings.GetKeysForCommand("+moveleft"),
 					back = Bindings.GetKeysForCommand("+back"),
@@ -1213,7 +1509,7 @@ class DeltaPlayer : PlayerPawn abstract
 	{
 		if (health <= 0)
 			return;
-		
+
 		bool doingMoveInput = player ? (player.cmd.forwardMove || player.cmd.sideMove)
 			: false;
 		
@@ -1226,8 +1522,6 @@ class DeltaPlayer : PlayerPawn abstract
 		}
 		else
 			PlayAir();
-		
-		AnimateLegs();
 	}
 	
 	void SetTension(double amount, bool resetTimer = true)
@@ -1239,7 +1533,7 @@ class DeltaPlayer : PlayerPawn abstract
 		tensionPoints = clamp(amount, 0, maxTensionPoints);
 		
 		if (resetTimer)
-			tensionDrainTimer = ceil(DRAIN_TIMER_START * factor);
+			tensionDrainTimer = int(ceil(DRAIN_TIMER_START * factor));
 	}
 	
 	void AddTension(double amount, bool graze = false, bool resetTimer = true)
@@ -1248,7 +1542,7 @@ class DeltaPlayer : PlayerPawn abstract
 		SetTension(tensionPoints + amount*factor, resetTimer);
 		
 		if (graze)
-			ticLastGrazed = level.Time;
+			grazeTics = MAX_GRAZE_TICS;
 	}
 	
 	clearscope DeltaTpResult GetTension(double amount)
@@ -1281,7 +1575,7 @@ class DeltaPlayer : PlayerPawn abstract
 		double factor = G_SkillPropertyFloat(SKILLP_AmmoFactor) * sv_ammofactor;
 		
 		if (tensionPoints > 0)
-			tensionDrainTimer = ceil(DRAIN_TIMER_START * factor);
+			tensionDrainTimer = int(ceil(DRAIN_TIMER_START * factor));
 		else
 			tensionDrainTimer = 0;
 		return true;
@@ -1332,29 +1626,33 @@ class DeltaPlayer : PlayerPawn abstract
 		return dest;
 	}
 	
+	protected void HandlePowerupEffects()
+	{
+		if (!(level.time % 3) && CountInv("PowerInvulnerable"))
+		{
+			let trail = DeltaTrail.SpawnTrail("DeltaRainbowTrail", pos);
+			trail.master = self;
+		}
+	}
+	
 	protected void HandleHeartbeat()
 	{
-		if (IsPredicting())
-			return;
 		if (!heartbeat)
 			heartbeat = LinearValueInterpolator.Create(0, 10);
 		
 		double
 			_maxHealth = GetMaxHealth(),
-			maxForHeartbeat = _maxHealth * 0.4,
-			minForHeartbeat = _maxHealth * 0.2,
-			heartbeatPerc = clamp(
-				(maxForHeartbeat - Health) / (maxForHeartbeat - minForHeartbeat - 1), 0, 1);
+			maxHb = _maxHealth * 0.45,
+			minHb = _maxHealth * 0.15;
+		int perc = 100 - int(100. * (Health - minHb) / (maxHb - minHb));
+		
 		bool heartbeatCvar = (cl_delta_heartbeatSound == HB_ON
-			|| (cl_delta_heartbeatSound == HB_KRIS_ONLY && self is "KrisPlayer"));
+			|| (cl_delta_heartbeatSound == HB_LIGHTNERS_ONLY && !(self is "RalseiPlayer")));
 		
 		// make sure heartbeat only plays if we're below a third of our max
 		// health AND we aren't dead
-		if (Health <= maxForHeartbeat && Health > 0 && heartbeatCvar)
-		{
-			double _targetVol = 100*heartbeatPerc;
-			heartbeat.Update(round(_targetVol));
-		}
+		if (Health <= maxHb && Health > 0 && heartbeatCvar)
+			heartbeat.Update(perc);
 		else if (Health > 0 && heartbeatCvar)
 			heartbeat.Update(0);
 		else if (heartbeat.GetValue() != 0)
@@ -1370,10 +1668,9 @@ class DeltaPlayer : PlayerPawn abstract
 	
 	protected virtual double GetViewRoll()
 	{
-		let relVelY = (-Vel.x * sin(-Angle) - Vel.y * cos(-Angle)) / 4.;
-		let rollTarget = min(10, max(-10, relVelY)) * cl_delta_leanIntensity;
-		
-		let maxChange = 20. / TICRATE;
+		let relVelY = (-Vel.x * sin(-Angle) - Vel.y * cos(-Angle)) / 4.,
+			rollTarget = min(10, max(-10, relVelY)) * cl_delta_leanIntensity,
+			maxChange = 10. / TICRATE;
 		
 		if (abs(rollTarget - _targetRoll) > 2)
 			maxChange *= 2;
@@ -1417,7 +1714,7 @@ class DeltaPlayer : PlayerPawn abstract
 	{
 		for (int i = 0; i < _recoils.Size(); i++)
 		{
-			if (_recoils[i].curTime <= 0)
+			if (_recoils[i].curTime <= 0 || IsFrozen())
 				continue;
 			
 			_recoils[i].curTime--;
@@ -1516,16 +1813,16 @@ class DeltaPlayer : PlayerPawn abstract
 			_flinchTics--;
 		
 		if (!shakiness)
-			shakiness = LinearValueInterpolator.Create(minShakiness * 100, 20);
+			shakiness = LinearValueInterpolator.Create(int(minShakiness * 100), 20);
 		
 		oldShakiness = shakiness.GetValue();
 		
 		double shakeMaxFactor = double(shakinessMaxHealth)/GetMaxHealth();
-		int targetShake = DeltaUtil.Lerp(maxShakiness*100., minShakiness*100.,
+		double targetShake = DeltaUtil.Lerp(maxShakiness*100., minShakiness*100.,
 			(Health-1) / (shakeMaxFactor*(GetMaxHealth()-1)));
 		
 		if (Health > 0)
-			shakiness.Update(targetShake);
+			shakiness.Update(int(targetShake));
 		else if (shakiness.GetValue() != 0)
 			shakiness.Reset(0);
 	}
@@ -1612,21 +1909,33 @@ class DeltaPlayer : PlayerPawn abstract
 			return;
 		
 		ThinkerIterator it = ThinkerIterator.Create("Actor", STAT_DEFAULT);
-		Actor mis;
 		bool grazeSound;
 		
-		while (mis = Actor(it.Next()))
+		foreach (Actor mis : it)
 		{
+			if (mis is "ArchvileFire")
+			{
+				if (!mis.target || !mis.tracer)
+					continue;
+				if (mis.tracer != self || !CheckSight(mis.target))
+					continue;
+				
+				DoGraze(mis);
+				continue;
+			}
+			
 			if (!mis.bMissile && !mis.bSkullfly)
 			{
-				uint misIndex = grazed.Find(mis);
+				let misIndex = grazed.Find(mis);
 				if (misIndex != grazed.Size())
 					grazed.Delete(misIndex);
+				// mostly making sure lost souls can be first-tic grazed again
+				// after slamming into something
 				
 				continue;
 			}
 			
-			if (!mis.bSkullfly && mis.target == self) // "target" with projectiles is used to figure out who threw it
+			if (!mis.bSkullfly && mis.target == self)
 				continue;
 			if (!mis.CanCollideWith(self, false))
 				continue;
@@ -1640,19 +1949,26 @@ class DeltaPlayer : PlayerPawn abstract
 			if (abs(diff.z) > blockHeight)
 				continue;
 			
-			int misDmg = mis.GetMissileDamage(0, 1);
-			
-			if (misDmg <= 0)
-				continue;
 			if (!mis.bSkullfly && mis.target && IsFriend(mis.target))
 				continue;
 			
+			DoGraze(mis);
+		}
+	}
+	
+	protected virtual void DoGraze(Actor mis)
+	{
+		if (!mis)
+			return;
+		
+		if (mis is "ArchvileFire")
+		{
 			bool firstGraze = grazed.Find(mis) == grazed.Size();
-			double grazeAmount = max(5, misDmg);
+			double grazeAmount = 2 * abs(mis.curState.DistanceTo(mis.SpawnState));
 			
 			GrazeEvent e;
 			e.thing = self;
-			e.grazeSource = mis;
+			e.grazeSource = mis.target;
 			
 			DeltaEvents(EventHandler.Find('DeltaEvents')).PlayerGrazed(e);
 			
@@ -1664,7 +1980,31 @@ class DeltaPlayer : PlayerPawn abstract
 			}
 			else
 				AddTension(grazeAmount * GetGrazeMultiplier() / TICRATE, true);
+			
+			return;
 		}
+		
+		int misDmg = mis.GetMissileDamage(0, 1);
+		if (misDmg <= 0)
+			return;
+		
+		bool firstGraze = grazed.Find(mis) == grazed.Size();
+		double grazeAmount = max(5, misDmg);
+		
+		GrazeEvent e;
+		e.thing = self;
+		e.grazeSource = mis;
+		
+		DeltaEvents(EventHandler.Find('DeltaEvents')).PlayerGrazed(e);
+		
+		if (firstGraze)
+		{
+			AddTension(grazeAmount * GetGrazeMultiplier(), true);
+			A_StartSound("delta/graze", 5, 0);
+			grazed.Push(mis);
+		}
+		else
+			AddTension(grazeAmount * GetGrazeMultiplier() / TICRATE, true);
 	}
 	
 	protected void DamageFlinch(double ang, int dmg, int dmgFlags)
@@ -1673,7 +2013,7 @@ class DeltaPlayer : PlayerPawn abstract
 			return;
 		
 		double damageMultiplier = min(0.25, dmg / 50.);
-		int damageAddTics = max(0, min(20, dmg / 2.));
+		int damageAddTics = max(0, min(20, dmg / 2));
 		bool isExplosion = (dmgFlags & DMG_EXPLOSION);
 		
 		_flinchTics = startFlinchTics + damageAddTics/2;
@@ -1756,7 +2096,7 @@ class DeltaPlayer : PlayerPawn abstract
 	
 	clearscope virtual double GetGrazeMultiplier()
 	{
-		return 1;
+		return GetIsUsingOffhand()? 0.25 : 1.;
 	}
 	
 	clearscope bool IsLunging()
@@ -1771,8 +2111,10 @@ class DeltaPlayer : PlayerPawn abstract
 	
 	clearscope bool IsGrounded()
 	{
-		return pos.Z <= floorZ || bOnMobj || bMBFBouncer
-			|| (player && player.cheats & CF_NOCLIP2);
+		if (player && (player.cheats & (CF_NOCLIP2|CF_FLY)))
+			return false;
+		
+		return pos.Z <= floorZ || bOnMobj;
 	}
 	
 	bool IsPredicting()
@@ -1794,6 +2136,16 @@ class DeltaPlayer : PlayerPawn abstract
 	clearscope TextureID GetNameTagID()
 	{
 		return _nameTagId;
+	}
+	
+	clearscope int GetAutomapIcon()
+	{
+		return _automapIcon;
+	}
+	
+	clearscope double GetTurn(double ticFrac = 0.)
+	{
+		return DeltaUtil.Lerp(_oldTurn, _turn, ticFrac);
 	}
 	
 	clearscope double GetCrouchFactor()
@@ -1819,5 +2171,55 @@ class DeltaPlayer : PlayerPawn abstract
 	clearscope bool IsVoodooDoll()
 	{
 		return !player || !player.mo || player.mo != self;
+	}
+}
+
+class DeltaPlayerMarker : MapMarker
+{
+	protected DeltaPlayer ply;
+	
+	States
+	{
+		Spawn:
+			#### A -1;
+			Stop;
+	}
+	
+	static DeltaPlayerMarker Create(DeltaPlayer ply)
+	{
+		return DeltaPlayerMarker(Spawn("DeltaPlayerMarker")).Init(ply);
+	}
+	
+	DeltaPlayerMarker Init(DeltaPlayer ply)
+	{
+		self.ply = ply;
+		SetOrigin(ply.pos, false);
+		return self;
+	}
+	
+	override void PostBeginPlay()
+	{
+		Super.PostBeginPlay();
+		
+		if (!ply || (deathmatch && !players[consolePlayer].mo.IsTeammate(ply)))
+		{
+			Deactivate(self);
+			return;
+		}
+		
+		args[2] = 1;
+		sprite = ply.GetAutomapIcon();
+	}
+	
+	override void Tick()
+	{
+		if (!ply)
+		{
+			Destroy();
+			return;
+		}
+		
+		SetOrigin(ply.pos, true);
+		Super.Tick();
 	}
 }

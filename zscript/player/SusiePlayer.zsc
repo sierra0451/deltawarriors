@@ -9,6 +9,7 @@ class SusiePlayer : DeltaPlayer
 		
 		Health 230;
 		Player.MaxHealth 230;
+		DeltaPlayer.LevelOneHP 110;
 		
 		Player.DisplayName "$DELTA_CHAR_SUSIE";
 		Player.ViewHeight 34.5;
@@ -27,7 +28,7 @@ class SusiePlayer : DeltaPlayer
 		DeltaPlayer.HugReactionTime 20;
 		DeltaPlayer.CharacterColor Color(234, 121, 200);
 		DeltaPlayer.OffhandIcon "";
-		DeltaPlayer.CharacterIcon "graphics/susieIcon.png";
+		DeltaPlayer.CharacterIcon "graphics/susieCharIcon.png";
 		
 		DeltaPlayer.FootstepType FOOTSTEP_BOOTS;
 		DeltaPlayer.VoiceClass "susie";

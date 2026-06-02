@@ -1,9 +1,10 @@
 $pitchshiftrange 0
 
 // Delta menu sounds
-	delta/menu_back 	=	"sounds/menu/menu_back.wav"
-	delta/menu_change 	= 	"sounds/menu/menu_change.wav"
-	delta/menu_confirm 	= 	"sounds/menu/menu_confirm.wav"
+	delta/menu_back 	=   "sounds/menu/menu_back.wav"
+	delta/menu_change 	=   "sounds/menu/menu_change.wav"
+	delta/menu_confirm 	=   "sounds/menu/menu_confirm.wav"
+	delta/menu_persist	=   "sounds/menu/menu_persist.ogg"
 
 // Delta player sounds
 	// Shared
@@ -60,6 +61,7 @@ $pitchshiftrange 0
 		// Miscellaneous sounds
 		delta/graze = "sounds/player/shared/player_graze.wav"
 		delta/use = "sounds/player/shared/player_usefail.wav"
+		delta/use_powerup = "sounds/player/shared/player_usePowerup.wav"
 		delta/tp_fail = "sounds/player/shared/player_tpfail.wav"
 		
 		delta/type = "sounds/type.wav"
@@ -257,38 +259,38 @@ $pitchshiftrange 0
 	
 	// Kris
 		// Sword
-		delta/sword/deploy = "sounds/weapons/sword/sword_unsheathe.wav"
+		delta/sword/deploy = "sounds/weapons/kris/sword/sword_unsheathe.wav"
 		$alias delta/sword/deploy_hit delta/generic_pullweapon
-		delta/sword/holster = "sounds/weapons/sword/sword_sheathe.wav"
+		delta/sword/holster = "sounds/weapons/kris/sword/sword_sheathe.wav"
 		$alias delta/sword/swing delta/generic_attack
 		$alias delta/sword/hit delta/generic_hit
 		
 		// Revolver
-		delta/revolver/deploy1 = "sounds/weapons/revolver/revolver_deploy1.wav"
-		delta/revolver/deploy2 = "sounds/weapons/revolver/revolver_deploy2.wav"
+		delta/revolver/deploy1 = "sounds/weapons/kris/revolver/revolver_deploy1.wav"
+		delta/revolver/deploy2 = "sounds/weapons/kris/revolver/revolver_deploy2.wav"
 		$alias delta/revolver/holster1 delta/shotgun/holster
-		delta/revolver/holster2 = "sounds/weapons/revolver/revolver_holster.wav"
-		delta/revolver/fire = "sounds/weapons/revolver/revolver_fire2.wav"
-		delta/revolver/cock1 = "sounds/weapons/revolver/revolver_cock1.wav"
-		delta/revolver/cock2 = "sounds/weapons/revolver/revolver_cock2.wav"
-		delta/revolver/charge = "sounds/weapons/revolver/revolver_charge.wav"
-		delta/revolver/charge_shot = "sounds/weapons/revolver/revolver_chargeShot.wav"
+		delta/revolver/holster2 = "sounds/weapons/kris/revolver/revolver_holster.wav"
+		delta/revolver/fire = "sounds/weapons/kris/revolver/revolver_fire2.wav"
+		delta/revolver/cock1 = "sounds/weapons/kris/revolver/revolver_cock1.wav"
+		delta/revolver/cock2 = "sounds/weapons/kris/revolver/revolver_cock2.wav"
+		delta/revolver/charge = "sounds/weapons/kris/revolver/revolver_charge.wav"
+		delta/revolver/charge_shot = "sounds/weapons/kris/revolver/revolver_chargeShot.wav"
 		
 		// Shotgun
-		delta/shotgun/deploy1 = "sounds/weapons/shotgun/shotgun_deploy1.wav"
-		delta/shotgun/deploy2 = "sounds/weapons/shotgun/shotgun_deploy2.wav"
-		delta/shotgun/fire = "sounds/weapons/shotgun/shotgun_fire.wav"
-		delta/shotgun/pumpIn = "sounds/weapons/shotgun/shotgun_pumpIn.wav"
-		delta/shotgun/pumpOut = "sounds/weapons/shotgun/shotgun_pumpOut.wav"
-		delta/shotgun/holster = "sounds/weapons/shotgun/shotgun_holster.wav"
+		delta/shotgun/deploy1 = "sounds/weapons/kris/shotgun/shotgun_deploy1.wav"
+		delta/shotgun/deploy2 = "sounds/weapons/kris/shotgun/shotgun_deploy2.wav"
+		delta/shotgun/fire = "sounds/weapons/kris/shotgun/shotgun_fire.wav"
+		delta/shotgun/pumpIn = "sounds/weapons/kris/shotgun/shotgun_pumpIn.wav"
+		delta/shotgun/pumpOut = "sounds/weapons/kris/shotgun/shotgun_pumpOut.wav"
+		delta/shotgun/holster = "sounds/weapons/kris/shotgun/shotgun_holster.wav"
 		
 		// SMG
 		$alias delta/smg/deploy1 delta/shotgun/deploy1
 		$alias delta/smg/deploy2 delta/shotgun/deploy2
-		delta/smg/fire1 = "sounds/weapons/smg/smg_fire1.wav"
-		delta/smg/fire2 = "sounds/weapons/smg/smg_fire2.wav"
-		delta/smg/fire3 = "sounds/weapons/smg/smg_fire3.wav"
-		delta/smg/fire4 = "sounds/weapons/smg/smg_fire4.wav"
+		delta/smg/fire1 = "sounds/weapons/kris/smg/smg_fire1.wav"
+		delta/smg/fire2 = "sounds/weapons/kris/smg/smg_fire2.wav"
+		delta/smg/fire3 = "sounds/weapons/kris/smg/smg_fire3.wav"
+		delta/smg/fire4 = "sounds/weapons/kris/smg/smg_fire4.wav"
 		
 		$random delta/smg/fire
 		{
@@ -298,12 +300,12 @@ $pitchshiftrange 0
 			delta/smg/fire4
 		}
 		
-		delta/smg/alt_fire = "sounds/weapons/smg/smg_altFire.wav"
-		delta/smg/grenade_explosion = "sounds/weapons/smg/smg_grenadeExplosion.wav"
-		delta/smg/grenade_hit1 = "sounds/weapons/smg/smg_grenadeHit1.wav"
-		delta/smg/grenade_hit2 = "sounds/weapons/smg/smg_grenadeHit2.wav"
-		delta/smg/grenade_hit3 = "sounds/weapons/smg/smg_grenadeHit3.wav"
-		$limit delta/smg/grenade_explosion 4
+		delta/smg/alt_fire = "sounds/weapons/kris/smg/smg_altFire.wav"
+		delta/smg/grenade_explosion = "sounds/weapons/kris/smg/smg_grenadeExplosion.wav"
+		delta/smg/grenade_hit1 = "sounds/weapons/kris/smg/smg_grenadeHit1.wav"
+		delta/smg/grenade_hit2 = "sounds/weapons/kris/smg/smg_grenadeHit2.wav"
+		delta/smg/grenade_hit3 = "sounds/weapons/kris/smg/smg_grenadeHit3.wav"
+		$limit delta/smg/grenade_explosion 0
 		
 		$random delta/smg/grenade_hit
 		{
@@ -312,9 +314,9 @@ $pitchshiftrange 0
 			delta/smg/grenade_hit3
 		}
 		
-		delta/smg/grenade_hit_map1 = "sounds/weapons/smg/smg_grenadeHitMap1.wav"
-		delta/smg/grenade_hit_map2 = "sounds/weapons/smg/smg_grenadeHitMap2.wav"
-		delta/smg/grenade_hit_map3 = "sounds/weapons/smg/smg_grenadeHitMap3.wav"
+		delta/smg/grenade_hit_map1 = "sounds/weapons/kris/smg/smg_grenadeHitMap1.wav"
+		delta/smg/grenade_hit_map2 = "sounds/weapons/kris/smg/smg_grenadeHitMap2.wav"
+		delta/smg/grenade_hit_map3 = "sounds/weapons/kris/smg/smg_grenadeHitMap3.wav"
 		
 		$random delta/smg/grenade_hit_map
 		{
@@ -335,14 +337,15 @@ $pitchshiftrange 0
 	$playeralias 		delta	neutral	*pain25		*pain100
 	$playeralias		delta	neutral	*death		*pain100
 	$playeralias		delta	neutral	*crazydeath	*death
-
+	
 	$playeralias		delta	neutral	*usefail	delta/use
-
-// Overriding Doom sounds!
+	
+	// Overriding UZDoom sounds!
 	misc/i_pkup 		= 	"sounds/player/shared/player_pickupitem.wav"
 	misc/w_pkup 		= 	"sounds/player/shared/player_pickupweapon.wav"
 	misc/k_pkup 		= 	"sounds/player/shared/player_pickupkey.wav"
 	misc/secret			=	"sounds/player/shared/player_findsecret.wav"
+	$alias misc/invchange	delta/menu_change
 	
 	$alias menu/activate	delta/menu_confirm
 	$alias menu/backup 		delta/menu_back

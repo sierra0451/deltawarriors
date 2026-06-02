@@ -1,0 +1,5 @@
+Sprite "KICNA0", 25, 20
+{
+	Offset 12, 10
+	Patch "graphics/krisCharIcon.png", 0, 0
+}

@@ -5,19 +5,25 @@ version "4.14.3"
 #include "zscript/DeltaUtil.zsc"
 #include "zscript/DeltaEvents..zsc"
 #include "zscript/DeltaEvents.MapsetCompat.zsc"
+#include "zscript/DeltaCutscenes.zsc"
 #include "zscript/DeltaMessages.zsc"
 
 // effects
 #include "zscript/effects/DeltaBadExplosion.zsc"
 #include "zscript/effects/DeltaSoul.zsc"
+#include "zscript/effects/DeltaTrail.zsc"
+
+// custom enemies
+#include "zscript/enemies/DeltaZombies.zsc"
 
 // items
-#include "zscript/items/HealthReplacements.zsc"
+#include "zscript/items/HealthItems.zsc"
 #include "zscript/items/InventoryUtil.zsc"
 #include "zscript/items/TensionItems.zsc"
 
 // player scripts
 #include "zscript/player/DeltaPlayer..zsc"
+#include "zscript/player/DeltaPlayer.DifficultyModifiers.zsc"
 #include "zscript/player/DeltaPlayer.Footsteps.zsc"
 #include "zscript/player/DeltaPlayer.Legs.zsc"
 #include "zscript/player/DeltaPlayer.Lunge.zsc"
@@ -25,8 +31,8 @@ version "4.14.3"
 #include "zscript/player/DeltaPlayer.StatesActions.zsc"
 #include "zscript/player/DeltaPlayer.Voice.zsc"
 #include "zscript/player/KrisPlayer.zsc"
-// #include "zscript/player/SusiePlayer.zsc"
-// #include "zscript/player/RalseiPlayer.zsc"
+#include "zscript/player/SusiePlayer.zsc"
+#include "zscript/player/RalseiPlayer.zsc"
 // #include "zscript/player/NoellePlayer.zsc"
 
 // ui
@@ -57,6 +63,7 @@ version "4.14.3"
 	#include "zscript/weapons/kris/KrisRevolverChargeShot.zsc"
 	#include "zscript/weapons/kris/KrisShotgun.zsc"
 	#include "zscript/weapons/kris/KrisSMG.zsc"
+	#include "zscript/weapons/kris/KrisGrenadeLauncher.zsc"
 
 // ------------------------------------------------------------------------------------
 // libeye library by KeksDose!

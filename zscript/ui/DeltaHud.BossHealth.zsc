@@ -19,7 +19,7 @@ extend class DeltaHud
 		{
 			if (_bosses.Find(curr) != _bosses.Size())
 				continue;
-			if (!curr.bShootable)
+			if (!curr.bShootable || curr.player)
 				continue;
 			
 			if (curr is "BossBrain")
@@ -41,7 +41,8 @@ extend class DeltaHud
 			string kRoundCheck = "K_Round"; // compat with Ralsei's Got a Gun
 			class<Actor> kRound = kRoundCheck;
 			
-			if (curr.bBoss || (curr.bE1M8Boss && (flags3 & LEVEL3_E1M8SPECIAL))
+			if (curr.bBoss
+				|| (curr.bE1M8Boss && (flags3 & LEVEL3_E1M8SPECIAL))
 				|| (curr.bE2M8Boss && (flags3 & LEVEL3_E2M8SPECIAL))
 				|| (curr.bE3M8Boss && (flags3 & LEVEL3_E3M8SPECIAL))
 				|| (curr.bE4M6Boss && (flags3 & LEVEL3_E4M6SPECIAL))

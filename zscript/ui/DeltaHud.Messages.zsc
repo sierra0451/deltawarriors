@@ -31,11 +31,6 @@ extend class DeltaHud
 		if (!messageHandler || !messageHandler.message)
 			return;
 		
-		string msg = messageHandler.message.GetMessage();
-		
-		if (msg.IndexOf("%%") == -1)
-			return;
-		
 		messageHandler.NextMessage();
 	}
 }

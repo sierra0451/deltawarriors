@@ -26,6 +26,20 @@ extend class DeltaHud
 		}
 	}
 	
+	protected void FreezeDamagePopups()
+	{
+		for (int i = 0; i < _damagePopups.Size(); i++)
+		{
+			if (_damagePopups[i].timer == POPUP_IS_INACTIVE)
+				continue;
+			
+			_damagePopups[i].pos += _damagePopups[i].vel;
+			_damagePopups[i].vel = (0, 0);
+			_damagePopups[i].oldPopUpScale = _damagePopups[i].popUpScale;
+			_damagePopups[i].oldAlpha = _damagePopups[i].alpha;
+		}
+	}
+	
 	protected void TickDamagePopups()
 	{
 		for (int i = 0; i < _damagePopups.Size(); i++)

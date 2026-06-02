@@ -1,8 +1,10 @@
 class KrisRevolver : DeltaWeapon
 {
-	bool pulledOutFirstTime;
-	bool cocked;
+	bool pulledOutFirstTime, cocked;
 	int chargeTics;
+	
+	protected ui Vector2 _oldShake, _shake;
+	protected ui double _lastTime;
 	
 	const MAX_CHARGE_TICS = 20;
 	const CHAN_CHARGE = 15;
@@ -63,21 +65,21 @@ class KrisRevolver : DeltaWeapon
 			{
 				if (invoker.cocked)
 					return A_ReadyIfCocked(WRF_NOBOB);
-				
+					
 				return ResolveState("Cock");
 			}
 			DKRD J 2 A_ReadyIfCocked(WRF_NOBOB);
 			Goto Ready;
 		AtEase:
-			DKRE ABCDE 2 A_DeltaWeaponReady(WRF_NOBOB | WRF_NOSWITCH, true);
-			DKRE F 1 A_DeltaWeaponReady(WRF_NOBOB | WRF_NOSWITCH, true);
+			DKRE ABCDE 2 A_DeltaWeaponReady(WRF_NOBOB, true);
+			DKRE F 1 A_DeltaWeaponReady(WRF_NOBOB, true);
 		// moved a state early cuz if we switch here, we'll play
 		// atEase holster animation instead
 		AtEaseLoop:
 			DKRE FG 1 A_DeltaWeaponReady(atEase: true);
 			Wait;
 		AtEaseEnd:
-			DKRE EDCBA 2 A_DeltaWeaponReady(WRF_NOBOB | WRF_NOSWITCH);
+			DKRE EDCBA 2 A_DeltaWeaponReady(WRF_NOBOB);
 			Goto Ready;
 		DeselectAtEase:
 			DKRE HIJ 2;
@@ -90,18 +92,17 @@ class KrisRevolver : DeltaWeapon
 			DKRV B 1 A_AddRecoil(10, 1, p: -4);
 			DKRV C 1 A_RemoveDynamicLight("revolverMuzzle");
 			DKRV D 2 A_ZoomFactor;
-			DKRV E 2;
+			DKRV E 2 A_DeltaWeaponReady(WRF_NOFIRE | WRF_NOBOB | WRF_NOSWITCH);
 			DKRV E 1 A_CheckReload; // fall-through is intentional
-			DKRV F 3;
+			DKRV F 3 A_DeltaWeaponReady(WRF_NOFIRE | WRF_NOBOB | WRF_NOSWITCH);
 		Cock:
 			DKRV G 2 A_DeltaWeaponReady(WRF_NOFIRE | WRF_NOBOB);
-			DKRV H 1;
-			DKRV I 2;
-			DKRV J 2;
+			DKRV H 1 A_DeltaWeaponReady(WRF_NOFIRE | WRF_NOBOB | WRF_NOSWITCH);
+			DKRV IJ 2 A_DeltaWeaponReady(WRF_NOFIRE | WRF_NOBOB | WRF_NOSWITCH);
 			DKRV J 1 A_StartSound("delta/revolver/cock1", CHAN_WEAPON,
 				CHANF_OVERLAP);
-			DKRV K 3;
-			DKRV L 2;
+			DKRV K 3 A_DeltaWeaponReady(WRF_NOFIRE | WRF_NOBOB | WRF_NOSWITCH);
+			DKRV L 2 A_DeltaWeaponReady(WRF_NOFIRE | WRF_NOBOB | WRF_NOSWITCH);
 			DKRV L 2 A_StartSound("delta/revolver/cock2", CHAN_WEAPON,
 				CHANF_OVERLAP);
 			DKRV N 4 A_Cock;
@@ -179,6 +180,7 @@ class KrisRevolver : DeltaWeapon
 	{
 		Super.BeginPlay();
 		cocked = true;
+		chargeTics = 0;
 	}
 	
 	override Vector2 ModifyBobLayer(Vector2 bob, int layer, double ticFrac)
@@ -188,10 +190,17 @@ class KrisRevolver : DeltaWeapon
 			bobPerc = max(0.2, 1 - chargePerc),
 			shakeAmount = 1.5,
 			shakePerc = chargePerc * chargePerc,
-			shake = (cfrandom(-shakeAmount, shakeAmount), cfrandom(0,
-				shakeAmount)) * shakePerc;
+			time = level.time + ticFrac,
+			shakeInterval = 0.5;
 		
-		return oldBob * bobPerc + shake;
+		if (abs(time - _lastTime) >= shakeInterval)
+		{
+			_lastTime = time;
+			_oldShake = _shake;
+			_shake = (cfrandom(-shakeAmount, shakeAmount), cfrandom(0, shakeAmount)) * shakePerc;
+		}
+		
+		return oldBob * bobPerc + DeltaUtil.Vector2Lerp(_oldShake, _shake, ticFrac % shakeInterval);
 	}
 	
 	override void OwnerDied()
@@ -256,7 +265,6 @@ class KrisRevolver : DeltaWeapon
 		Weapon.DoReadyWeaponToBob(ply);
 		int input = ply.cmd.buttons, oldInput = ply.oldButtons,
 			cTics = invoker.chargeTics, maxCTics = invoker.MAX_CHARGE_TICS;
-		double shake = 0.5;
 		bool fullCharge = cTics == maxCTics;
 		
 		if ((!(input & BT_ALTATTACK) && (oldInput & BT_ALTATTACK)) ||
@@ -288,7 +296,6 @@ class KrisRevolver : DeltaWeapon
 			A_StartSound("delta/revolver/charge", CHAN_CHARGE, CHANF_LOOPING,
 				volume: perc, pitch: perc);
 		
-		shake *= perc * perc;
 		return ResolveState(null);
 	}
 	
@@ -298,9 +305,10 @@ class KrisRevolver : DeltaWeapon
 			return ResolveState("Ready");
 		
 		invoker.chargeTics--;
-		
 		if (player.PendingWeapon != WP_NOCHANGE && invoker.chargeTics)
 			invoker.chargeTics--;
+		
+		double perc = invoker.GetChargePercent();
 		
 		if (!IsActorPlayingSound(CHAN_CHARGE))
 			return ResolveState(null);
@@ -309,7 +317,6 @@ class KrisRevolver : DeltaWeapon
 			A_StopSound(CHAN_CHARGE);
 		else 
 		{
-			double perc = invoker.GetChargePercent();
 			A_SoundVolume(CHAN_CHARGE, perc);
 			A_SoundPitch(CHAN_CHARGE, perc);
 		}

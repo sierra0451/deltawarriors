@@ -11,7 +11,7 @@ class KrisSword : DeltaWeapon
 		Weapon.SlotNumber 1;
 		Weapon.SelectionOrder 1000;
 		
-		DeltaWeapon.AnimType DELTA_WEAPONANIM_MELEE;
+		DeltaWeapon.AnimType DeltaPlayer.DELTA_WEAPONANIM_MELEE;
 		DeltaWeapon.RedCrosshairRange 150;
 		DeltaWeapon.MaxLungeDistance 150;
 		DeltaWeapon.Crosshair "DRSWDRET";
@@ -143,9 +143,10 @@ class KrisSword : DeltaWeapon
 				puffDist = dist;
 		}
 		
-		if (targets.Size() > 0)
+		if (targets.Size())
 		{
-			Radius_Quake(2, 3, 0, 1, 0);
+			//Radius_Quake(2, 3, 0, 1, 0);
+			A_QuakeEx(0, 4, 2, 5, 0, 1, "dssilent", QF_RELATIVE | QF_SCALEDOWN);
 			A_StartSound("delta/sword/hit", CHAN_WEAPON, CHANF_OVERLAP);
 		}
 		else

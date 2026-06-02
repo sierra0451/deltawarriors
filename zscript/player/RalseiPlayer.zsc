@@ -11,6 +11,7 @@ class RalseiPlayer : DeltaPlayer
 		
 		Health 180;
 		Player.MaxHealth 180;
+		DeltaPlayer.LevelOneHP 70;
 		
 		Player.DisplayName "$DELTA_CHAR_RALSEI";
 		Player.ViewHeight 32;
@@ -29,9 +30,13 @@ class RalseiPlayer : DeltaPlayer
 		DeltaPlayer.HugReactionTime 20;
 		DeltaPlayer.CharacterColor Color(0, 255, 0);
 		DeltaPlayer.OverhealColor Color(255, 255, 0);
+		DeltaPlayer.OffhandIcon "";
+		DeltaPlayer.CharacterIcon "graphics/ralseiCharIcon.png";
 		
 		DeltaPlayer.FootstepType FOOTSTEP_FLUFF;
 		DeltaPlayer.VoiceClass "ralsei";
+		
+		+NOBLOODDECALS;
 	}
 	
 	States

@@ -81,29 +81,41 @@ extend class DeltaPlayer
 	
 	protected void AdjustLungeAngles()
 	{
-		let diff = level.Vec3Diff(pos, lungeTarget.pos);
-		let diffUnit = diff.Unit();
-		A_SetAngle(VectorAngle(diff.x, diff.y), SPF_INTERPOLATE);
+		let diff = level.Vec3Diff(pos, lungeTarget.pos),
+			diffUnit = diff.Unit(),
+			angDiff = VectorAngle(diff.x, diff.y) - angle;
 		
-		if (level.IsFreelookAllowed())
+		let minChange = 0.5,
+			maxChange = 2.;
+		
+		if (abs(angDiff) > minChange)
 		{
-			let minPitchAdjust = 5.;
-			let check = level.Vec3Diff(GetViewPos(), lungeTarget.pos);
-			let checkUnit = check.Unit();
-			let targetPitch = -asin(checkUnit.z);
+			if (angDiff < -maxChange)
+				angDiff = -maxChange;
+			else if (angDiff > maxChange)
+				angDiff = maxChange;
 			
-			if (pitch > targetPitch)
+			A_SetAngle(angle + angDiff, SPF_INTERPOLATE);
+		}
+		
+		if (!level.IsFreelookAllowed())
+			return;
+		
+		let check = level.Vec3Diff(GetViewPos(), lungeTarget.pos),
+			checkUnit = check.Unit(),
+			targetPitch = -asin(checkUnit.z);
+		
+		if (pitch > targetPitch)
+			A_SetPitch(targetPitch, SPF_INTERPOLATE);
+		else
+		{
+			check = level.Vec3Diff(GetViewPos(),
+				lungeTarget.pos.PlusZ(lungeTarget.height));
+			checkUnit = check.Unit();
+			targetPitch = -asin(checkUnit.z);
+			
+			if (pitch < targetPitch)
 				A_SetPitch(targetPitch, SPF_INTERPOLATE);
-			else
-			{
-				check = level.Vec3Diff(GetViewPos(),
-					lungeTarget.pos.PlusZ(lungeTarget.height));
-				checkUnit = check.Unit();
-				targetPitch = -asin(checkUnit.z);
-				
-				if (pitch < targetPitch)
-					A_SetPitch(targetPitch, SPF_INTERPOLATE);
-			}
 		}
 	}
 	

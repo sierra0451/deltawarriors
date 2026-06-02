@@ -20,10 +20,10 @@ class DeltaTensionPickup : Inventory
 		
 		if (!delta)
 			return false;
-		if (delta.GetTension(delta.maxTensionPoints) != TP_FAIL && !bAlwaysPickup)
+		if (delta.GetTension(delta.maxTensionPoints) != DeltaPlayer.TP_FAIL && !bAlwaysPickup)
 			return false;
 		
-		delta.AddTension(Amount * 2.5);
+		delta.AddTension(Amount * delta.maxTensionPoints/100.);
 		GoAwayAndDie();
 		return true;
 	}

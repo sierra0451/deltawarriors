@@ -27,9 +27,10 @@ class DeltaWeaponPickup : Weapon
 	
 	virtual void AddPickups() {}
 	
-	class<DeltaWeapon> GetWeapon()
+	class<DeltaWeapon> GetWeapon(PlayerPawn ply = null)
 	{
-		let ply = players[consoleplayer].mo;
+		if (!ply)
+			ply = players[consoleplayer].mo;
 		if (!ply || !(ply is "DeltaPlayer"))
 			return null;
 		
@@ -163,10 +164,18 @@ class ChaingunReplacer : DeltaWeaponPickup replaces Chaingun
 	}
 }
 
+class RocketLauncherReplacer : DeltaWeaponPickup replaces RocketLauncher
+{
+	override void AddPickups()
+	{
+		actualPickups.Insert("KrisPlayer", "KrisGrenadeLauncher");
+	}
+}
+
 /// -----------------------------------------------------------------
 /// TEMPORARY REPLACERS FOR WEAPONS THAT HAVEN'T BEEN IMPLEMENTED YET
 /// -----------------------------------------------------------------
-class TempRocketLauncher : DeltaWeapon replaces RocketLauncher
+class TempRocketLauncher : DeltaWeapon
 {
 	Default
 	{
@@ -178,6 +187,7 @@ class TempRocketLauncher : DeltaWeapon replaces RocketLauncher
 		Weapon.AmmoGive 2;
 		Weapon.AmmoType "RocketAmmo";
 		DeltaWeapon.Crosshair "DRRCKRET";
+		DeltaWeapon.MinYOffset 0;
 		
 		+WEAPON.NOAUTOFIRE;
 		+WEAPON.EXPLOSIVE;
@@ -226,6 +236,7 @@ class TempPlasmaRifle : DeltaWeapon
 		Weapon.AmmoGive 40;
 		Weapon.AmmoType "Cell";
 		DeltaWeapon.Crosshair "DRPLSRET";
+		DeltaWeapon.MinYOffset 0;
 	}
 	
 	States
@@ -272,6 +283,7 @@ class TempBFG9000 : DeltaWeapon
 		Weapon.AmmoGive 40;
 		Weapon.AmmoType "Cell";
 		DeltaWeapon.Crosshair "DRPLSRET";
+		DeltaWeapon.MinYOffset 0;
 		
 		+WEAPON.NOAUTOFIRE;
 		+WEAPON.BFG;
@@ -333,6 +345,7 @@ class TempIncinerator : DeltaWeapon replaces ID24Incinerator
 		Weapon.AmmoGive 20;
 		Weapon.AmmoType "ID24Fuel";
 		DeltaWeapon.Crosshair "DRPLSRET";
+		DeltaWeapon.MinYOffset 0;
 	}
 	
 	States
@@ -384,6 +397,7 @@ class TempCalamityBlade : DeltaWeapon replaces ID24CalamityBlade
 		Weapon.AmmoGive 20;
 		Weapon.AmmoType "ID24Fuel";
 		DeltaWeapon.Crosshair "DRPLSRET";
+		DeltaWeapon.MinYOffset 0;
 		
 		+WEAPON.NOAUTOAIM;
 	}

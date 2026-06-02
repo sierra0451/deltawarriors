@@ -15,6 +15,7 @@ class DeltaEvents : EventHandler
 {
 	DeltaDamageEvent[300] damageEvents;
 	Actor[100] reviving;
+	Array<int> scrollTags;
 	
 	protected Le_GlScreen	gl_proj;
 	protected Le_Viewport	viewport;
@@ -27,6 +28,30 @@ class DeltaEvents : EventHandler
 	override void WorldLoaded(WorldEvent e)
 	{
 		EnableNetworking(true);
+		scrollTags.Clear();
+		
+		for (int i = 0; i < level.lines.Size(); i++)
+		{
+			// gross ass hack but scrollers aren't exposed, so this is the best i got for the moment
+			if (level.lines[i].special || level.lines[i].args[2] == 0
+				|| scrollTags.Find(level.lines[i].args[0]) != scrollTags.Size())
+				continue;
+			
+			scrollTags.Push(level.lines[i].args[0]);
+		}
+	}
+	
+	override void WorldUnloaded(WorldEvent e)
+	{
+		// if we die right before exiting, we wanna make sure the death sequence
+		// gets cancelled so shit doesn't break in the next map
+		for (int i = 0; i < MAXPLAYERS; i++)
+		{
+			if (!playerInGame[i] || !players[i].mo)
+				continue;
+			
+			EventHandler.SendInterfaceEvent(i, "DeltaCancelDeathSequence");
+		}
 	}
 	
 	override void WorldTick()
@@ -47,6 +72,23 @@ class DeltaEvents : EventHandler
 				continue;
 			if (damageEvents[i].amount <= 0)
 				continue;
+			
+			if (sv_delta_pacifist && damageEvents[i].source
+				&& damageEvents[i].source is "DeltaPlayer"
+				&& damageEvents[i].victim.bIsMonster)
+			{
+				let dummy = damageEvents[i].source.Spawn("DeltaPacifistFail");
+				
+				for (int i = 0; i < MAXPLAYERS; i++)
+				{
+					if (!playerInGame[i] || !players[i].mo)
+						continue;
+					
+					players[i].mo.DamageMobj(damageEvents[i].source, dummy,
+						random[instakill](10000, 100000), "PacifistFail", DMG_FORCED);
+				}
+				return;
+			}
 			
 			if (damageEvents[i].victim is "DeltaPlayer")
 			{
@@ -104,7 +146,6 @@ class DeltaEvents : EventHandler
 	protected void NametagTick()
 	{
 		int c = consolePlayer;
-		
 		if (!playerInGame[c] || !players[c].camera)
 			return;
 		
@@ -123,38 +164,44 @@ class DeltaEvents : EventHandler
 	
 	override bool WorldHitscanPreFired(WorldEvent e)
 	{
+		let ang = e.attackAngle,
+			pitch = e.attackPitch,
+			dir = (cos(pitch) * cos(ang), cos(pitch) * sin(ang), sin(-pitch)),
+			offsetUp = e.thing.height/2. + e.attackZ - 2;
+		
+		if (e.thing.player)
+			offsetUp = e.thing.player.viewZ - e.thing.pos.Z - 2;
+		
+		let pos = e.thing.pos.PlusZ(offsetUp),
+			dist = e.attackDistance;
+		FLineTraceData grazeData;
+		
+		if (e.thing.LineTrace(ang, dist, pitch, offsetZ: offsetUp, data: grazeData))
+			dist = min(dist, grazeData.Distance + 8.);
+		
+		Graze(e.thing, e.damage, pos, grazeData.HitLocation);
+		
 		if (e.AttackLineFlags & LAF_ISMELEEATTACK)
 			return false;
 		
 		let fwd = DeltaUtil.GetActorForward(e.thing),
 			right = DeltaUtil.GetActorRight(e.thing, true);
 		
-		let ang = e.attackAngle,
-			pitch = e.attackPitch,
-			dir = (cos(pitch) * cos(ang), cos(pitch) * sin(ang), sin(-pitch));
-		
-		let offsetUp = e.thing.height/2. + e.attackZ - 2;
-		if (e.thing.player)
-			offsetUp += PlayerPawn(e.thing).AttackZOffset;
-		
-		let pos = e.thing.pos.PlusZ(offsetUp),
-			offsetRight = e.attackOffsetSide + 2,
+		let offsetRight = e.attackOffsetSide + 2,
 			offsetFwd = (e.attackOffsetForward + max(0, (e.thing.vel dot fwd) * 2));
 		
 		// hitscan tracers should show up on left side if we're lefthanded
 		if (e.thing == players[consolePlayer].mo && cl_delta_weaponHandedness)
 			offsetRight -= 4;
 		
-		pos = level.Vec3Offset(pos, right * offsetRight);
-		pos = level.Vec3Offset(pos, fwd * offsetFwd);
-		
-		let dist = 2048.;
-		FLineTraceData data;
+		pos = level.Vec3Offset(pos, right * offsetRight + fwd * offsetFwd);
+		dist = 2048.;
+		FLineTraceData tracerData;
 		
 		if (e.thing.LineTrace(ang, dist, pitch, offsetZ: offsetUp,
-			offsetForward: offsetFwd, offsetSide: offsetRight, data: data))
+			offsetForward: offsetFwd, offsetSide: offsetRight, data: tracerData))
 		{
-			dist = min(dist, data.Distance);
+			dist = min(dist, tracerData.Distance + 8.);
 		}
 		
 		FSpawnParticleParams p;
@@ -185,24 +232,24 @@ class DeltaEvents : EventHandler
 		return false;
 	}
 	
-	override void WorldHitscanFired(WorldEvent e)
+	virtual void Graze(Actor source, int damage, Vector3 startPos, Vector3 endPos)
 	{
-		let check = new('DeltaHitscanGrazeChecker');
+		let check = DeltaHitscanGrazeChecker.Create();
 		if (!check)
 			return;
 		
-		check.CheckHitscanGraze(e.thing, e.attackPos, e.damagePosition);
+		check.CheckHitscanGraze(source, startPos, endPos);
 		
-		for (int i = 0; i < check._grazed.Size(); i++)
+		for (int i = 0; i < check.grazed.Size(); i++)
 		{
 			GrazeEvent graze;
-			graze.thing = check._grazed[i];
-			graze.grazeSource = e.thing;
+			graze.thing = check.grazed[i];
+			graze.grazeSource = source;
 			PlayerGrazed(graze);
 			
-			let grazeAmount = max(5, e.inflictor.GetMissileDamage(0, 1));
-			check._grazed[i].AddTension(grazeAmount * check._grazed[i].GetGrazeMultiplier(), true);
-			check._grazed[i].A_StartSound("delta/graze", 5, 0);
+			let grazeAmount = max(5, damage);
+			check.grazed[i].AddTension(grazeAmount * check.grazed[i].GetGrazeMultiplier(), true);
+			check.grazed[i].A_StartSound("delta/graze", 5, 0);
 		}
 	}
 	
@@ -247,42 +294,111 @@ class DeltaEvents : EventHandler
 		}
 		
 		if (e.damageSource is "DeltaPlayer" && e.damageSource != e.thing
-            && !e.damageSource.IsFriend(e.thing) && !(e.thing is "DeltaGrenade" || e.thing is "DeltaGrenadeHitbox"))
+			&& !(e.thing is "DeltaGrenade" || e.thing is "DeltaGrenadeHitbox"))
 		{
-			DeltaPlayer ply = DeltaPlayer(e.damageSource);
-			
-			if (!ply.GetDamageTics())
-				ply.AddTension(e.damage / 8);
+			if (!e.damageSource.IsFriend(e.thing))
+			{
+				DeltaPlayer ply = DeltaPlayer(e.damageSource);
+				
+				if (!ply.GetDamageTics())
+					ply.AddTension(e.damage / 8);
+			}
 		}
+		
+		// parrying projectiles back at enemies should also roll for bad explosion
+		if (e.thing.health <= 0 && e.inflictor && e.inflictor.CountInv("DeltaParried"))
+			DeltaUtil.RollForParryExplosion(e.thing);
 	}
 	
 	override void PlayerDied(PlayerEvent e)
 	{
-		return;
-		
-		if (deathmatch)
+		if (gamestate != GS_LEVEL)
 			return;
+		
+		bool gameOver = cl_delta_deathScreen && !multiplayer && !deathmatch
+			&& !level.AllowRespawn && !sv_singlePlayerRespawn
+			&& !G_SkillPropertyInt(SKILLP_PlayerRespawn);
 		
 		for (int i = 0; i < MAXPLAYERS; i++)
 		{
-			if (!playerInGame[i] || !players[i].mo)
+			if (!gameOver)
+				break;
+			
+			if (!playerInGame[i] || !players[i].mo || i == e.playerNumber)
 				continue;
 			if (players[i].mo.health > 0)
-				return;
+				gameOver = false;
+		}
+		
+		let barrelIter = ThinkerIterator.Create("ExplosiveBarrel");
+		foreach (Actor mo : ThinkerIterator.Create("BossBrain"))
+		{
+			if (!gameOver)
+				break;
+			
+			// if the last player dies when an icon of sin is dead, make sure
+			// we can end the level anyway
+			if (mo.health <= 0)
+			{
+				gameOver = false;
+				break;
+			}
+			
+			// make sure we're not in a map that's gonna blow up the shit out
+			// of an icon of sin lol (doom/boom format maps forcing an inventory
+			// reset for the next map)
+			foreach (Actor barr : barrelIter)
+			{
+				if (mo.CheckSight(barr) && barr.health < barr.SpawnHealth())
+				{
+					gameOver = false;
+					break;
+				}
+			}
+		}
+		
+		let ply = players[e.playerNumber];
+		
+		if (!gameOver)
+		{
+			if (ply.mo && ply.mo is "DeltaPlayer")
+			{
+				DeltaPlayer(ply.mo).A_StartDeath();
+				
+				if (ply.lastDamageType != 'Suicide')
+					ply.mo.A_StartSound("delta/hurt", CHAN_HEALTH_SOUNDS, attenuation: 0.5);
+			}
+			
+			return;
 		}
 		
 		level.SetFrozen(true);
+		
+		for (int i = 0; i < level.sectors.Size(); i++)
+		{
+			bool moving = level.sectors[i].PlaneMoving(Sector.floor)
+				|| level.sectors[i].PlaneMoving(Sector.ceiling);
+			if (!moving)
+				continue;
+			
+			level.sectors[i].StartSoundSequence(1, "Silence", 0);
+			level.sectors[i].StartSoundSequence(2, "Silence", 0);
+			
+			if (level.sectors[i].floorData)
+				level.sectors[i].floorData.Destroy();
+			if (level.sectors[i].ceilingData)
+				level.sectors[i].ceilingData.Destroy();
+		}
+		
+		foreach (Actor mo : ThinkerIterator.Create("Actor"))
+			mo.A_StopAllSounds();
+		
 		S_ChangeMusic("", force: true);
 		S_StartSound("delta/hurt", CHAN_AUTO);
 		
-		for (int i = 0; i < MAXPLAYERS; i++)
-		{
-			if (!playerInGame[i] || !players[i].mo)
-				continue;
-			
-			EventHandler.SendInterfaceEvent(i, "DeltaAllPlayersDead",
-				Cvar.GetCvar("prgr_delta_diedFirstTime").GetBool());
-		}
+		requireMouse = true;
+		EventHandler.SendInterfaceEvent(e.playerNumber, "DeltaAllPlayersDead",
+			!Cvar.GetCvar("data_delta_diedFirstTime").GetBool());
 	}
 	
 	override void PlayerEntered(PlayerEvent e)
@@ -293,6 +409,55 @@ class DeltaEvents : EventHandler
 	override void PlayerRespawned(PlayerEvent e)
 	{
 		EventHandler.SendInterfaceEvent(e.playerNumber, "DeltaResetHUD");
+	}
+	
+	override void NetworkProcess(ConsoleEvent e)
+	{
+		if (e.IsManual)
+			return;
+		if (!playerInGame[e.player])
+			return;
+		
+		let ply = players[e.player].mo;
+		if (!ply)
+			return;
+		
+		if (e.name ~== "DeltaTimeToRespawn")
+		{
+			for (int i = 0; i < MAXPLAYERS; i++)
+			{
+				if (!playerInGame[i] || !players[i].mo)
+					continue;
+				
+				players[i].cls = NULL;
+				players[i].playerState = PST_ENTER;
+				
+				if (players[i].mo.special1 > 2)
+					players[i].mo.special1 = 0;
+			}
+		}
+	}
+	
+	override void NetworkCommandProcess(NetworkCommand cmd)
+	{
+		if (cmd.Command == "CreateDebugMarker")
+		{
+			Vector3 pos = cmd.ReadVector3();
+			
+			int lifetime = -1;
+			if (!cmd.EndOfStream())
+				lifetime = cmd.ReadInt();
+			
+			Color col = 0xffffffff;
+			if (!cmd.EndOfStream())
+				col = uint(cmd.ReadInt());
+			
+			double alpha = 1.;
+			if (!cmd.EndOfStream())
+				alpha = cmd.ReadDouble();
+			
+			DeltaDebugPositionMarker.SpawnMarker(pos, lifetime, col, alpha);
+		}
 	}
 	
 	override void InterfaceProcess(ConsoleEvent e)
@@ -325,6 +490,10 @@ class DeltaEvents : EventHandler
 			bool firstTime = e.args[0];
 			hud.StartDeathSequence(firstTime);
 		}
+		else if (e.name ~== "DeltaCancelDeathSequence")
+		{
+			hud.CancelDeathSequence();
+		}
 		else if (e.name ~== "DismissMapMessage")
 		{
 			hud.DismissMessage();
@@ -342,22 +511,31 @@ class DeltaEvents : EventHandler
 	
 	override void RenderUnderlay(RenderEvent e)
 	{
-		if (!(statusBar is "DeltaHud"))
+		let hud = DeltaHud(statusBar);
+		if (!hud)
 			return;
 		
+		hud.pos = e.viewPos;
+		hud.angles = (e.viewPitch, e.viewRoll, e.viewAngle);
+	}
+	
+	override bool InputProcess(InputEvent e)
+	{
 		let hud = DeltaHud(statusBar);
-		hud._pos = e.viewPos;
-		hud._angles = (e.viewPitch, e.viewRoll, e.viewAngle);
+		if (!hud)
+			return false;
+		
+		hud.TakeInput(e);
+		return false;
 	}
 	
 	virtual void PlayerGrazed(GrazeEvent e)
 	{
-		if (e.thing != e.grazeSource)
-		{
-			EventHandler.SendInterfaceEvent(e.thing.PlayerNumber(),
-				"DeltaPlayerGraze",
-				e.grazeSource ? e.grazeSource.GetNetworkID() : 0);
-		}
+		if (e.thing == e.grazeSource)
+			return;
+		
+		EventHandler.SendInterfaceEvent(e.thing.PlayerNumber(),
+			"DeltaPlayerGraze", e.grazeSource ? e.grazeSource.GetNetworkID() : 0);
 	}
 }
 
@@ -369,7 +547,10 @@ class DeltaForceClass : EventHandler
 	{
 		targetPlayer = GetPlayerClass();
 		if (!targetPlayer)
-			return;
+			ThrowAbortException("%s uses null player class!", GetClassName());
+		if (!(targetPlayer is "PlayerPawn"))
+			ThrowAbortException("%s uses invalid player class %s!", GetClassName(),
+				targetPlayer.GetClassName());
 		
 		//Console.Printf("target player class is " .. targetPlayer.GetClassName());
 	}
@@ -378,10 +559,9 @@ class DeltaForceClass : EventHandler
 	{
 		let ply = players[e.playerNumber];
 		
-		if (!ply || ply.cls == targetPlayer)
+		if (!ply.mo || ply.cls == targetPlayer)
 			return;
 		
-		//Console.Printf("player entering as wrong class!");
 		let newPawn = PlayerPawn(Actor.Spawn(targetPlayer, ply.mo.pos)),
 			oldPawn = ply.mo;
 		newPawn.player = ply;

@@ -128,7 +128,7 @@ extend class DeltaPlayer
 		player.bonuscount = 0;
 	}
 	
-	protected action void A_StartDeath(bool freeze = false)
+	action void A_StartDeath(bool freeze = false)
 	{
 		invoker.coyoteTimer = 0;
 		invoker.isUsingOffhand = false;
@@ -145,15 +145,7 @@ extend class DeltaPlayer
 		// use deselect state, which would look weird since it's actually
 		// animated
 		if (player)
-		{
-			player.SetPSprite(PSP_FLASH, null);
-			player.SetPSprite(PSP_WEAPON, null);
-			player.SetPSprite(PSP_OFFHAND, null);
-			
-			if (player.FindPSprite(PSP_LEGS))
-				player.SetPSprite(PSP_LEGS, null);
-		}
-		A_StopSound(CHAN_WEAPON);
+			A_ClearOverlays(safety: false); // safety is false, we wanna remove EVERYTHING
 		
 		if (!freeze)
 			invoker.bCanPass = false;		// make sure our corpse doesn't get

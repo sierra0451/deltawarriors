@@ -1,6 +1,6 @@
 class DeltaWeapon : Weapon
 {
-	protected DeltaWeaponAnimType _animType;	// used to determine if third person sprite uses melee, gun, or magic animations when holding this weapon
+	protected int _animType;					// (DeltaWeaponAnimType) used to determine if third person sprite uses melee, gun, or magic animations when holding this weapon
 	protected double _redCrosshairRange;		// maximum distance an enemy can be at from player and still have red crosshairs when aimed at
 	protected double _maxLungeDistance;			// maximum distance the lunge check will detect targets from
 	protected double _stopLungeDistance;		// distance user must be at during lunge before they stop and attack
@@ -10,7 +10,7 @@ class DeltaWeapon : Weapon
 	protected bool _hasBeenPickedUp;			// used to determine if we should do inspect animation upon pulling this out or not
 	protected int _easeTics;
 	
-	protected double _tensionUse, _tensionUse2;
+	protected double _tensionUse, _tensionUse2, _minYOffset, _maxYOffset;
 	protected sound _dryFireSound;
 	
 	protected state _AtEaseLoopState, _DeselectAtEaseState;
@@ -30,6 +30,8 @@ class DeltaWeapon : Weapon
 	property AltFireIcon: _altFireIcon;
 	property Crosshair: _crosshair;
 	property DryFireSound: _dryFireSound;
+	property MinYOffset: _minYOffset;
+	property MaxYOffset: _maxYOffset;
 	
 	Default
 	{
@@ -37,13 +39,15 @@ class DeltaWeapon : Weapon
 		Weapon.BobRangeX 0.667;
 		Weapon.BobRangeY 0.667;
 		Weapon.BobSpeed 2.75;
-		DeltaWeapon.AnimType DELTA_WEAPONANIM_GUN;
+		DeltaWeapon.AnimType DeltaPlayer.DELTA_WEAPONANIM_GUN;
 		DeltaWeapon.RedCrosshairRange PLAYERMISSILERANGE / 2.;
 		DeltaWeapon.MaxLungeDistance -1;
 		DeltaWeapon.StopLungeDistance 5;
 		DeltaWeapon.TensionUse 0;
 		DeltaWeapon.TensionUse2 0;
 		DeltaWeapon.DryFireSound "delta/dry_fire";
+		DeltaWeapon.MinYOffset -25;
+		DeltaWeapon.MaxYOffset 25;
 	}
 	
 	States
@@ -110,9 +114,12 @@ class DeltaWeapon : Weapon
 		double lTensionUse1,
 			lTensionUse2 = _tensionUse2,
 			tensionCount = DeltaPlayer(owner).tensionPoints;
-
+		
 		if (bDehAmmo && Ammo1 == null)
-			lAmmoUse1 = lTensionUse1 = 0;
+		{
+			lAmmoUse1 = 0;
+			lTensionUse1 = 0;
+		}
 		else if (ammoCount >= 0)
 			lAmmoUse1 = lAmmoUse2 = ammoCount;
 		else
@@ -176,8 +183,15 @@ class DeltaWeapon : Weapon
 	
 	override state GetDownState()
 	{
+		if (!owner || !owner.player)
+			return Super.GetDownState();
+		
 		let psp = owner.player.GetPSprite(PSP_WEAPON);
-		if (!psp || !psp.curState.InStateSequence(_AtEaseLoopState))
+		if (!psp)
+			return Super.GetDownState();
+		if (owner.health <= 0)
+			return psp.curState;
+		if (!psp.curState.InStateSequence(_AtEaseLoopState))
 			return Super.GetDownState();
 		
 		let dest = FindState("DeselectAtEase");
@@ -185,6 +199,17 @@ class DeltaWeapon : Weapon
 			return dest;
 		
 		return Super.GetDownState();
+	}
+	
+	override void AlterWeaponSprite(VisStyle vis, in out int changed)
+	{
+		if (sv_delta_blind)
+		{
+			vis.RenderStyle = STYLE_None;
+			return;
+		}
+		
+		Super.AlterWeaponSprite(vis, changed);
 	}
 	
 	virtual bool TakeTension(bool altFire)
@@ -348,16 +373,18 @@ class DeltaWeapon : Weapon
 					|| invoker.owner.IsFriend(currMo)
 					|| currMo.bNeverTarget) continue;
 				
-				Vector3 diff = level.Vec3Diff(pos, currMo.pos);
-				Vector3 diffNorm = diff.Unit();
-				double targetAngle = VectorAngle(diff.x, diff.y);
-				double targetPitch = asin(diffNorm.z);
-				double distance = diff.Length();
-				let forward = DeltaUtil.GetActorForward(deltaOwner, false);
-				let diffDot = (diff.x, diff.y).Unit() dot (forward.x, forward.y);
+				Vector3
+					diff = level.Vec3Diff(pos, currMo.pos),
+					diffNorm = diff.Unit(),
+					forward = DeltaUtil.GetActorForward(deltaOwner, false);
+				double
+					targetAngle = VectorAngle(diff.x, diff.y),
+					targetPitch = asin(diffNorm.z),
+					distance = diff.Length(),
+					diffDot = (diff.x, diff.y).Unit() dot (forward.x, forward.y);
+				
 				if (diffDot < 0.9)
 					continue;
-				
 				if (abs(targetPitch) > 80)
 					continue;
 				
@@ -396,7 +423,7 @@ class DeltaWeapon : Weapon
 	{
 		double kb = player.onGround ? groundKnockback : airKnockback;
 		
-		if (crouchNullifies && player.crouchOffset != 0)
+		if (crouchNullifies && (player.cmd.buttons & BT_CROUCH))
 			return;
 		if (kb ~== 0)
 			return;
@@ -425,7 +452,7 @@ class DeltaWeapon : Weapon
 	
 	action void A_AddRecoil(int startTime, int leadInTime = 0, double p = 0, double y = 0, double r = 0)
 	{
-		DeltaPlayer(invoker.owner).AddRecoil(RECOIL_WEAPON, startTime, leadInTime, p, y, r);
+		DeltaPlayer(invoker.owner).AddRecoil(DeltaPlayer.RECOIL_WEAPON, startTime, leadInTime, p, y, r);
 	}
 	
 	action void A_AddDynamicLight(Name lightId, Name lightDef)
@@ -473,7 +500,8 @@ class DeltaWeapon : Weapon
 		return _redCrosshairRange;
 	}
 	
-	clearscope DeltaWeaponAnimType GetAnimType()
+	// returns a DeltaWeaponAnimType (see enum in DeltaPlayer for more info)
+	clearscope int GetAnimType()
 	{
 		return _animType;
 	}
@@ -489,6 +517,16 @@ class DeltaWeapon : Weapon
 		
 		return InStateSequence(psp.curState, _AtEaseLoopState)
 			|| InStateSequence(psp.curState, _DeselectAtEaseState);
+	}
+	
+	clearscope double GetMinYOffset()
+	{
+		return _minYOffset;
+	}
+	
+	clearscope double GetMaxYOffset()
+	{
+		return _maxYOffset;
 	}
 	
 	clearscope double GetCrouchFactor()

@@ -7,7 +7,7 @@ extend class DeltaPlayer
 		A_OverlayOffset(PSP_LEGS, off.x, off.y);
 	}
 	
-	virtual void AnimateLegs()
+	virtual void HandleLegs()
 	{
 		if (!player || player.health <= 0 || IsPredicting())
 			return;
@@ -22,8 +22,6 @@ extend class DeltaPlayer
 			return;
 		}
 		
-		let offset = GetLegsOffset();
-		
 		if (!psp)
 		{
 			SetUpLegs();
@@ -35,7 +33,16 @@ extend class DeltaPlayer
 		
 		psp.bAddBob = false;
 		psp.bAddWeapon = false;
-		A_OverlayOffset(PSP_LEGS, offset.x, offset.y, WOF_INTERPOLATE);
+		
+		let off = GetLegsOffset();
+		A_OverlayOffset(PSP_LEGS, off.x, off.y, WOF_INTERPOLATE);
+		
+		AnimateLegs();
+	}
+	
+	virtual void AnimateLegs()
+	{
+		let psp = player.FindPSprite(PSP_LEGS);
 		
 		bool inIdle = LegsInIdleState(),
 			inWalk = LegsInWalkState(),
@@ -53,25 +60,26 @@ extend class DeltaPlayer
 		}
 		
 		if ((coyoteTimer >= ANIM_GROUNDED_HANG_TIME && pos.z != floorz) && inJurisdiction)
-			AnimateLegsAir();
-		else
 		{
-			bool doingMoveInput = player ?
-					(player.buttons & (BT_MOVERIGHT | BT_MOVELEFT | BT_BACK | BT_FORWARD))
-					: false,
-				running = player ? (player.buttons & BT_RUN) : false;
-			
-			if (!inJurisdiction)
-				return;
-			
-			if (doingMoveInput)
-				AnimateLegsWalking();
-			else
-				AnimateLegsIdle();
+			AnimateLegsAir();
+			return;
 		}
+		
+		bool doingMoveInput = player? (player.cmd.forwardMove || player.cmd.sideMove)
+			: false,
+			running = player? (abs(player.cmd.forwardMove) > 6400
+				|| abs(player.cmd.sideMove) > 6144) : false;
+		
+		if (!inJurisdiction)
+			return;
+		
+		if (doingMoveInput)
+			AnimateLegsWalking();
+		else
+			AnimateLegsIdle();
 	}
 	
-	virtual Vector2 CalculateLegsOffset(double realPitch)
+	clearscope Vector2 CalculateLegsOffset(double realPitch)
 	{
 		double
 			fovFactor = (1/90.),
@@ -105,7 +113,7 @@ extend class DeltaPlayer
 			int targetFrame = 0;
 			double diff = viewHeight - player.viewHeight;
 			
-			targetFrame = clamp(floor(diff / 4.), int(player.deltaViewHeight < 0), 4);
+			targetFrame = clamp(int(diff / 4.), int(player.deltaViewHeight < 0), 4);
 			psp.frame = targetFrame;
 		}
 	}
@@ -117,7 +125,7 @@ extend class DeltaPlayer
 			inRun = LegsInRunState(),
 			inAir = LegsInAirState(),
 			inCrouchWalk = LegsInCrouchWalkState(),
-			crouching = IsCrouching(inCrouchWalk),
+			crouching = IsCrouching(),
 			running = player ? ((player.buttons & BT_RUN) && waterLevel < 2) : false;
 		
 		let psp = player.FindPSprite(PSP_LEGS);

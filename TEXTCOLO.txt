@@ -1,102 +1,105 @@
 // Text emphasis
-DeltaHighlight DeltaYellow {
-#4F4F00 #FFFF40 0 256
-Console:
-	#4F4F00 #FFFF40 0 256
+DeltaDefault
+{
+	#404040 #404040 0 1
+	#FFFFFF #FFFFFF 2 256
+	Console:
+		#404040 #FFFFFF 0 256
 }
-DeltaBlue {
-#00004F #4040FF 0 256
-Console:
-	#00004F #4040FF 0 256
+DeltaHighlight DeltaYellow
+{
+	#404010 #404010 0 231
+	#FFFF40 #FFFF40 232 233
+	#FFFF40 #FFFFC0 234 252
+	Console:
+		#4F4F10 #FFFF40 0 256
 }
-DeltaRed {
-#4F0000 #FF4040 0 256
-Console:
-	#4F0000 #FF4040 0 256
+DeltaBlue
+{
+	#101040 #101040 0 231
+	#4040FF #4040FF 232 233
+	#4040FF #C0C0FF 234 252
+	Console:
+		#101040 #4040FF 0 256
 }
-DeltaGrey {
-#242400 #808080 0 256
-Console:
+DeltaRed
+{
+	#401010 #401010 0 231
+	#FF4040 #FF4040 232 233
+	#FF4040 #FFC0C0 234 252
+	Console:
+		#401010 #FF4040 0 256
+}
+DeltaGrey
+{
 	#242400 #808080 0 256
+	Console:
+		#242400 #808080 0 256
 }
 
 // Characters
-DeltaKris {
-#002149 #00A2E8 0 256 
-Console:
-	#002149 #00A2E8 0 256
+DeltaKris
+{
+	#0072A8 #00A2E8 0 256 
+	Console:
+		#003278 #00A2E8 0 256
 }
-DeltaSusie {
-#2B143B #D66CFF 0 256 
-Console:
-	#2B143B #D66CFF 0 256
+DeltaSusie
+{
+	#962CBF #D66CFF 0 256 
+	Console:
+		#56007F #D66CFF 0 256
 }
-DeltaRalsei {
-#1D4600 #56D200 0 256 
-Console:
-	#1D4600 #56D200 0 256
+DeltaRalsei
+{
+	#169200 #56D200 0 256 
+	Console:
+		#005200 #56D200 0 256
 }
-DeltaNoelle {
-#6E6B3F #FBF236 0 256 
-Console:
-	#6E6B3F #FBF236 0 256
+DeltaNoelle
+{
+	#BBB206 #FBF236 0 256 
+	Console:
+		#7B7206 #FBF236 0 256
 }
 
 // Menu colors
 DeltaMenuTitle
-{ #003040 #00C0FF 0 256 }
+{ #003040 #00C0FF }
 DeltaMenuHeader
-{ #003040 #00C0FF 0 256 }
+{ #003040 #00C0FF }
 DeltaMenuDesc
-{ #102040 #80C0FF 0 256 }
+{ #102040 #80C0FF }
 DeltaMenuText
-{ #404040 #FFFFFF 0 256 }
-DeltaMenuHighlight DeltaOptMenuHighlight
-{ #404010 #FFFF40 0 256 }
+{ #404040 #FFFFFF }
+DeltaMenuHighlight
+{ #404000 #FFFF00 }
+
 DeltaOptMenuValue
-{ #086040 #20C0FF 0 256 }
-DeltaOptMenuActive
-{ #404010 #FFFF40 0 256 }
+{ #086040 #20C0FF }
+DeltaOptMenuHighlight DeltaOptMenuActive
+{ #606000 #FFFF00 }
 DeltaOptMenuInactive DeltaOptMenuLabel
-{ #404040 #FFFFFF 0 256 }
+{ #606060 #FFFFFF }
 
 // Skill levels
 DeltaVeryEasy
-{ #006080 #00C0FF 0 256 }
+{ #003040 #00C0FF }
 DeltaEasy
-{ #008000 #00FF00 0 256 }
+{ #004000 #00FF00 }
 DeltaHard
-{ #804000 #FF8000 0 256 }
+{ #603000 #FF8000 }
 DeltaVeryHard
-{ #800000 #FF0000 0 256 }
+{ #600000 #FF0000 }
 DeltaNightmare
-{ #600000 #C02020 0 256 }
+{ #480000 #C02020 }
 
 // Misc
 DeltaLowHealth
-{ #FFFF00 #FFFF00 0 256 }
+{ #FFFF00 #FFFF00 }
 KrisPlayer_damage
-{
-	#000000 #000000 0 1
-	#82FFFF #82FFFF 2 256
-}
-SusiePlayer_damage
-{
-	#000000 #000000 0 1
-	#C69BC6 #C69BC6 2 256
-}
-RalseiPlayer_damage
-{
-	#000000 #000000 0 1
-	#80FC82 #80FC82 2 256
-}
-Susie_damage
-{
-	#000000 #000000 0 1
-	#C69BC6 #C69BC6 2 256
-}
-Ralsei_damage
-{
-	#000000 #000000 0 1
-	#80FC82 #80FC82 2 256
-}
+{ #000000 #82FFFF }
+SusiePlayer_damage Susie_damage
+{ #000000 #C69BC6 }
+RalseiPlayer_damage Ralsei_damage
+{ #000000 #80FC82 }

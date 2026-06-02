@@ -14,33 +14,33 @@ extend class DeltaPlayer
 	
 	protected void TickVoice()
 	{
-		if (painTimer == -1)
-		{
-			painTimer = PAIN_TIMER_START;
-			string painSnd = "light_pain";
-			int priorityOffset = 0,
-				lowHpThreshold = GetMaxHealth()*0.333,
-				medThreshold = GetMaxHealth()*0.2,
-				severeThreshold = GetMaxHealth()*0.5;
-			
-			if (painAmount >= severeThreshold
-				|| (painAmount >= medThreshold && health <= lowHpThreshold))
-			{
-				painSnd = "severe_pain";
-				priorityOffset = 2;
-			}
-			else if (painAmount >= medThreshold || health <= lowHpThreshold)
-			{
-				painSnd = "medium_pain";
-				priorityOffset = 1;
-			}
-			
-			DoSpeak(painSnd, VOX_PAIN + priorityOffset);
-			painAmount = 0;
-		}
-		
 		if (painTimer > 0 && (lastPriority != VOX_PAIN || !IsActorPlayingSound(VOICE_CHANNEL)))
 			painTimer--;
+		
+		if (painTimer != -1)
+			return;
+		
+		painTimer = PAIN_TIMER_START;
+		string painSnd = "light_pain";
+		let priorityOffset = 0,
+			lowHpThreshold = GetMaxHealth() / 3,
+			medThreshold = GetMaxHealth() / 5,
+			severeThreshold = GetMaxHealth() / 2;
+		
+		if (painAmount >= severeThreshold
+			|| (painAmount >= medThreshold && health <= lowHpThreshold))
+		{
+			painSnd = "severe_pain";
+			priorityOffset = 2;
+		}
+		else if (painAmount >= medThreshold || health <= lowHpThreshold)
+		{
+			painSnd = "medium_pain";
+			priorityOffset = 1;
+		}
+		
+		DoSpeak(painSnd, VOX_PAIN + priorityOffset);
+		painAmount = 0;
 	}
 	
 	bool CanSpeak(int priority)

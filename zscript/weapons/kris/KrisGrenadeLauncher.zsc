@@ -1,0 +1,229 @@
+class KrisGrenadeLauncher : DeltaWeapon
+{
+	Default
+	{
+		Tag "$TAG_DELTA_GRENADELAUNCHER";
+		Inventory.PickupMessage "$PICKUP_DELTA_GRENADELAUNCHER";
+		
+		Weapon.SlotNumber 5;
+		Weapon.SelectionOrder 900;
+		Weapon.AmmoUse 1;
+		Weapon.AmmoGive 4;
+		Weapon.AmmoType "RocketAmmo";
+		DeltaWeapon.Crosshair "DRRCKRET";
+		
+		+WEAPON.NOALERT; // handling this manually
+		+SQUAREPIXELS
+	}
+	
+	States
+	{
+		Ready:
+			MISG A 1 A_DeltaWeaponReady; // use KGLN for actual sprites
+			Loop;
+		Deselect:
+			/*
+			TNT1 A 4 A_StartSound("delta/revolver/holster2", CHAN_WEAPON,
+				CHANF_OVERLAP);
+			TNT1 A 0 A_SwapWeapon;
+			Stop;
+			*/
+			MISG A 1 A_Lower(9);
+			Loop;
+		Select:
+			/*
+			TNT1 A 2 A_StartRaiseWeapon;
+			TNT1 A 4;
+			*/
+			MISG A 1 A_Raise(9);
+			Loop;
+		Fire:
+			MISG B 8
+			{
+				A_KrisGrenadeLauncherFire();
+				A_GunFlash();
+			}
+			MISG B 2 A_DeltaWeaponReady(WRF_NOFIRE | WRF_NOBOB);
+			MISG B 10;
+			MISG B 0 A_ReFire();
+			Goto Ready;
+		AltFire:
+			MISG B 8
+			{
+				A_KrisGrenadeLauncherAltFire();
+				A_GunFlash("AltFlash");
+			}
+			MISG B 2 A_DeltaWeaponReady(WRF_NOFIRE | WRF_NOBOB);
+			MISG B 10;
+			MISG B 0 A_ReFire();
+			Goto Ready;
+		Flash:
+			MISF A 1 Bright;
+			MISF B 3 Bright;
+			MISF CD 4 Bright;
+			Goto LightDone;
+		AltFlash:
+			MISF A 1 Bright;
+			MISF B 3 Bright;
+			MISF CD 4 Bright;
+			Goto LightDone;
+		Spawn:
+			LAUN A -1;
+			Stop;
+	}
+	
+	protected action state A_KrisGrenadeLauncherFire()
+	{
+		if (!invoker.DepleteAmmo(false))
+			return ResolveState("Ready");
+		
+		A_FireProjectile("KrisGrenade", useAmmo: false);
+		// temporarily using doom rocket launcher sound
+		A_StartSound("weapons/rocklf", CHAN_WEAPON, CHANF_OVERLAP);
+		A_AlertMonsters();
+		A_OwnerPlayAttack(false);
+		
+		A_AddRecoil(12, 2, p: -5);
+		return ResolveState(null);
+	}
+	
+	protected action state A_KrisGrenadeLauncherAltFire()
+	{
+		if (!invoker.DepleteAmmo(true))
+			return ResolveState("Ready");
+		
+		A_FireProjectile("KrisStunGrenade", useAmmo: false);
+		// temporarily using doom rocket launcher sound
+		A_StartSound("weapons/rocklf", CHAN_WEAPON, CHANF_OVERLAP);
+		A_AlertMonsters();
+		A_OwnerPlayAttack(false);
+		
+		A_AddRecoil(12, 2, p: -5);
+		return ResolveState(null);
+	}
+}
+
+class KrisGrenade : DeltaGrenade
+{
+	Default
+	{
+		Speed 30;
+		Gravity 0.333;
+		Obituary "$OBIT_DELTA_GRENADE";
+		
+		DeltaGrenade.GrenadeType GRENADE_CONTACT;
+		DeltaGrenade.FuseTime 0.;
+		DeltaGrenade.ArmedSound "delta/smg/grenade_hit_map";
+		DeltaGrenade.ExplosionSound "delta/smg/grenade_explosion";
+		DeltaGrenade.HitboxClass "KrisSmgGrenadeHitbox";
+	}
+	
+	override void Explode()
+	{
+		Super.Explode();
+		
+		double range = 110;
+		RadiusAttack(target, 250 + dmgTaken, range, 'KrisGrenade',
+			RADF_THRUSTZ, range*0.2);
+		// note the lack of RADF_HURTSOURCE, we wanna handle that manually here
+		
+		let diff = level.Vec3Diff(pos, target.pos),
+			dist = max(abs(diff.x), abs(diff.y), abs(diff.z));
+		if (dist > range || !CheckSight(target, SF_IGNOREVISIBILITY))
+			return;
+		
+		let damageMult = clamp(1.2 - dist/range, 0, 1),
+			dmg = int(ceil(60 * damageMult));
+		
+		target.DamageMobj(self, target, dmg, 'KrisGrenade', DMG_THRUSTLESS);
+		
+		let knockbackDmg = dmg * 0.5;
+		let deltaTarget = DeltaPlayer(target);
+		
+		if (deltaTarget && !deltaTarget.IsGrounded())
+			knockbackDmg *= 2;
+		
+		if (knockbackDmg > 20)
+			knockbackDmg = 20;
+		
+		target.Vel += diff.Unit() * knockbackDmg;
+	}
+	
+	override string GetObituary(Actor victim, Actor inflictor, Name mod, bool playerAttack)
+	{
+		if (victim == target)
+			return StringTable.Localize("$OBIT_DELTA_KSMGALTSELF");
+		
+		return Super.GetObituary(victim, inflictor, mod, playerAttack);
+	}
+	
+	States
+	{
+		Spawn:
+			MISL A 1 Bright;
+			Loop;
+		Explode:
+			MISL A 1 Bright; // freeze here for hitstop
+			MISL B 2 Bright A_GrenadeExplode;
+			MISL CD 3 Bright;
+			Stop;
+	}
+}
+
+class KrisStunGrenade : DeltaGrenade
+{
+	Default
+	{
+		Speed 35;
+		Gravity 0.333;
+		
+		DeltaGrenade.GrenadeType GRENADE_NORMAL;
+		DeltaGrenade.FuseTime 0.5;
+		DeltaGrenade.ArmedSound "delta/smg/grenade_hit_map";
+		DeltaGrenade.ExplosionSound "delta/smg/grenade_explosion";
+		DeltaGrenade.HitboxClass "KrisSmgGrenadeHitbox";
+	}
+	
+	override void Explode()
+	{
+		Super.Explode();
+		
+		double range = 110;
+		RadiusAttack(target, 250 + dmgTaken, range, 'KrisGrenade',
+			RADF_THRUSTZ, range*0.2);
+		// note the lack of RADF_HURTSOURCE, we wanna handle that manually here
+		
+		let diff = level.Vec3Diff(pos, target.pos),
+			dist = max(abs(diff.x), abs(diff.y), abs(diff.z));
+		if (dist > range || !CheckSight(target, SF_IGNOREVISIBILITY))
+			return;
+		
+		let damageMult = clamp(1.2 - dist/range, 0, 1),
+			dmg = int(ceil(60 * damageMult));
+		
+		target.DamageMobj(self, target, dmg, 'KrisGrenade', DMG_THRUSTLESS);
+		
+		let knockbackDmg = dmg * 0.5;
+		let deltaTarget = DeltaPlayer(target);
+		
+		if (deltaTarget && !deltaTarget.IsGrounded())
+			knockbackDmg *= 2;
+		
+		if (knockbackDmg > 20)
+			knockbackDmg = 20;
+		
+		target.Vel += diff.Unit() * knockbackDmg;
+	}
+	
+	States
+	{
+		Spawn:
+			MISL A 1 Bright;
+			Loop;
+		Explode:
+			MISL A 1 Bright; // freeze here for hitstop
+			MISL B 2 Bright A_GrenadeExplode;
+			MISL CD 3 Bright;
+			Stop;
+	}
+}

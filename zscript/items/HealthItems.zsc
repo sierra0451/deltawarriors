@@ -1,0 +1,178 @@
+class DeltaHealthBonus : HealthBonus replaces HealthBonus
+{
+	override bool TryPickup(in out Actor toucher)
+	{
+		toucher.GiveBody(5, toucher.GetMaxHealth() * 2);
+		GoAwayAndDie();
+		return true;
+	}
+}
+
+class DeltaHealthPickup : HealthPickup abstract
+{
+	private string _useMessage, _lowUseMessage;
+	private int _prevHealth;
+	
+	property UseMessage: _useMessage;
+	property LowUseMessage: _lowUseMessage;
+	
+	Default
+	{
+		Health 10;
+		Inventory.MaxAmount 9;
+		Inventory.Icon "";
+		Inventory.UseSound "delta/heal";
+		
+		// use a LANGUAGE entry for the messages, these ones are just examples!!
+		Inventory.PickupMessage "You picked up a health pickup. Replace this text with your own!";
+		DeltaHealthPickup.UseMessage "You used a health pickup. Replace this text with your own!";
+		DeltaHealthPickup.LowUseMessage ""; // leave this alone to ALWAYS use the normal message
+		
+		+INVENTORY.ISHEALTH
+	}
+	
+	virtual string UseMessage()
+	{
+		if (_lowUseMessage != "" && _prevHealth < owner.GetMaxHealth(true)/4)
+			return _lowUseMessage;
+		
+		return _useMessage;
+	}
+	
+	override bool Use(bool pickup)
+	{
+		_prevHealth = owner.health;
+		let result = Super.Use(pickup);
+		if (result)
+			owner.A_Log(UseMessage(), true);
+		
+		return result;
+	}
+}
+
+class DeltaStimpack : DeltaHealthPickup replaces Stimpack
+{
+	Default
+	{
+		Tag "$TAG_STIMPACK";
+		
+		Health 20;
+		Inventory.Icon "STIMA0";
+		Inventory.PickupMessage "$GOTSTIM";
+		DeltaHealthPickup.UseMessage "$DELTA_USE_STIMPACK";
+	}
+	
+	States
+	{
+		Spawn:
+			STIM A -1;
+			Stop;
+	}
+}
+
+class DeltaMedikit : DeltaHealthPickup replaces Medikit
+{
+	Default
+	{
+		Tag "$TAG_MEDIKIT";
+		
+		Health 50;
+		Inventory.Icon "MEDIA0";
+		Inventory.PickupMessage "$GOTMEDIKIT";
+		DeltaHealthPickup.UseMessage "$DELTA_USE_MEDIKIT";
+		DeltaHealthPickup.LowUseMessage "$DELTA_USE_MEDIKITLOW";
+	}
+	
+	States
+	{
+		Spawn:
+			MEDI A -1;
+			Stop;
+	}
+}
+
+class DeltaBerserk : DeltaHealthPickup replaces Berserk
+{
+	Default
+	{
+		Tag "$TAG_BERSERK";
+		
+		Inventory.MaxAmount 1;
+		Inventory.Icon "PSTRA0";
+		Inventory.UseSound "delta/use_powerup";
+		Inventory.PickupMessage "$GOTBERSERK";
+		DeltaHealthPickup.UseMessage "$DELTA_USE_BERSERK";
+		
+		+COUNTITEM;
+		+Inventory.ISHEALTH;
+	}
+	
+	States
+	{
+		Spawn:
+			PSTR A -1 Bright;
+			Stop;
+	}
+	
+	override bool Use(bool pickup)
+	{
+		owner.A_StartSound("delta/heal", CHAN_HEALTH_SOUNDS);
+		owner.GiveInventory("PowerStrength", 1);
+		owner.GiveBody(-100);
+		return true;
+	}
+}
+
+class DeltaSoulsphere : Soulsphere replaces Soulsphere
+{
+	override bool TryPickup(in out Actor toucher)
+	{
+		amount = toucher.GetMaxHealth(true);
+		maxAmount = amount*2;
+		return Super.TryPickup(toucher);
+	}
+}
+
+class DeltaMegasphere : Megasphere replaces Megasphere
+{
+	Default
+	{
+		-INVENTORY.ISARMOR; // this isn't an armor pickup anymore, it doesn't give us armor
+	}
+	
+	States
+	{
+		Spawn:
+			Goto Super::Spawn;
+		Pickup:
+			TNT1 A 0 A_GiveInventory("DeltaTensionMax", 250);
+			TNT1 A 0 A_GiveInventory("DeltaMegasphereHealth", 1);
+			Stop;
+	}
+}
+
+class DeltaMegasphereHealth : Health replaces MegasphereHealth
+{
+	Default
+	{
+		+INVENTORY.ALWAYSPICKUP;
+	}
+	
+	States
+	{
+		Pickup:
+			Stop;
+	}
+	
+	// making sure no matter who picks this thing up, we always give max overheal!
+	override bool TryPickup(in out Actor toucher)
+	{
+		if (toucher.GiveBody(-200))
+		{
+			GoAwayAndDie();
+			return true;
+		}
+		
+		return false;
+	}
+}

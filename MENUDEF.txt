@@ -18,6 +18,11 @@ ListMenu "MainMenu"
 	TextItem "$MENU_OPTIONS", "c", "DeltaOptions"
 	TextItem "$MENU_ABOUT", "p", "ReadThisMenu"
 	TextItem "$MENU_QUIT", "e", "QuitMenu"
+	
+	IfNotGame(Doom)
+	{
+		StaticTextCentered 150, 200, "$DELTAWARRIORS_NOT_SUPPORTED"
+	}
 }
 
 ListMenu "PlayerClassMenu"
@@ -125,7 +130,6 @@ OptionMenu "DeltaOptions"
 	
 	StaticText ""
 	Slider "$MENU_FOV", "fov", 75, 160, 1, 0
-	Option "$MENU_DISCORD_RPC", "i_discordrpc", "YesNo"
 	
 	StaticText ""
 	SubMenu "$MENU_OPT_SEARCH", "os_menu"
