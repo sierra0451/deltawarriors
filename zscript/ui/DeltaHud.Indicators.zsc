@@ -25,9 +25,9 @@ extend class DeltaHud
 	
 	protected void SetUpIndicatorTextures()
 	{
-		_damageIndicator 	= TexMan.CheckForTexture("DRDMGIND");
-		_grazeStencil		= TexMan.CheckForTexture("sprites/hud/grazeStencil.png");
-		_grazeMarker		= TexMan.CheckForTexture("sprites/hud/grazeMarker.png");
+		_damageIndicator 	= TexMan.CheckForTexture("graphics/hud/damageIndicator.png");
+		_grazeStencil		= TexMan.CheckForTexture("graphics/hud/grazeStencil.png");
+		_grazeMarker		= TexMan.CheckForTexture("graphics/hud/grazeMarker.png");
 	}
 	
 	protected void TickIndicators()
@@ -105,7 +105,7 @@ extend class DeltaHud
 		
 		if (ply.grazeTics)
 		{
-			let alpha = 48. * ply.grazeTics / DeltaPlayer.MAX_GRAZE_TICS;
+			let alpha = 160. * ply.grazeTics / DeltaPlayer.MAX_GRAZE_TICS;
 			
 			DrawTexture(_grazeStencil, (0, 0), DI_SCREEN_CENTER | DI_ITEM_OFFSETS,
 				scale: _universalScale * 2, col: Color(int(alpha), 160, 160, 160));

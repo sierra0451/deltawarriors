@@ -7,6 +7,16 @@ class DeltaNoHud : Inventory
 	}
 }
 
+// used for making sure things that cost TP don't also give us back TP by dealing damage
+class DeltaNoGiveDamageTP : Inventory
+{
+	Default
+	{
+		+Inventory.UNDROPPABLE;
+		+Inventory.UNTOSSABLE;
+	}
+}
+
 // used to modify projectile damage directly!
 class DeltaParryDamage : Inventory
 {
@@ -37,4 +47,18 @@ class DeltaParried : Inventory
 	// between killing a player with their own projectile and killing them with
 	// someone else's
 	Actor oldTarget;
+}
+
+class DeltaParriable : Inventory
+{
+	Default
+	{
+		+Inventory.UNDROPPABLE;
+		+Inventory.UNTOSSABLE;
+	}
+	
+	virtual bool CanBeParried()
+	{
+		return true;
+	}
 }

@@ -4,17 +4,20 @@ version "4.14.3"
 #include "zscript/DeltaEnums.zsc"
 #include "zscript/DeltaUtil.zsc"
 #include "zscript/DeltaEvents..zsc"
-#include "zscript/DeltaEvents.MapsetCompat.zsc"
+#include "zscript/DeltaEvents.Level.zsc"
 #include "zscript/DeltaCutscenes.zsc"
 #include "zscript/DeltaMessages.zsc"
+#include "zscript/StatusEffects.zsc"
 
 // effects
 #include "zscript/effects/DeltaBadExplosion.zsc"
+#include "zscript/effects/DeltaHealEffects.zsc"
 #include "zscript/effects/DeltaSoul.zsc"
-#include "zscript/effects/DeltaTrail.zsc"
+#include "zscript/effects/DeltaTelegraphs.zsc"
+#include "zscript/effects/DeltaTrails.zsc"
 
 // custom enemies
-#include "zscript/enemies/DeltaZombies.zsc"
+// #include "zscript/enemies/DoomEnemyReplacements.zsc"		// intentionally commented out!! will revisit these at a later time
 
 // items
 #include "zscript/items/HealthItems.zsc"
@@ -44,14 +47,13 @@ version "4.14.3"
 #include "zscript/ui/DeltaHud.Messages.zsc"
 #include "zscript/ui/DeltaHud.Multiplayer.zsc"
 #include "zscript/ui/DeltaPopups..zsc"
-#include "zscript/ui/DeltaPopups.Damage.zsc"
+#include "zscript/ui/DeltaPopups.Health.zsc"
 	// menu
 	#include "zscript/ui/menu/DeltaListMenu.zsc"
 	#include "zscript/ui/menu/DeltaOptionMenu.zsc"
 	#include "zscript/ui/menu/DeltaSkillMenu.zsc"
 
 // projectiles
-#include "zscript/projectiles/DeltaProjectile.zsc"
 #include "zscript/projectiles/DeltaGrenade.zsc"
 
 // weapons

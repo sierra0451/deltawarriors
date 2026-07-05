@@ -2,7 +2,7 @@ class DeltaHealthBonus : HealthBonus replaces HealthBonus
 {
 	override bool TryPickup(in out Actor toucher)
 	{
-		toucher.GiveBody(5, toucher.GetMaxHealth() * 2);
+		DeltaGlobals.GetLevelEvents().Heal(toucher, 5, toucher.GetMaxHealth() * 2);
 		GoAwayAndDie();
 		return true;
 	}
@@ -10,25 +10,32 @@ class DeltaHealthBonus : HealthBonus replaces HealthBonus
 
 class DeltaHealthPickup : HealthPickup abstract
 {
+	int maxHealth;
+	private bool _alwaysAllowUse;
 	private string _useMessage, _lowUseMessage;
 	private int _prevHealth;
 	
 	property UseMessage: _useMessage;
 	property LowUseMessage: _lowUseMessage;
+	property AlwaysAllowUse: _alwaysAllowUse;
+	property MaxHealth: maxHealth;
 	
 	Default
 	{
 		Health 10;
 		Inventory.MaxAmount 9;
+		Inventory.InterHubAmount 9;
 		Inventory.Icon "";
-		Inventory.UseSound "delta/heal";
+		Inventory.UseSound "";
 		
 		// use a LANGUAGE entry for the messages, these ones are just examples!!
 		Inventory.PickupMessage "You picked up a health pickup. Replace this text with your own!";
 		DeltaHealthPickup.UseMessage "You used a health pickup. Replace this text with your own!";
 		DeltaHealthPickup.LowUseMessage ""; // leave this alone to ALWAYS use the normal message
+		DeltaHealthPickup.AlwaysAllowUse false;
+		DeltaHealthPickup.MaxHealth 0;
 		
-		+INVENTORY.ISHEALTH
+		+Inventory.ISHEALTH
 	}
 	
 	virtual string UseMessage()
@@ -42,7 +49,9 @@ class DeltaHealthPickup : HealthPickup abstract
 	override bool Use(bool pickup)
 	{
 		_prevHealth = owner.health;
-		let result = Super.Use(pickup);
+		let result = DeltaGlobals.GetLevelEvents().Heal(owner, health, maxHealth);
+		if (_alwaysAllowUse)
+			result = true;
 		if (result)
 			owner.A_Log(UseMessage(), true);
 		
@@ -95,13 +104,15 @@ class DeltaBerserk : DeltaHealthPickup replaces Berserk
 {
 	Default
 	{
+		Health -100;
 		Tag "$TAG_BERSERK";
 		
 		Inventory.MaxAmount 1;
 		Inventory.Icon "PSTRA0";
-		Inventory.UseSound "delta/use_powerup";
+		Inventory.UseSound "";
 		Inventory.PickupMessage "$GOTBERSERK";
 		DeltaHealthPickup.UseMessage "$DELTA_USE_BERSERK";
+		DeltaHealthPickup.AlwaysAllowUse true;
 		
 		+COUNTITEM;
 		+Inventory.ISHEALTH;
@@ -116,9 +127,11 @@ class DeltaBerserk : DeltaHealthPickup replaces Berserk
 	
 	override bool Use(bool pickup)
 	{
-		owner.A_StartSound("delta/heal", CHAN_HEALTH_SOUNDS);
+		if (!Super.Use(pickup))
+			return false;
+		
+		owner.A_StartSound("delta/use_powerup", CHAN_AUTO);
 		owner.GiveInventory("PowerStrength", 1);
-		owner.GiveBody(-100);
 		return true;
 	}
 }
@@ -127,9 +140,15 @@ class DeltaSoulsphere : Soulsphere replaces Soulsphere
 {
 	override bool TryPickup(in out Actor toucher)
 	{
-		amount = toucher.GetMaxHealth(true);
-		maxAmount = amount*2;
-		return Super.TryPickup(toucher);
+		let amt = toucher.GetMaxHealth(true),
+			maxAmt = amt*2;
+		
+		if (DeltaGlobals.GetLevelEvents().Heal(toucher, amt, maxAmt))
+		{
+			GoAwayAndDie();
+			return true;
+		}
+		return false;
 	}
 }
 
@@ -137,7 +156,7 @@ class DeltaMegasphere : Megasphere replaces Megasphere
 {
 	Default
 	{
-		-INVENTORY.ISARMOR; // this isn't an armor pickup anymore, it doesn't give us armor
+		-Inventory.ISARMOR; // this isn't an armor pickup anymore, it doesn't give us armor
 	}
 	
 	States
@@ -155,7 +174,7 @@ class DeltaMegasphereHealth : Health replaces MegasphereHealth
 {
 	Default
 	{
-		+INVENTORY.ALWAYSPICKUP;
+		+Inventory.ALWAYSPICKUP;
 	}
 	
 	States
@@ -167,7 +186,8 @@ class DeltaMegasphereHealth : Health replaces MegasphereHealth
 	// making sure no matter who picks this thing up, we always give max overheal!
 	override bool TryPickup(in out Actor toucher)
 	{
-		if (toucher.GiveBody(-200))
+		let amt = toucher.GetMaxHealth()*2;
+		if (DeltaGlobals.GetLevelEvents().Heal(toucher, amt, amt))
 		{
 			GoAwayAndDie();
 			return true;

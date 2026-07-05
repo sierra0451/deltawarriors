@@ -1,0 +1,746 @@
+struct GrazeEvent play version("2.4")
+{
+	PlayerPawn thing;
+	Actor grazeSource;
+}
+
+struct DeltaDamageEvent
+{
+	Actor victim, source, inflictor;
+	int amount;
+	double height; // used for if victim is killed, and thus immediately reduces height
+}
+
+class DeltaLevelEvents : EventHandler
+{
+	DeltaDamageEvent[300] damageEvents;
+	Actor[100] reviving;
+	Array<int> scrollTags;
+	Vector3 viewPos;
+	
+	protected Le_GlScreen	gl_proj;
+	protected Le_Viewport	viewport;
+	protected int			currentTime;
+	
+	override void OnRegister()
+	{
+		gl_proj = new("Le_GlScreen");
+	}
+	
+	override void WorldLoaded(WorldEvent e)
+	{
+		EnableNetworking(true);
+		
+		let _name = level.mapName,
+			mapset = DeltaGlobals.GetGlobals().GetMapset();
+		
+		if (mapset ~== "AncientAliens" && _name ~== "map30")
+			Actor.Spawn("DeltaWeaponsAtEase");
+		else if (mapset ~== "BTSX1" && (_name ~== "map08" || _name ~== "map16"
+			|| _name ~== "map23" || _name ~== "map25"))
+			Actor.Spawn("DeltaWeaponsAtEase");
+		else if (mapset ~== "BTSX2" && (_name ~== "map05" || _name ~== "map11"
+			|| _name ~== "map16" || _name ~== "map23" || _name ~== "map27"))
+			Actor.Spawn("DeltaWeaponsAtEase");
+		
+		scrollTags.Clear();
+		
+		for (int i = 0; i < level.lines.Size(); i++)
+		{
+			// gross ass hack but scrollers aren't exposed, so this is the best i got for the moment
+			if (level.lines[i].special || level.lines[i].args[2] == 0
+				|| scrollTags.Find(level.lines[i].args[0]) != scrollTags.Size())
+				continue;
+			
+			scrollTags.Push(level.lines[i].args[0]);
+		}
+		
+		for (int j = 0; j < level.sectors.Size(); j++)
+		{
+			if (!level.sectors[j].damageAmount || level.sectors[j].damageInterval != 32)
+				continue;
+			
+			level.sectors[j].damageInterval = 15;
+			level.sectors[j].damageAmount = max(3, level.sectors[j].damageAmount / 3);
+		}
+	}
+	
+	override void WorldUnloaded(WorldEvent e)
+	{
+		// if we die right before exiting, we wanna make sure the death sequence
+		// gets cancelled so shit doesn't break in the next map
+		for (int i = 0; i < MAXPLAYERS; i++)
+		{
+			if (!playerInGame[i] || !players[i].mo)
+				continue;
+			
+			EventHandler.SendInterfaceEvent(i, "DeltaCancelDeathSequence");
+		}
+	}
+	
+	override void WorldTick()
+	{
+		ReviveTick();
+		DamageEventTick();
+		NametagTick();
+	}
+	
+	protected void DamageEventTick()
+	{
+		if (!damageEvents.Size())
+			return;
+		
+		for (int i = 0; i < damageEvents.Size(); i++)
+		{
+			if (!damageEvents[i].victim)
+				continue;
+			if (damageEvents[i].amount <= 0)
+				continue;
+			
+			if (sv_delta_pacifist && damageEvents[i].source
+				&& damageEvents[i].source is "DeltaPlayer"
+				&& damageEvents[i].victim.bIsMonster)
+			{
+				let dummy = damageEvents[i].source.Spawn("DeltaPacifistFail");
+				
+				for (int i = 0; i < MAXPLAYERS; i++)
+				{
+					if (!playerInGame[i] || !players[i].mo)
+						continue;
+					
+					players[i].mo.DamageMobj(damageEvents[i].source, dummy,
+						random[instakill](10000, 100000), "PacifistFail", DMG_FORCED);
+				}
+				return;
+			}
+			
+			if (damageEvents[i].victim is "DeltaPlayer")
+			{
+				if (damageEvents[i].victim.health <= 0)
+				{
+					let ded = DeltaDeadPopup.SpawnPopup("DeltaDeadPopup",
+						damageEvents[i].victim, damageEvents[i].source, 5);
+				}
+				else
+					DeltaDamagePopup.SpawnNumbers(damageEvents[i].victim,
+						damageEvents[i].source, damageEvents[i].amount);
+				
+				EventHandler.SendInterfaceEvent(
+					playerNum: damageEvents[i].victim.PlayerNumber(),
+					name: "DeltaPlayerDamage",
+					arg1 : damageEvents[i].source ?
+						damageEvents[i].source.GetNetworkID() : 0,
+					arg2 : damageEvents[i].inflictor ?
+						damageEvents[i].inflictor.GetNetworkID() : 0,
+					arg3: damageEvents[i].amount
+				);
+			}
+			else
+				DeltaDamagePopup.SpawnNumbers(damageEvents[i].victim,
+					damageEvents[i].source, damageEvents[i].amount);
+			
+			damageEvents[i].victim = null;
+			damageEvents[i].source = null;
+			damageEvents[i].amount = 0;
+		}
+	}
+	
+	protected void ReviveTick()
+	{
+		if (!reviving.Size())
+			return;
+		
+		for (int i = reviving.Size() - 1; i >= 0; i--)
+		{
+			Actor revivee = reviving[i];
+			
+			if (!revivee)
+				continue;
+			if (revivee.InStateSequence(revivee.curState, revivee.FindState("Raise")))
+				continue;
+			if (revivee.Health <= 0)
+				continue;
+			
+			DeltaPopup.SpawnPopup("DeltaHealMaxPopup", revivee);
+			revivee.A_StartSound("delta/heal", CHAN_AUTO);
+			reviving[i] = null;
+		}
+	}
+	
+	protected void NametagTick()
+	{
+		int c = consolePlayer;
+		if (!playerInGame[c] || !players[c].camera)
+			return;
+		
+		EventHandler.SendInterfaceEvent(c, "DeltaClearPlayersSeen");
+		
+		for (int j = 0; j < players.Size(); j++)
+		{
+			if (!playerInGame[j] || c == j || !players[j].mo)
+				continue;
+			if (!players[c].camera.CheckSight(players[j].mo, SF_IGNOREVISIBILITY))
+				continue;
+			
+			EventHandler.SendInterfaceEvent(c, "DeltaSeenPlayer", j);
+		}
+	}
+	
+	override bool WorldHitscanPreFired(WorldEvent e)
+	{
+		let ang = e.attackAngle,
+			pitch = e.attackPitch,
+			dir = (cos(pitch) * cos(ang), cos(pitch) * sin(ang), sin(-pitch)),
+			offsetUp = e.thing.height/2. + e.attackZ - 2;
+		
+		if (e.thing.player)
+			offsetUp = e.thing.player.viewZ - e.thing.pos.Z - 2;
+		
+		let pos = e.thing.pos.PlusZ(offsetUp),
+			dist = e.attackDistance;
+		FLineTraceData grazeData;
+		
+		if (e.thing.LineTrace(ang, dist, pitch, offsetZ: offsetUp, data: grazeData))
+			dist = min(dist, grazeData.Distance + 8.);
+		
+		Graze(e.thing, e.damage, pos, grazeData.HitLocation);
+		
+		if (e.AttackLineFlags & LAF_ISMELEEATTACK)
+			return false;
+		
+		let fwd = DeltaUtil.GetActorForward(e.thing),
+			right = DeltaUtil.GetActorRight(e.thing, true);
+		
+		let offsetRight = e.attackOffsetSide + 2,
+			offsetFwd = (e.attackOffsetForward + max(0, (e.thing.vel dot fwd) * 2));
+		
+		// hitscan tracers should show up on left side if we're lefthanded
+		if (e.thing == players[consolePlayer].mo && cl_delta_weaponHandedness)
+			offsetRight -= 4;
+		
+		pos = level.Vec3Offset(pos, right * offsetRight + fwd * offsetFwd);
+		dist = 2048.;
+		FLineTraceData tracerData;
+		
+		if (e.thing.LineTrace(ang, dist, pitch, offsetZ: offsetUp,
+			offsetForward: offsetFwd, offsetSide: offsetRight, data: tracerData))
+		{
+			dist = min(dist, tracerData.Distance + 8.);
+		}
+		
+		FSpawnParticleParams p;
+		int count = 0;
+		p.color1 = "ff c0 40";
+		p.size = 4;
+		p.flags = SPF_FULLBRIGHT;
+		p.startAlpha = 1;
+		p.fadeStep = -1;
+		
+		let mult = 2.5;
+		
+		for (double i = e.thing.radius; i < dist; )
+		{
+			p.pos = level.Vec3Offset(pos, dir * i);
+			
+			if (!level.IsPointInLevel(p.pos))
+				break;
+			
+			p.lifetime = 3 + (count/50);
+			level.SpawnParticle(p);
+			count++;
+			
+			let cPly = players[consolePlayer],
+				diff = level.Vec3Diff(p.pos, cPly.camera.pos.PlusZ(cPly.mo.viewHeight));
+			i += max(0.025, diff.Length() * 0.05);
+		}
+		return false;
+	}
+	
+	override void CheckReplacement(ReplaceEvent e)
+	{
+		let curMapset = DeltaGlobals.GetGlobals().GetMapset();
+		//Console.Printf("mapset is %s, checking replacement for %s", curMapset, e.replacee.GetClassName());
+		
+		if (curMapset ~== "LegacyOfRust")
+		{
+			if (e.replacee is "PlasmaRifle")
+				e.replacement = "TempIncinerator";
+			else if (e.replacee is "BFG9000")
+				e.replacement = "TempCalamityBlade";
+			else if (e.replacee is "CellPack")
+				e.replacement = "ID24FuelTank";
+			else if (e.replacee is "Cell")
+				e.replacement = "ID24Fuel";
+		}
+		else
+		{
+			if (e.replacee is "PlasmaRifle")
+				e.replacement = "TempPlasmaRifle";
+			else if (e.replacee is "BFG9000")
+				e.replacement = "TempBFG9000";
+		}
+	}
+	
+	virtual void Graze(Actor source, int damage, Vector3 startPos, Vector3 endPos)
+	{
+		let check = DeltaHitscanGrazeChecker.Create();
+		if (!check)
+			return;
+		
+		check.CheckHitscanGraze(source, startPos, endPos);
+		
+		for (int i = 0; i < check.grazed.Size(); i++)
+		{
+			GrazeEvent graze;
+			graze.thing = check.grazed[i];
+			graze.grazeSource = source;
+			PlayerGrazed(graze);
+			
+			let grazeAmount = max(5, damage);
+			check.grazed[i].AddTension(grazeAmount * check.grazed[i].GetGrazeMultiplier(), true);
+			check.grazed[i].A_StartSound("delta/graze", 5, 0);
+		}
+	}
+	
+	virtual bool Heal(Actor target, int amount, int max = 0, bool useEffects = true)
+	{
+		let oldHealth = target.health;
+		if (!target.GiveBody(amount, max))
+			return false;
+		
+		target.A_StartSound("delta/heal", CHAN_HEALTH_SOUNDS);
+		if (target.health != (max? max : target.GetMaxHealth(true)))
+			DeltaHealPopup.SpawnNumbers(target, target.health - oldHealth);
+		else
+			DeltaPopup.SpawnPopup("DeltaHealMaxPopup", target);
+		
+		let healEffect = DeltaHealEffect(Actor.Spawn("DeltaHealEffect", target.pos));
+		healEffect.A_SetSize(target.radius, target.height);
+		healEffect.master = target;
+		return true;
+	}
+	
+	override void WorldThingRevived(WorldEvent e)
+	{
+		if (!e.thing)
+			return;
+		
+		for (int i = 0; i < reviving.Size(); i++)
+		{
+			if (reviving[i])
+				continue;
+			
+			reviving[i] = e.thing;
+			return;
+		}
+		
+		reviving[0] = e.thing;
+	}
+	
+	override void WorldThingDamaged(WorldEvent e)
+	{
+		if (!e.thing || e.damage <= 0)
+			return;
+		if (e.thing is "LostSoul" && e.inflictor is "PainElemental")
+			return;
+		
+		for (int i = 0; i < damageEvents.Size(); i++)
+		{
+			if (damageEvents[i].victim == e.thing && damageEvents[i].source == e.damageSource)
+			{
+				damageEvents[i].amount += e.damage;
+				break;
+			}
+			
+			if (!damageEvents[i].victim)
+			{
+				damageEvents[i].victim = e.thing;
+				damageEvents[i].source = e.damageSource;
+				damageEvents[i].inflictor = e.inflictor;
+				damageEvents[i].amount = e.damage;
+				break;
+			}
+		}
+		
+		if (e.damageSource is "DeltaPlayer" && e.damageSource != e.thing
+			&& !(e.thing is "DeltaGrenade" || e.thing is "DeltaGrenadeHitbox"))
+		{
+			if (!e.damageSource.IsFriend(e.thing))
+			{
+				DeltaPlayer ply = DeltaPlayer(e.damageSource);
+				
+				if (!ply.GetDamageTics() && !e.inflictor.CountInv("DeltaNoGiveDamageTP"))
+					ply.AddTension(e.damage / 8);
+			}
+		}
+		
+		// parrying projectiles back at enemies should also roll for bad explosion
+		if (e.thing.health <= 0 && e.inflictor && e.inflictor.CountInv("DeltaParried"))
+			DeltaUtil.RollForParryExplosion(e.thing);
+	}
+	
+	override void PlayerDied(PlayerEvent e)
+	{
+		if (gamestate != GS_LEVEL)
+			return;
+		
+		bool gameOver = cl_delta_deathScreen && !multiplayer && !deathmatch
+			&& !level.AllowRespawn && !sv_singlePlayerRespawn
+			&& !G_SkillPropertyInt(SKILLP_PlayerRespawn);
+		
+		for (int i = 0; i < MAXPLAYERS; i++)
+		{
+			if (!gameOver)
+				break;
+			
+			if (!playerInGame[i] || !players[i].mo || i == e.playerNumber)
+				continue;
+			if (players[i].mo.health > 0)
+				gameOver = false;
+		}
+		
+		let barrelIter = ThinkerIterator.Create("ExplosiveBarrel");
+		foreach (Actor mo : ThinkerIterator.Create("BossBrain"))
+		{
+			if (!gameOver)
+				break;
+			
+			// if the last player dies when an icon of sin is dead, make sure
+			// we can end the level anyway
+			if (mo.health <= 0)
+			{
+				gameOver = false;
+				break;
+			}
+			
+			// make sure we're not in a map that's gonna blow up the shit out
+			// of an icon of sin lol (doom/boom format maps forcing an inventory
+			// reset for the next map)
+			foreach (Actor barr : barrelIter)
+			{
+				if (mo.CheckSight(barr) && barr.health < barr.SpawnHealth())
+				{
+					gameOver = false;
+					break;
+				}
+			}
+		}
+		
+		let ply = players[e.playerNumber];
+		
+		if (!gameOver)
+		{
+			if (ply.mo && ply.mo is "DeltaPlayer")
+			{
+				DeltaPlayer(ply.mo).A_StartDeath();
+				
+				if (ply.lastDamageType != 'Suicide')
+					ply.mo.A_StartSound("delta/hurt", CHAN_HEALTH_SOUNDS, attenuation: 0.5);
+			}
+			
+			return;
+		}
+		
+		level.SetFrozen(true);
+		
+		for (int i = 0; i < level.sectors.Size(); i++)
+		{
+			bool moving = level.sectors[i].PlaneMoving(Sector.floor)
+				|| level.sectors[i].PlaneMoving(Sector.ceiling);
+			if (!moving)
+				continue;
+			
+			level.sectors[i].StartSoundSequence(1, "Silence", 0);
+			level.sectors[i].StartSoundSequence(2, "Silence", 0);
+			
+			if (level.sectors[i].floorData)
+				level.sectors[i].floorData.Destroy();
+			if (level.sectors[i].ceilingData)
+				level.sectors[i].ceilingData.Destroy();
+		}
+		
+		foreach (Actor mo : ThinkerIterator.Create("Actor"))
+			mo.A_StopAllSounds();
+		
+		S_ChangeMusic("", force: true);
+		S_StartSound("delta/hurt", CHAN_AUTO);
+		
+		requireMouse = true;
+		EventHandler.SendInterfaceEvent(e.playerNumber, "DeltaAllPlayersDead",
+			!Cvar.GetCvar("data_delta_diedFirstTime").GetBool());
+	}
+	
+	override void PlayerEntered(PlayerEvent e)
+	{
+		EventHandler.SendInterfaceEvent(e.playerNumber, "DeltaResetHUD");
+	}
+	
+	override void PlayerRespawned(PlayerEvent e)
+	{
+		EventHandler.SendInterfaceEvent(e.playerNumber, "DeltaResetHUD");
+	}
+	
+	override void NetworkProcess(ConsoleEvent e)
+	{
+		if (e.IsManual)
+			return;
+		if (!playerInGame[e.player])
+			return;
+		
+		let ply = players[e.player].mo;
+		if (!ply)
+			return;
+		
+		if (e.name ~== "DeltaTimeToRespawn")
+		{
+			for (int i = 0; i < MAXPLAYERS; i++)
+			{
+				if (!playerInGame[i] || !players[i].mo)
+					continue;
+				
+				players[i].cls = NULL;
+				players[i].playerState = PST_ENTER;
+				
+				if (players[i].mo.special1 > 2)
+					players[i].mo.special1 = 0;
+			}
+		}
+		else if (e.name ~== "DeltaUpdateTime")
+		{
+			currentTime = e.args[0];
+		}
+		else if (e.name ~== "DeltaUpdateViewPos")
+		{
+			viewPos = (e.args[0], e.args[1], e.args[2]);
+		}
+	}
+	
+	override void NetworkCommandProcess(NetworkCommand cmd)
+	{
+		if (cmd.Command == "CreateDebugMarker")
+		{
+			Vector3 pos = cmd.ReadVector3();
+			
+			int lifetime = -1;
+			if (!cmd.EndOfStream())
+				lifetime = cmd.ReadInt();
+			
+			Color col = 0xffffffff;
+			if (!cmd.EndOfStream())
+				col = uint(cmd.ReadInt());
+			
+			double alpha = 1.;
+			if (!cmd.EndOfStream())
+				alpha = cmd.ReadDouble();
+			
+			DeltaDebugPositionMarker.SpawnMarker(pos, lifetime, col, alpha);
+		}
+	}
+	
+	override void InterfaceProcess(ConsoleEvent e)
+	{
+		if (e.IsManual)
+			return;
+		
+		let hud = DeltaHud(statusBar);
+		if (!hud)
+			return;
+		
+		if (e.name ~== "DeltaResetHUD")
+			hud.ResetHUD();
+		else if (e.name ~== "DeltaPlayerDamage")
+		{
+			Actor source = Actor(GetNetworkEntity(e.args[0])),
+				inflictor = Actor(GetNetworkEntity(e.args[1]));
+			let amount = e.args[2];
+			
+			hud.CreateDamageIndicator(source, inflictor);
+			hud.CreateDamagePopup(source, amount);
+		}
+		else if (e.name ~== "DeltaPlayerGraze")
+		{
+			let source = Actor(GetNetworkEntity(e.args[0]));
+			hud.CreateGrazeIndicator(source);
+		}
+		else if (e.name ~== "DeltaAllPlayersDead")
+		{
+			bool firstTime = e.args[0];
+			hud.StartDeathSequence(firstTime);
+		}
+		else if (e.name ~== "DeltaCancelDeathSequence")
+		{
+			hud.CancelDeathSequence();
+		}
+		else if (e.name ~== "DismissMapMessage")
+		{
+			hud.DismissMessage();
+		}
+		else if (e.name.Left(10) == "MessageIs_")
+		{
+			let msg = e.name.Mid(10);
+			hud.AddMessage(msg);
+		}
+		else if (e.name ~== "DeltaSeenPlayer")
+			hud.playersSeen.Push(e.args[0]);
+		else if (e.name ~== "DeltaClearPlayersSeen")
+			hud.playersSeen.Clear();
+	}
+	
+	override void RenderUnderlay(RenderEvent e)
+	{
+		let hud = DeltaHud(statusBar);
+		if (!hud)
+			return;
+		
+		hud.pos = e.viewPos;
+		hud.angles = (e.viewPitch, e.viewRoll, e.viewAngle);
+		EventHandler.SendNetworkEvent("DeltaUpdateViewPos",
+			int(e.viewPos.x), int(e.viewPos.y), int(e.viewPos.z));
+	}
+	
+	override void UiTick()
+	{
+		EventHandler.SendNetworkEvent("DeltaUpdateTime", SystemTime.Now());
+	}
+	
+	override bool InputProcess(InputEvent e)
+	{
+		let hud = DeltaHud(statusBar);
+		if (!hud)
+			return false;
+		
+		hud.TakeInput(e);
+		return false;
+	}
+	
+	virtual void PlayerGrazed(GrazeEvent e)
+	{
+		if (e.thing == e.grazeSource)
+			return;
+		
+		EventHandler.SendInterfaceEvent(e.thing.PlayerNumber(),
+			"DeltaPlayerGraze", e.grazeSource ? e.grazeSource.GetNetworkID() : 0);
+	}
+	
+	clearscope int GetCurrentTime()
+	{
+		return currentTime;
+	}
+}
+
+class DeltaForceClass : EventHandler
+{
+	class<DeltaPlayer> targetPlayer;
+	
+	override void OnRegister()
+	{
+		targetPlayer = GetPlayerClass();
+		if (!targetPlayer)
+			ThrowAbortException("%s uses null player class!", GetClassName());
+		if (!(targetPlayer is "PlayerPawn"))
+			ThrowAbortException("%s uses invalid player class %s!", GetClassName(),
+				targetPlayer.GetClassName());
+		
+		//Console.Printf("target player class is " .. targetPlayer.GetClassName());
+	}
+	
+	override void PlayerEntered(PlayerEvent e)
+	{
+		let ply = players[e.playerNumber];
+		
+		if (!ply.mo || ply.cls == targetPlayer)
+			return;
+		
+		let newPawn = PlayerPawn(Actor.Spawn(targetPlayer, ply.mo.pos)),
+			oldPawn = ply.mo;
+		newPawn.player = ply;
+		ply.cls = targetPlayer;
+		ply.mo = newPawn;
+		ply.camera = ply.mo;
+		oldPawn.Destroy();
+	}
+	
+	virtual class<DeltaPlayer> GetPlayerClass()
+	{
+		return null;
+	}
+}
+
+class DeltaForceKris : DeltaForceClass
+{
+	override class<DeltaPlayer> GetPlayerClass()
+	{
+		return "KrisPlayer";
+	}
+}
+
+class DeltaTitleEvents : EventHandler
+{
+	protected Array<TextureID> _titleBackgrounds;
+	private int _curTick, _curFrame, _frameDuration, _fadeDuration;
+	
+	virtual void SetUpTitles()
+	{
+		let mapset = DeltaGlobals.GetGlobals().GetMapset(),
+			titlePrefix = "DELTATT",
+			music = "music/mus_deltaMenu.ogg";
+		
+		if (mapset ~== "Sunlust")
+		{
+			titlePrefix = "SNLSTTT";
+			music = "D_DM2TTL";
+		}
+		
+		for (int i = 1; i <= 5; i++)
+		{
+			_titleBackgrounds.Push(TexMan.CheckForTexture(titlePrefix .. i));
+		}
+		S_ChangeMusic(music, force: true);
+	}
+	
+	override void WorldLoaded(WorldEvent e)
+	{
+		_frameDuration = 15; // ticks per frame including fade duration
+		_fadeDuration = _frameDuration; // ticks to fade between frames
+		_curFrame = 0;
+		SetUpTitles();
+	}
+	
+	override void WorldTick()
+	{
+		if (!_titleBackgrounds.Size())
+			return;
+		
+		_curTick++;
+		
+		if (_curTick != _frameDuration)
+			return;
+		
+		_curTick = 0;
+		_curFrame++;
+		
+		if (_curFrame == _titleBackgrounds.Size())
+			_curFrame = 0;
+	}
+	
+	override void RenderOverlay(RenderEvent e)
+	{
+		if (!_titleBackgrounds.Size())
+			return;
+		
+		Screen.DrawTexture(_titleBackgrounds[_curFrame], false, 0, 0,
+			DTA_Fullscreen, true, DTA_FullScreenScale, FSMode_ScaleToFill);
+		
+		if (!_fadeDuration) // make sure we're not dividing by zero
+			return;
+		
+		int nextFrame = _curFrame == _titleBackgrounds.Size()-1 ? 0
+			: _curFrame+1;
+		double targetAlpha = max(0,
+			(_fadeDuration - _frameDuration + _curTick + 1.) / _fadeDuration);
+		
+		Screen.DrawTexture(_titleBackgrounds[nextFrame], false, 0, 0,
+			DTA_Fullscreen, true, DTA_FullScreenScale, FSMode_ScaleToFill,
+			DTA_Alpha, targetAlpha);
+	}
+}

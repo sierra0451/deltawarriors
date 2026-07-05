@@ -19,6 +19,12 @@ class DeltaUtil
 		return 0;
 	}
 	
+	clearscope static double Map(double value, double minIn, double maxIn,
+		double minOut, double maxOut, bool _clamp = true)
+	{
+		return Lerp(minOut, maxOut, (value - minIn) / (maxIn - minIn), _clamp);
+	}
+	
 	clearscope static Vector2 Vector2Lerp(Vector2 a, Vector2 b, double t, bool _clamp = true)
 	{
 		double
@@ -161,6 +167,7 @@ class DeltaUtil
 		return String.Format("%u:0%.2f", timeMinutes, tics / TICRATE);
 	}
 	
+	// maintained for backwards compatibility, use TriggerPainChance
 	play static void ForceActorPain(Actor a, Name mod)
 	{
 		a.TriggerPainChance(mod, true);
@@ -174,9 +181,11 @@ class DeltaUtil
 		originator.freezeTics = tics;
 		
 		if (flash)
+		{
 			originator.A_StartSound("delta/kris/shield_parry");
-		if (originator.player && flash)
-			originator.A_SetBlend("white", 0.3, tics, "white", 0.15);
+			if (originator.player)
+				originator.A_SetBlend("white", 0.3, tics, "white", 0.15);
+		}
 		
 		int count = affected.Size();
 		if (!count)
@@ -206,8 +215,8 @@ class DeltaUtil
 		}
 	}
 	
-	play static void RollForParryExplosion(Actor parried, double explodeChance = 0.2,
-		int hpThresholdExclusive = -20)
+	play static void RollForParryExplosion(Actor parried,
+		double explodeChance = 0.2, int hpThresholdExclusive = -20)
 	{
 		// don't affect RNG if this will nullify the call anyway
 		if (parried.health >= hpThresholdExclusive)
@@ -216,9 +225,37 @@ class DeltaUtil
 			return;
 		
 		let exp = DeltaBadExplosion(Actor.Spawn("DeltaBadExplosion",
-			level.Vec3Offset(parried.pos, (0, 0, GetDefaultByType(parried.GetClass()).height / 2.))));
+			level.Vec3Offset(parried.pos,
+				(0, 0, GetDefaultByType(parried.GetClass()).height / 2.))));
 		exp.master = parried;
 		exp.scale = parried.scale;
+	}
+	
+	// returns as [predicted angle, predicted pitch]
+	play static double, double PredictTarget(Actor context, class<Actor> missile, double maxTurn = 0., double maxPitch = 0.)
+	{
+		if (!context)
+			return 0, 0;
+		if (!missile || !context.target)
+			return context.angle, context.pitch;
+		
+		let targVel = context.target.vel,
+			targDir = targVel == (0, 0, 0)? (0, 0, 0) : targVel.Unit(),
+			dist = context.Distance3D(context.target),
+			missSpd = Actor.GetDefaultSpeed(missile),
+			targOffset = targDir * dist * ((missSpd == 0)? 0 : targVel.Length() / missSpd),
+			coords = level.SphericalCoords(context.pos, context.target.pos + targOffset,
+				(context.angle, context.pitch));
+		
+		let targetAngle = -coords.x,
+			targetPitch = -coords.y;
+		
+		if (maxTurn != 0)
+			targetAngle = clamp(targetAngle, -maxTurn, maxTurn);
+		if (maxPitch != 0)
+			targetPitch = clamp(targetPitch, -maxPitch, maxPitch);
+		
+		return context.angle + targetAngle, context.pitch + targetPitch;
 	}
 }
 
@@ -252,7 +289,7 @@ class DeltaDebugPositionMarker : Actor
 	States
 	{
 		Spawn:
-			DTNB A -1 Bright;
+			DTNC A -1 Bright;
 			Stop;
 	}
 	

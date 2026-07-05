@@ -1,14 +1,24 @@
+enum DeltaSkills
+{
+	SKILL_CASUAL,
+	SKILL_EASY,
+	SKILL_NORMAL,
+	SKILL_HARD,
+	SKILL_EXPERT
+}
+
 enum DeltaSoundChannels
 {
-	CHAN_HEALTH_SOUNDS = 6, // things like damage and healing sounds
-	CHAN_HEARTBEAT = 7,
-	CHAN_MOVEMENT = 8		// things like grinding sound when kris is sliding
+	CHAN_HEALTH_SOUNDS = 6, 	// things like damage and healing sounds
+	CHAN_HEARTBEAT,				
+	CHAN_FALL_WIND,				// we have this on its own channel just in case <3
+	CHAN_MOVEMENT				// things like grinding sound when Kris is sliding
 }
 
 enum DeltaMessageType
 {
-	MSG_TYPE_NORMAL,		// uses normal border
-	MSG_TYPE_DARKWORLD		// uses dark world border
+	MSG_TYPE_NORMAL,			// uses normal border
+	MSG_TYPE_DARKWORLD			// uses dark world border
 }
 
 enum DeltaMessageState
@@ -23,6 +33,6 @@ enum DeltaMessageState
 
 enum DeltaMessageInputResponse
 {
-	MSG_IGNORE,				// ignore input
-	MSG_SKIP				// skip to end of message
+	MSG_IGNORE,					// ignore input
+	MSG_SKIP					// skip to end of message
 }

@@ -16,12 +16,27 @@ ListMenu "MainMenu"
 	TextItem "$MENU_LOAD", "l", "LoadGameMenu"
 	TextItem "$MENU_SAVE", "s", "SaveGameMenu"
 	TextItem "$MENU_OPTIONS", "c", "DeltaOptions"
-	TextItem "$MENU_ABOUT", "p", "ReadThisMenu"
 	TextItem "$MENU_QUIT", "e", "QuitMenu"
 	
+	IfGame(Heretic)
+	{
+		StaticTextCentered 150, 200, "$DELTAWARRIORS_HERETIC_NOT_SUPPORTED", "DeltaRed"
+	}
+	IfGame(Hexen)
+	{
+		StaticTextCentered 150, 200, "$DELTAWARRIORS_HEXEN_NOT_SUPPORTED", "DeltaRed"
+	}
+	IfGame(Strife)
+	{
+		StaticTextCentered 150, 200, "$DELTAWARRIORS_STRIFE_NOT_SUPPORTED", "DeltaRed"
+	}
+	IfGame(Chex)
+	{
+		StaticTextCentered 150, 200, "$DELTAWARRIORS_CHEX_NOT_SUPPORTED", "DeltaRed"
+	}
 	IfNotGame(Doom)
 	{
-		StaticTextCentered 150, 200, "$DELTAWARRIORS_NOT_SUPPORTED"
+		StaticTextCentered 150, 214, "$DELTAWARRIORS_LOAD_DOOM", "DeltaYellow"
 	}
 }
 

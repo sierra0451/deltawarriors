@@ -61,7 +61,7 @@ class KrisPlayer : DeltaPlayer
 		
 		DeltaPlayer.HugReactionTime 20;
 		DeltaPlayer.CharacterColor Color(0, 162, 232);
-		DeltaPlayer.OffhandIcon "sprites/hud/shieldParry.png";
+		DeltaPlayer.OffhandIcon "graphics/hud/shieldParryIcon.png";
 		DeltaPlayer.OffhandTpCost floor(0.4 * 250);
 		
 		DeltaPlayer.CharacterIcon "graphics/krisCharIcon.png";
@@ -682,7 +682,9 @@ class KrisPlayer : DeltaPlayer
 		vel.y = slideY;
 		_oldSlideVel = vel;
 		
-		A_StartSound("delta/kris/slide_start", CHAN_AUTO);
+		if (!IsActorPlayingSound(CHAN_BODY, "delta/land"))
+			A_StartSound("delta/kris/slide_start", CHAN_BODY);
+		
 		let psp = player.FindPSprite(PSP_LEGS);
 		if (!psp)
 			return;
@@ -740,30 +742,15 @@ class KrisPlayer : DeltaPlayer
 		{
 			if (!mis.CanCollideWith(self, false))
 				continue;
-			if (!mis.GetMissileDamage(0, 1) && !mis.bIsMonster)
-				continue;
-			
 			if (!mis.bIsMonster && mis.target && IsFriend(mis.target)) // friendly projectiles shouldn't be parried
-				continue;
-			if (!mis.bMissile && !mis.bSkullfly)
-			{
-				if (!mis.bIsMonster)
-					continue;
-				if ((!mis.curState.InStateSequence(mis.ResolveState("Melee"))
-						&& (!mis.curState.InStateSequence(mis.ResolveState("Missile")) || !(mis is "Cacodemon")))
-						// we only wanna be able to parry an enemy's missile
-						// state if it's a cacodemon, as that's the state they
-						// use for their bite attack
-					|| damageTics != 0)
-					continue;
-			}
-			if (mis.curState.InStateSequence(mis.ResolveState("Death")))
 				continue;
 			if (mis.bMissile && mis.target == self) // "target" with projectiles is used to figure out who threw it
 				continue;
 			
-			let proj = DeltaProjectile(mis);
-			if (proj && !proj.CanBeParried())
+			let parriable = DeltaParriable(mis.FindInventory("DeltaParriable", true));
+			if (!mis.bMissile && !mis.bSkullfly && (!parriable || !parriable.CanBeParried()))
+				continue;
+			if (mis.curState.InStateSequence(mis.ResolveState("Death")))
 				continue;
 			
 			double blockDist = forwardDistance + (mis.radius * 1.5);
@@ -831,9 +818,10 @@ class KrisPlayer : DeltaPlayer
 				parryTarget.Angle = Angle;
 				parryTarget.Pitch = parryPitch;
 				parryTarget.bForcePain = true;
+				parryTarget.GiveInventory("DeltaNoGiveDamageTP", 1);
 				
 				let dmg = max(0, parryTarget.GetMissileDamage(0, 1) - 10);
-				hitstopTics = max(hitstopTics, startHitstopTics + int(dmg * 0.5));
+				hitstopTics = clamp(startHitstopTics + int(dmg * 0.1), hitstopTics, 20);
 				continue;
 			}
 			
@@ -851,10 +839,6 @@ class KrisPlayer : DeltaPlayer
 				parryTarget.TriggerPainChance('Parry', true);
 				DeltaUtil.RollForParryExplosion(parryTarget);
 			}
-			
-			let proj = DeltaProjectile(parryTarget);
-			if (proj)
-				proj.OnParry(self);
 		}
 		
 		DeltaUtil.StartHitstop(self, affected, hitstopTics);

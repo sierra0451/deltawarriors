@@ -1,6 +1,0 @@
-unbind x
-bind q +offhand
-bind ctrl +crouch
-bind c invprev
-bind v invnext
-bind r invuse

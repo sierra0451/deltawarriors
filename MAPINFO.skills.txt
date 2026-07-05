@@ -51,27 +51,11 @@ skill DeltaHard
 skill DeltaVeryHard
 {
     SpawnFilter = Nightmare
-    DamageFactor = 1.25
-    FastMonsters
+    DamageFactor = 1.1
+    //FastMonsters
     
     ACSReturn = 4
     TextColor = "DeltaVeryHard"
     Name = "$DELTA_SKILL_VERYHARD"
 	MustConfirm = "$DELTA_SKILLWARN_VERYHARD"
-}
-
-skill DeltaNightmare
-{
-	SpawnFilter = Nightmare
-	AmmoFactor = 2
-	DamageFactor = 1.25
-	FastMonsters
-	InstantReaction
-	DisableCheats
-	RespawnTime = 12
-	
-	ACSReturn = 4
-	TextColor = "DeltaNightmare"
-	Name = "$DELTA_SKILL_NIGHTMARE"
-	MustConfirm = "$DELTA_SKILLWARN_NIGHTMARE"
 }

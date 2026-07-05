@@ -7,7 +7,7 @@ extend class DeltaHud
 	
 	protected void SetUpBossBars()
 	{
-		_bossBarBack = TexMan.CheckForTexture("DRBOSBAK");
+		_bossBarBack = TexMan.CheckForTexture("graphics/hud/bossBar.png");
 	}
 	
 	protected void TickBossBars()
@@ -65,9 +65,11 @@ extend class DeltaHud
 	
 	protected void DrawBossBars()
 	{
-		int bossCount = _bosses.Size();
+		int bossCount = _bosses.Size(),
+			start = max(0, bossCount - MAX_BOSS_BARS),
+			end = min(bossCount, MAX_BOSS_BARS);
 		
-		for (int i = max(0, bossCount-MAX_BOSS_BARS); i < bossCount; i++)
+		for (int i = start; i < end; i++)
 		{
 			Actor curr = _bosses[i];
 			double w, h;
@@ -76,7 +78,7 @@ extend class DeltaHud
 			h *= _universalScale.y;
 			
 			double curX = -w - _hBorder,
-				curY = i*(h + 5*_universalScale.y) + _vBorder,
+				curY = (i - start) * (h + 5*_universalScale.y) + _vBorder,
 				perc = double(curr.Health) / curr.GetMaxHealth();
 			perc = clamp(perc, 0, 1);
 			
@@ -100,7 +102,7 @@ extend class DeltaHud
 				(-_hBorder - 10*_universalScale.x, curY - fontH/2. + h - 5*_universalScale.y),
 				DI_TEXT_ALIGN_RIGHT | DI_SCREEN_RIGHT_TOP,
 				scale: _universalScale/2);
-			DrawString(_drHudFont, String.Format("%d", perc*100),
+			DrawString(_drHudFont, String.Format("%d", curr.Health),
 				(-_hBorder - 8*_universalScale.x, curY + 9*_universalScale.y),
 				DI_TEXT_ALIGN_RIGHT | DI_SCREEN_RIGHT_TOP,
 				scale: _universalScale*2);

@@ -1,4 +1,4 @@
-class DeltaGrenade : DeltaProjectile abstract
+class DeltaGrenade : Actor abstract
 {
 	enum DeltaGrenadeType
 	{
@@ -72,6 +72,8 @@ class DeltaGrenade : DeltaProjectile abstract
 	override void BeginPlay()
 	{
 		Super.BeginPlay();
+		A_GiveInventory("DeltaParriable");
+		
 		curTime = fuseTime;
 		fuseLit = false;
 		exploded = false;
@@ -161,24 +163,6 @@ class DeltaGrenade : DeltaProjectile abstract
 			return false;
 		
 		return Super.CanCollideWith(other, passive);
-	}
-	
-	override void OnParry(Actor parrier)
-	{
-		grenadeType = GRENADE_CONTACT;
-	}
-	
-	override bool CanBeParried()
-	{
-		switch (grenadeType)
-		{
-			case GRENADE_STICKY:
-				if (stickVictim || fuseLit)
-					return false;
-			
-			default: // fallthrough is intentional
-				return !exploded;
-		}
 	}
 	
 	virtual void StickyLogic()
@@ -307,7 +291,6 @@ class DeltaGrenadeHitbox : Actor abstract
 	{
 		if (!(flags & DMG_INFLICTOR_IS_PUFF))
 			return 0;
-		
 		if (source == parent.target)
 			return Super.DamageMobj(inflictor, source, damage * 2, mod, flags, angle);
 		
@@ -322,6 +305,10 @@ class DeltaGrenadeHitbox : Actor abstract
 		if (parent)
 		{
 			parent.dmgTaken = clamp(-health, 0, 100);
+			
+			if (source == parent.target && parent.target is "DeltaPlayer")
+				DeltaPlayer(source).AddTension(20.);
+			
 			parent.TryStartExplosion();
 		}
 		

@@ -1,44 +1,47 @@
 /// base class for tension items!
 class DeltaTensionPickup : Inventory
 {
-	bool exactAmount;	// if true, Inventory.Amount will be actual TP given instead of percent
-						// i.e. if true, amount of 5 will give 5 TP instead of 5% TP, or 12.5 TP
-	
-	property ExactAmount: exactAmount;
-	
-	Default
-	{
-		Inventory.Amount 0;
-		DeltaTensionPickup.ExactAmount true;
-		
-		+INVENTORY.KEEPDEPLETED
-	}
-	
 	override bool TryPickup(in out Actor toucher)
 	{
 		let delta = DeltaPlayer(toucher);
-		
 		if (!delta)
 			return false;
 		if (delta.GetTension(delta.maxTensionPoints) != DeltaPlayer.TP_FAIL && !bAlwaysPickup)
 			return false;
 		
-		delta.AddTension(Amount * delta.maxTensionPoints/100.);
+		let actualAmount = (amount < 0)? (amount * -delta.maxTensionPoints/100.) : amount;
+		delta.AddTension(actualAmount);
 		GoAwayAndDie();
 		return true;
 	}
 }
 
-class DeltaTensionBit : DeltaTensionPickup replaces ArmorBonus
+class DeltaCourage : DeltaTensionPickup replaces ArmorBonus
+{
+	Default
+	{
+		Inventory.Amount -5; // 5% i.e. 12.5 TP, not actually 5 TP
+		Inventory.PickupMessage "$PICKUP_DELTA_COURAGE";
+		
+		+COUNTITEM
+		+Inventory.ALWAYSPICKUP
+	}
+	
+	States
+	{
+		Spawn:
+			DTNC ABCB 8;
+			Loop;
+	}
+}
+
+class DeltaTensionBit : DeltaTensionPickup
 {
 	Default
 	{
 		Tag "$TAG_DELTA_TPSMALL";
-		Inventory.Amount 5; // 5% i.e. 12.5 TP, not actually 5 TP
+		Inventory.Amount -32; // 32% i.e. 80 TP, not actually 32 TP
 		Inventory.PickupMessage "$PICKUP_DELTA_TPSMALL";
-		
-		+COUNTITEM
-		+INVENTORY.ALWAYSPICKUP
 	}
 	
 	States
@@ -53,8 +56,7 @@ class DeltaTensionGem : DeltaTensionPickup replaces GreenArmor
 {
 	Default
 	{
-		Tag "$TAG_DELTA_TPMED";
-		Inventory.Amount 50; // 50% i.e. 125 TP, not actually 50 TP
+		Inventory.Amount -50; // 50% i.e. 125 TP, not actually 50 TP
 		Inventory.PickupMessage "$PICKUP_DELTA_TPMED";
 	}
 	
@@ -70,10 +72,10 @@ class DeltaTensionMax : DeltaTensionPickup replaces BlueArmor
 {
 	Default
 	{
-		Tag "$TAG_DELTA_TPLARGE";
-		Inventory.Amount 100; // 100% i.e. 250 TP, not actually 100 TP
+		Inventory.Amount -100; // 100% i.e. 250 TP, not actually 100 TP
 		Inventory.PickupMessage "$PICKUP_DELTA_TPLARGE";
-		+INVENTORY.BIGPOWERUP;
+		
+		+Inventory.BIGPOWERUP;
 	}
 	
 	States

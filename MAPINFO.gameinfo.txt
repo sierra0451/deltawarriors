@@ -4,7 +4,7 @@ GameInfo
 	AltHUDClass = "DeltaAltHud"
 	CorrectPrintBold = true
 	
-	AddEventHandlers = "DeltaEvents", "DeltaMapsetCompat"
+	AddEventHandlers = "DeltaGlobals", "DeltaLevelEvents"
 	CursorPic = "graphics/deltaCursor.png"
 	
 	Endoom = "ENDDELTA"

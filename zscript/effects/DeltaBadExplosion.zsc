@@ -4,10 +4,10 @@ class DeltaBadExplosion : Actor
 	
 	Default
 	{
-		+NOINTERACTION;
-		+SQUAREPIXELS;
-		+BRIGHT;
-		+FORCEXYBILLBOARD;
+		+NOINTERACTION
+		+SQUAREPIXELS
+		+BRIGHT
+		+FORCEXYBILLBOARD
 	}
 	
 	States

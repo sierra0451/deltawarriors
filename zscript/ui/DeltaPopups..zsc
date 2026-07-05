@@ -107,12 +107,11 @@ class DeltaPopup : Actor abstract
 	
 	double GetFadeAlpha()
 	{
-		Actor cam = players[consolePlayer].camera;
-		
-		if (!cam)
+		let ev = DeltaGlobals.GetLevelEvents();
+		if (!ev)
 			return 1.;
 		
-		let diff = level.Vec3Diff(pos, cam.pos.PlusZ(players[consolePlayer].viewHeight)),
+		let diff = level.Vec3Diff(pos, ev.viewPos),
 			dist = diff.Length();
 		
 		if (dist > FADE_MAX_DISTANCE)

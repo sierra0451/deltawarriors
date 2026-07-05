@@ -6,7 +6,6 @@ class KrisShotgun : DeltaWeapon
 		NEEDS_PUMP_PRIMARY = 1,
 		NEEDS_PUMP_ALT = 2
 	}
-	int needsPump;
 	
 	Default
 	{
@@ -20,12 +19,12 @@ class KrisShotgun : DeltaWeapon
 		Weapon.AmmoGive 10;
 		Weapon.AmmoType "Shell";
 		Weapon.AmmoType2 "Shell";
-		DeltaWeapon.Crosshair "DRSHGRET";
+		DeltaWeapon.Crosshair "graphics/hud/reticle/shotgunReticle.png";
 		DeltaWeapon.RedCrosshairRange 500;
 		DeltaWeapon.TensionUse2 50;
 		
 		+SQUAREPIXELS
-		+WEAPON.NOALERT
+		+Weapon.NOALERT
 	}
 	
 	States
@@ -33,9 +32,9 @@ class KrisShotgun : DeltaWeapon
 		Ready:
 			DKSG A 1
 			{
-				if (invoker.needsPump == NEEDS_PUMP_ALT)
+				if (invoker.needsCycling == NEEDS_PUMP_ALT)
 					return ResolveState("AltPump");
-				if (invoker.needsPump == NEEDS_PUMP_PRIMARY)
+				if (invoker.needsCycling == NEEDS_PUMP_PRIMARY)
 					return ResolveState("Pump");
 				
 				return A_DeltaWeaponReady();
@@ -54,11 +53,12 @@ class KrisShotgun : DeltaWeapon
 				A_StartRaiseWeapon();
 				A_StartSound("delta/shotgun/deploy1", CHAN_WEAPON,
 					CHANF_OVERLAP);
+				return A_DeltaWeaponReady(WRF_NOFIRE | WRF_NOBOB);
 			}
-			DKSD ABCD 2;
+			DKSD ABCD 2 A_DeltaWeaponReady(WRF_NOFIRE | WRF_NOBOB);
 			DKSD E 1
 			{
-				if (!invoker.needsPump)
+				if (!invoker.needsCycling)
 					return A_DeltaWeaponReady(WRF_NOBOB);
 				
 				return ResolveState(null);
@@ -67,19 +67,19 @@ class KrisShotgun : DeltaWeapon
 				CHANF_OVERLAP);
 			DKSD FGH 2
 			{
-				if (!invoker.needsPump)
+				if (!invoker.needsCycling)
 					return A_DeltaWeaponReady(WRF_NOBOB);
 				
 				return ResolveState(null);
 			}
 			Goto Ready;
 		AtEase:
-			DKSE ABCDE 2 A_DeltaWeaponReady(WRF_NOBOB | WRF_NOSWITCH, true);
+			DKSE ABCDE 2 A_DeltaWeaponReady(WRF_NOBOB, true);
 		AtEaseLoop:
 			DKSE F 1 A_DeltaWeaponReady(atEase: true);
 			Wait;
 		AtEaseEnd:
-			DKSE EDCBA 2 A_DeltaWeaponReady(WRF_NOBOB | WRF_NOSWITCH);
+			DKSE EDCBA 2 A_DeltaWeaponReady(WRF_NOBOB);
 			Goto Ready;
 		DeselectAtEase:
 			DKSE H 2;
@@ -90,32 +90,40 @@ class KrisShotgun : DeltaWeapon
 			DKSG B 2 A_KrisShotgunFire;
 			DKSG C 1 A_RemoveDynamicLight("shotgunMuzzle");
 			DKSG C 1 A_ZoomFactor;
-			DKSG DEFGH 2;
+			DKSG D 2;
+			DKSG EFGH 2 A_DeltaWeaponReady(WRF_NOFIRE | WRF_NOBOB);
 			DKSG I 1 A_DeltaWeaponReady(WRF_NOFIRE | WRF_NOBOB);
 			DKSG I 1 A_CheckReload;
 		Pump:
-			DKSG J 1;
+			DKSG J 1 A_DeltaWeaponReady(WRF_NOFIRE | WRF_NOBOB);
 			DKSG J 1 A_StartSound("delta/shotgun/pumpIn", CHAN_WEAPON,
 				CHANF_OVERLAP);
 			DKSG KLM 2;
-			DKSG N 1;
-			DKSG N 1
+			DKSG N 2
 			{
 				A_StartSound("delta/shotgun/pumpOut", CHAN_WEAPON,
 					CHANF_OVERLAP);
-				invoker.needsPump = invoker.PUMPED;
+				invoker.needsCycling = invoker.PUMPED;
 			}
-			DKSG OPQR 2;
+			DKSG OPQR 2 A_DeltaWeaponReady(WRF_NOFIRE | WRF_NOBOB);
 			Goto Ready;
 		AltFire:
 			DKSA A 2 A_KrisShotgunAltFire;
 			DKSA B 1 A_RemoveDynamicLight("shotgunMuzzle");
 			DKSA B 1 A_ZoomFactor;
-			DKSA CDEFGHIJKL 2;
+			DKSA C 2;
+			DKSA DEFGH 2 A_DeltaWeaponReady(WRF_NOFIRE | WRF_NOBOB);
+			DKSA I 2
+			{
+				A_StartSound("delta/shotgun/deploy2", CHAN_WEAPON,
+					CHANF_OVERLAP, 0.6, pitch: 1.1);
+				return A_DeltaWeaponReady(WRF_NOFIRE | WRF_NOBOB);
+			}
+			DKSA JKL 2 A_DeltaWeaponReady(WRF_NOFIRE | WRF_NOBOB);
 			DKSA M 1 A_DeltaWeaponReady(WRF_NOFIRE | WRF_NOBOB);
 			DKSA M 1 A_CheckReload;
 		AltPump:
-			DKSA NOPQ 2;
+			DKSA NOPQ 2 A_DeltaWeaponReady(WRF_NOFIRE | WRF_NOBOB);
 			DKSA R 2 A_StartSound("delta/shotgun/pumpIn", CHAN_WEAPON,
 				CHANF_OVERLAP);
 			DKSA S 2;
@@ -124,19 +132,13 @@ class KrisShotgun : DeltaWeapon
 			{
 				A_StartSound("delta/shotgun/pumpOut", CHAN_WEAPON,
 					CHANF_OVERLAP);
-				invoker.needsPump = invoker.PUMPED;
+				invoker.needsCycling = invoker.PUMPED;
 			}
-			DKSA VWXYZ 2;
+			DKSA VWXYZ 2 A_DeltaWeaponReady(WRF_NOFIRE | WRF_NOBOB);
 			Goto Ready;
 		Spawn:
 			DSHG A -1;
 			Stop;
-	}
-	
-	override void BeginPlay()
-	{
-		Super.BeginPlay();
-		needsPump = PUMPED;
 	}
 	
 	override string PickupMessage()
@@ -155,7 +157,7 @@ class KrisShotgun : DeltaWeapon
 			flags: FBF_USEAMMO | FBF_NORANDOM, spawnHeight: 32 * invoker.GetCrouchFactor());
 		A_AddDynamicLight("shotgunMuzzle", "DeltaGenericMuzzle");
 		A_AddRecoil(10, 1, p: -4);
-		invoker.needsPump = NEEDS_PUMP_PRIMARY;
+		invoker.needsCycling = NEEDS_PUMP_PRIMARY;
 		
 		A_StartSound("delta/shotgun/fire", CHAN_WEAPON, CHANF_OVERLAP);
 		A_AlertMonsters();
@@ -163,24 +165,18 @@ class KrisShotgun : DeltaWeapon
 		A_OwnerPlayAttack();
 	}
 	
-	action state A_KrisShotgunAltFire()
+	action void A_KrisShotgunAltFire()
 	{
-		if (!invoker.DepleteAmmo(true))
-			return ResolveState("Ready");
-		
-		A_FireBullets(6.5, 6.5, 16, 10, "KrisShotgunAltPuff", FBF_NORANDOM);
+		A_FireBullets(6.5, 6.5, 16, 10, "KrisShotgunAltPuff", FBF_USEAMMO | FBF_NORANDOM);
 		A_AddDynamicLight("shotgunMuzzle", "DeltaGenericMuzzle");
 		A_AddRecoil(25, 2, p: -10);
-		invoker.needsPump = NEEDS_PUMP_ALT;
+		invoker.needsCycling = NEEDS_PUMP_ALT;
 		
 		A_StartSound("delta/shotgun/fire", CHAN_WEAPON, CHANF_OVERLAP);
 		A_AlertMonsters();
 		
 		A_OwnerPlayAttack();
-		//A_ZoomFactor(0.97, ZOOM_INSTANT | ZOOM_NOSCALETURNING);
 		A_OwnerKnockback(5, 10);
-		
-		return ResolveState(null);
 	}
 }
 
@@ -197,5 +193,11 @@ class KrisShotgunAltPuff : KrisShotgunPuff
 	Default
 	{
 		Obituary "$OBIT_DELTA_KSHOTGUNALT";
+	}
+	
+	override void BeginPlay()
+	{
+		Super.BeginPlay();
+		GiveInventory("DeltaNoGiveDamageTP", 1);
 	}
 }

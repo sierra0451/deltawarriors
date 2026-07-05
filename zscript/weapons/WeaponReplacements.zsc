@@ -69,8 +69,11 @@ class DeltaWeaponPickup : Weapon
 			return false;
 		
 		let realWeap = Weapon(Spawn(weap));
-		realWeap.bDropped = bDropped;
-		realWeap.ModifyDropAmount(-1);
+		if (bDropped)
+		{
+			realWeap.bDropped = true;
+			realWeap.ModifyDropAmount(-1);
+		}
 		
 		if (!realWeap.TryPickup(toucher))
 		{
@@ -186,11 +189,11 @@ class TempRocketLauncher : DeltaWeapon
 		Weapon.AmmoUse 1;
 		Weapon.AmmoGive 2;
 		Weapon.AmmoType "RocketAmmo";
-		DeltaWeapon.Crosshair "DRRCKRET";
+		DeltaWeapon.Crosshair "graphics/hud/reticle/rocketReticle.png";
 		DeltaWeapon.MinYOffset 0;
 		
-		+WEAPON.NOAUTOFIRE;
-		+WEAPON.EXPLOSIVE;
+		+Weapon.NOAUTOFIRE;
+		+Weapon.EXPLOSIVE;
 	}
 	
 	States
@@ -235,7 +238,7 @@ class TempPlasmaRifle : DeltaWeapon
 		Weapon.AmmoUse 1;
 		Weapon.AmmoGive 40;
 		Weapon.AmmoType "Cell";
-		DeltaWeapon.Crosshair "DRPLSRET";
+		DeltaWeapon.Crosshair "graphics/hud/reticle/plasmaReticle.png";
 		DeltaWeapon.MinYOffset 0;
 	}
 	
@@ -282,11 +285,11 @@ class TempBFG9000 : DeltaWeapon
 		Weapon.AmmoUse 40;
 		Weapon.AmmoGive 40;
 		Weapon.AmmoType "Cell";
-		DeltaWeapon.Crosshair "DRPLSRET";
+		DeltaWeapon.Crosshair "graphics/hud/reticle/plasmaReticle.png";
 		DeltaWeapon.MinYOffset 0;
 		
-		+WEAPON.NOAUTOFIRE;
-		+WEAPON.BFG;
+		+Weapon.NOAUTOFIRE;
+		+Weapon.BFG;
 	}
 	
 	States
@@ -344,7 +347,7 @@ class TempIncinerator : DeltaWeapon replaces ID24Incinerator
 		Weapon.AmmoUse 1;
 		Weapon.AmmoGive 20;
 		Weapon.AmmoType "ID24Fuel";
-		DeltaWeapon.Crosshair "DRPLSRET";
+		DeltaWeapon.Crosshair "graphics/hud/reticle/plasmaReticle.png";
 		DeltaWeapon.MinYOffset 0;
 	}
 	
@@ -396,7 +399,7 @@ class TempCalamityBlade : DeltaWeapon replaces ID24CalamityBlade
 		Weapon.AmmoUse 10;
 		Weapon.AmmoGive 20;
 		Weapon.AmmoType "ID24Fuel";
-		DeltaWeapon.Crosshair "DRPLSRET";
+		DeltaWeapon.Crosshair "graphics/hud/reticle/plasmaReticle.png";
 		DeltaWeapon.MinYOffset 0;
 		
 		+WEAPON.NOAUTOAIM;

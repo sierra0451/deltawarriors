@@ -7,17 +7,17 @@ class KrisSmg : DeltaWeapon
 		Inventory.PickupMessage "$PICKUP_DELTA_KSMG";
 		
 		Weapon.SlotNumber 4;
-		Weapon.SelectionOrder 800;
+		Weapon.SelectionOrder 600;
 		Weapon.AmmoUse 1;
 		Weapon.AmmoUse2 1;
 		Weapon.AmmoGive 30;
 		Weapon.AmmoType "Clip";
 		Weapon.AmmoType2 "RocketAmmo";
-		DeltaWeapon.Crosshair "DRSMGRET";
+		DeltaWeapon.Crosshair "graphics/hud/reticle/smgReticle.png";
 		DeltaWeapon.TensionUse2 75;
 		
 		+SQUAREPIXELS
-		+WEAPON.NOALERT
+		+Weapon.NOALERT
 	}
 	
 	States
@@ -36,19 +36,19 @@ class KrisSmg : DeltaWeapon
 			TNT1 A 0 A_StartRaiseWeapon;
 			DKSM G 2 A_StartSound("delta/smg/deploy1", CHAN_WEAPON,
 				CHANF_OVERLAP);
-			DKSM HIJ 2;
+			DKSM HIJ 2 A_DeltaWeaponReady(WRF_NOFIRE | WRF_NOBOB);
 			DKSM K 1 A_DeltaWeaponReady(WRF_NOBOB);
 			DKSM K 1 A_StartSound("delta/smg/deploy2", CHAN_WEAPON,
 				CHANF_OVERLAP, pitch: 1.2);
 			DKSM LMN 2 A_DeltaWeaponReady(WRF_NOBOB);
 			Goto Ready;
 		AtEase:
-			DKME ABCDE 2 A_DeltaWeaponReady(WRF_NOBOB | WRF_NOSWITCH, true);
+			DKME ABCDE 2 A_DeltaWeaponReady(WRF_NOBOB, true);
 		AtEaseLoop:
 			DKME F 1 A_DeltaWeaponReady(atEase: true);
 			Loop;
 		AtEaseEnd:
-			DKME EDCBA 2 A_DeltaWeaponReady(WRF_NOBOB | WRF_NOSWITCH);
+			DKME EDCBA 2 A_DeltaWeaponReady(WRF_NOBOB);
 			Goto Ready;
 		DeselectAtEase:
 			DKME GHI 2;
@@ -61,7 +61,7 @@ class KrisSmg : DeltaWeapon
 			DKSM C 2 A_RemoveDynamicLight("smgMuzzle");
 			DKSM D 1
 			{
-				if (!invoker.CheckAmmo(PrimaryFire, true))
+				if (!invoker.DeltaCheckAmmo(PrimaryFire, true))
 					return ResolveState("DoneFiring");
 				
 				return ResolveState(null);
@@ -78,8 +78,8 @@ class KrisSmg : DeltaWeapon
 			KSMA A 1 A_KrisSmgAltFire;
 			KSMA B 2;
 			KSMA C 2 A_ZoomFactor;
-			KSMA DE 2;
-			KSMA FGHI 2 A_DeltaWeaponReady(WRF_NOFIRE | WRF_NOBOB);
+			KSMA D 2;
+			KSMA EFGHI 2 A_DeltaWeaponReady(WRF_NOFIRE | WRF_NOBOB);
 			KSMA J 3 A_DeltaWeaponReady(WRF_NOSECONDARY | WRF_NOBOB);
 			KSMA K 3 A_DeltaWeaponReady(WRF_NOBOB);
 			Goto Ready;
@@ -110,21 +110,16 @@ class KrisSmg : DeltaWeapon
 		A_OwnerPlayAttack();
 	}
 	
-	protected action state A_KrisSmgAltFire()
+	protected action void A_KrisSmgAltFire()
 	{
-		if (!invoker.DepleteAmmo(true))
-			return ResolveState("Ready");
-		
-		A_FireProjectile("KrisSmgGrenade", useAmmo: false);
+		A_FireProjectile("KrisSmgGrenade");
 		A_ZoomFactor(0.99, ZOOM_INSTANT | ZOOM_NOSCALETURNING);
 		A_AddRecoil(15, 3, p: -5);
 		
 		A_StartSound("delta/smg/alt_fire", CHAN_WEAPON, CHANF_OVERLAP,
 			pitch: cfrandom(0.93, 1.07));
 		A_AlertMonsters();
-		
 		A_OwnerPlayAttack(false);
-		return ResolveState(null);
 	}
 }
 
@@ -152,12 +147,18 @@ class KrisSmgGrenade : DeltaGrenade
 		DeltaGrenade.HitboxClass "KrisSmgGrenadeHitbox";
 	}
 	
+	override void BeginPlay()
+	{
+		Super.BeginPlay();
+		GiveInventory("DeltaNoGiveDamageTP", 1);
+	}
+	
 	override void Explode()
 	{
 		Super.Explode();
 		
 		double range = 70;
-		RadiusAttack(target, 200 + dmgTaken, range, 'KrisSmgGrenade',
+		RadiusAttack(target, 220 + dmgTaken, range, 'KrisSmgGrenade',
 			RADF_THRUSTZ, range*0.2);
 		
 		let diff = level.Vec3Diff(pos, target.pos),

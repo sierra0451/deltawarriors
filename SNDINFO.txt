@@ -24,6 +24,7 @@ $pitchshiftrange 0
 		delta/land2 = "sounds/player/shared/land/player_land2.wav"
 		delta/land3 = "sounds/player/shared/land/player_land3.wav"
 		
+		/*
 		$random delta/jump
 		{
 			delta/jump1
@@ -38,6 +39,10 @@ $pitchshiftrange 0
 			delta/land2
 			delta/land3
 		}
+		*/
+		
+		delta/jump = "sounds/player/shared/jump/player_newJump.wav"
+		delta/land = "sounds/player/shared/land/player_newLand.wav"
 		
 		// Heal
 		delta/heal = "sounds/player/shared/player_heal.wav"
@@ -48,7 +53,7 @@ $pitchshiftrange 0
 		delta/impact = "sounds/player/shared/damage/player_impact.wav"
 		delta/fall_damage = "sounds/player/shared/damage/player_fallDamage.wav"
 		delta/freeze = "sounds/player/shared/damage/player_freeze.wav"
-		delta/heartbeat = "sounds/player/shared/damage/player_heartbeat.wav"
+		delta/heartbeat = "sounds/player/shared/damage/player_heartbeat_new.wav"
 		
 		delta/drown1 = "sounds/player/shared/damage/player_drown1.wav"
 		delta/drown2 = "sounds/player/shared/damage/player_drown2.wav"
@@ -63,6 +68,7 @@ $pitchshiftrange 0
 		delta/use = "sounds/player/shared/player_usefail.wav"
 		delta/use_powerup = "sounds/player/shared/player_usePowerup.wav"
 		delta/tp_fail = "sounds/player/shared/player_tpfail.wav"
+		delta/falling_wind = "sounds/player/shared/player_fallingWind.wav"
 		
 		delta/type = "sounds/type.wav"
 		
@@ -240,6 +246,8 @@ $pitchshiftrange 0
 		// Shield
 		delta/kris/shield_swing = "sounds/player/kris/kris_shieldSwing.wav"
 		delta/kris/shield_parry = "sounds/player/kris/kris_shieldParry.wav"
+		delta/telegraph = "sounds/telegraph.wav"
+		delta/unparriable = "sounds/unparriable.wav"
 	
 	// Susie
 		// Laughing
@@ -327,18 +335,7 @@ $pitchshiftrange 0
 		$alias delta/smg/holster delta/shotgun/holster
 
 // Player sounds
-	$playeralias		delta	neutral	*jump		delta/jump
-	$playersound		delta	neutral	*grunt		dsempty
-	$playeralias		delta	neutral	*land		delta/land
-
-	$playeralias		delta	neutral	*pain100	delta/pain
-	$playeralias 		delta	neutral	*pain75		*pain100
-	$playeralias 		delta	neutral	*pain50		*pain100
-	$playeralias 		delta	neutral	*pain25		*pain100
-	$playeralias		delta	neutral	*death		*pain100
-	$playeralias		delta	neutral	*crazydeath	*death
-	
-	$playeralias		delta	neutral	*usefail	delta/use
+	$playeralias	delta	neutral	*usefail	delta/use
 	
 	// Overriding UZDoom sounds!
 	misc/i_pkup 		= 	"sounds/player/shared/player_pickupitem.wav"
@@ -356,19 +353,6 @@ $pitchshiftrange 0
 	$alias menu/choose		delta/menu_confirm
 	$alias menu/cursor		dsempty
 	$alias menu/invalid		delta/tp_fail
-	
-	/*
-	menu/activate			dsswtchn	// Activate a new menu
-	menu/backup				dsswtchn	// Backup to previous menu
-	menu/prompt				dsswtchn	// Activate a prompt "menu"
-	menu/cursor				dspstop		// Move cursor up/down
-	menu/change				dsstnmov	// Select new value for option
-	menu/invalid			dsoof		// Menu not available
-	menu/dismiss			dsswtchx	// Dismiss a prompt message
-	menu/choose				dspistol	// Choose a menu item
-	menu/clear				dsswtchx	// Close top menu
-	$alias menu/advance 	menu/choose	// Open a submenu
-	*/
 	
 	$alias menu/quit1_1		delta/hurt
 	$alias menu/quit1_2 	delta/susie/laugh

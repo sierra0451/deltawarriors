@@ -1,37 +1,43 @@
 class DeltaWeapon : Weapon
 {
-	protected int _animType;					// (DeltaWeaponAnimType) used to determine if third person sprite uses melee, gun, or magic animations when holding this weapon
-	protected double _redCrosshairRange;		// maximum distance an enemy can be at from player and still have red crosshairs when aimed at
-	protected double _maxLungeDistance;			// maximum distance the lunge check will detect targets from
-	protected double _stopLungeDistance;		// distance user must be at during lunge before they stop and attack
-	protected string _altFireIcon;				// used for displaying alt fire key and cost (keep as null if you don't want anything there)
-	protected string _crosshair;
-    protected bool _atEase;
-	protected bool _hasBeenPickedUp;			// used to determine if we should do inspect animation upon pulling this out or not
-	protected int _easeTics;
+	protected int animType;					// (DeltaWeaponAnimType) used to determine if third person sprite uses melee, gun, or magic animations when holding this weapon
+	protected double redCrosshairRange;		// maximum distance an enemy can be at from player and still have red crosshairs when aimed at
+	protected double maxLungeDistance;		// maximum distance the lunge check will detect targets from
+	protected double stopLungeDistance;		// distance user must be at during lunge before they stop and attack
+	protected string altFireIcon;			// used for displaying alt fire key and cost (keep as null if you don't want anything there)
+	protected string crosshair;
+    protected bool atEase;
+	protected bool hasBeenPickedUp;			// used to determine if we should do inspect animation upon pulling this out or not
+	protected int easeTics;
+	protected int needsCycling;				// used to determine if we need to cycle our weapon after pulling it out (say for cocking a revolver or pumping a shotgun)
+											// this is an int and not a bool so as to allow for different types of cycling (kris's shotgun uses this)
 	
-	protected double _tensionUse, _tensionUse2, _minYOffset, _maxYOffset;
-	protected sound _dryFireSound;
+	protected double tensionUse, tensionUse2, minYOffset, maxYOffset;
+	protected sound dryFireSound;
 	
-	protected state _AtEaseLoopState, _DeselectAtEaseState;
+	protected state AtEaseLoopState, DeselectAtEaseState;
 	
 	private bool _lungeReadyToStop;
 	private TextureID _altFireIconId, _crosshairId;
+	private int _deltaWeaponFlags, _backpackTics;
 	
 	const EASE_TICS_SET_ATTACK = -25;
 	const TP_FAIL_SOUND = "delta/tp_fail";
 	
-	property AnimType: _animType;
-	property RedCrosshairRange: _redCrosshairRange;
-	property MaxLungeDistance: _maxLungeDistance;
-	property StopLungeDistance: _stopLungeDistance;
-	property TensionUse: _tensionUse;
-	property TensionUse2: _tensionUse2;
-	property AltFireIcon: _altFireIcon;
-	property Crosshair: _crosshair;
-	property DryFireSound: _dryFireSound;
-	property MinYOffset: _minYOffset;
-	property MaxYOffset: _maxYOffset;
+	property AnimType: animType;
+	property RedCrosshairRange: redCrosshairRange;
+	property MaxLungeDistance: maxLungeDistance;
+	property StopLungeDistance: stopLungeDistance;
+	property TensionUse: tensionUse;
+	property TensionUse2: tensionUse2;
+	property AltFireIcon: altFireIcon;
+	property Crosshair: crosshair;
+	property DryFireSound: dryFireSound;
+	property MinYOffset: minYOffset;
+	property MaxYOffset: maxYOffset;
+	
+	flagdef NO_CONSUME_AMMO: _deltaWeaponFlags, 0;
+	flagdef NO_CONSUME_ALT_AMMO: _deltaWeaponFlags, 1;
 	
 	Default
 	{
@@ -64,19 +70,43 @@ class DeltaWeapon : Weapon
 	
 	override void BeginPlay()
 	{
-		_hasBeenPickedUp = false;
-		Super.BeginPlay();
-		_altFireIconId = TexMan.CheckForTexture(_altFireIcon);
-		_crosshairId = TexMan.CheckForTexture(_crosshair);
+		hasBeenPickedUp = false;
+		needsCycling = 0;
 		
-		_AtEaseLoopState = ResolveState("AtEaseLoop");
-		_DeselectAtEaseState = ResolveState("DeselectAtEase");
+		Super.BeginPlay();
+		
+		_altFireIconId = TexMan.CheckForTexture(altFireIcon);
+		_crosshairId = TexMan.CheckForTexture(crosshair);
+		AtEaseLoopState = ResolveState("AtEaseLoop");
+		DeselectAtEaseState = ResolveState("DeselectAtEase");
+	}
+	
+	override void DoEffect()
+	{
+		Super.DoEffect();
+		if (!owner || !owner.player)
+			return;
+		if (owner.player.ReadyWeapon == self)
+		{
+			_backpackTics = 0;
+			return;
+		}
+		
+		_backpackTics++;
+		HandleBackpackCycle(_backpackTics);
 	}
 	
 	override bool CheckAmmo(int fireMode, bool autoSwitch, bool requireAmmo,
 		int ammoCount)
 	{
-		if (!owner || sv_infiniteammo || (owner.FindInventory('PowerInfiniteAmmo', true) != null))
+		return DeltaCheckAmmo(fireMode, autoSwitch, requireAmmo, ammoCount, false);
+	}
+	
+	virtual bool DeltaCheckAmmo(int fireMode, bool autoSwitch,
+		bool requireAmmo = false, int ammoCount = -1, bool playSounds = true)
+	{
+		if (!owner || sv_infiniteammo
+			|| (owner.FindInventory('PowerInfiniteAmmo', true) != null))
 			return true;
 		
 		if (!(owner is "DeltaPlayer"))
@@ -91,13 +121,13 @@ class DeltaWeapon : Weapon
 		
 		if (fireMode == EitherFire)
 		{
-			bool gotBoth = CheckAmmo(PrimaryFire, false)
-				|| (hasAltFire && CheckAmmo(AltFire, false));
+			bool gotEither = DeltaCheckAmmo(PrimaryFire, false, playSounds: false)
+				|| (hasAltFire && DeltaCheckAmmo(AltFire, false, playSounds: false));
 			
-			if (!gotBoth && autoSwitch)
+			if (!gotEither && autoSwitch)
 				PlayerPawn(Owner).PickNewWeapon (null);
 			
-			return gotBoth;
+			return gotEither;
 		}
 		
 		let altFire = (fireMode == AltFire);
@@ -112,7 +142,7 @@ class DeltaWeapon : Weapon
 			count1 = ((Ammo1 != null) ? Ammo1.Amount : 0),
 			count2 = ((Ammo2 != null) ? Ammo2.Amount : 0);
 		double lTensionUse1,
-			lTensionUse2 = _tensionUse2,
+			lTensionUse2 = tensionUse2,
 			tensionCount = DeltaPlayer(owner).tensionPoints;
 		
 		if (bDehAmmo && Ammo1 == null)
@@ -125,18 +155,12 @@ class DeltaWeapon : Weapon
 		else
 		{
 			lAmmoUse1 = AmmoUse1;
-			lTensionUse1 = _tensionUse;
+			lTensionUse1 = tensionUse;
 		}
-
+		
 		int enough = (count1 >= lAmmoUse1 && tensionCount >= lTensionUse1)
 			| ((hasAltFire && count2 >= lAmmoUse2 && tensionCount >= lTensionUse2) << 1),
 		enoughMask = useBoth ? 3 : (1 << altFire);
-		int failEffect = 0; // 0 = none, 1 = dry fire, 2 = tp fail sound
-		
-		if (altFire ? (count2 < lAmmoUse2) : (count1 < lAmmoUse1))
-			failEffect = 1;
-		else if (tensionCount < (altFire ? lTensionUse2 : lTensionUse1))
-			failEffect = 2;
 		
 		if ((altFire && !hasAltFire) ||
 			((enough & enoughMask) != enoughMask) && !(enough && bAmmo_CheckBoth))
@@ -145,14 +169,14 @@ class DeltaWeapon : Weapon
 			if (autoSwitch && enough != (1 << !altFire))
 				PlayerPawn(Owner).PickNewWeapon (null);
 			
-			if (autoSwitch && (owner.player.weaponState & (altFire ? WF_WEAPONREADYALT : WF_WEAPONREADY)))
+			if (playSounds)
 			{
-				sound snd = _dryFireSound;
-				if (failEffect == 2)
-					snd = TP_FAIL_SOUND;
-				
-				owner.A_StartSound(snd, CHAN_AUTO, CHANF_LOCAL | CHANF_NOSTOP);
+				if (count1 < lAmmoUse1 || count2 < lAmmoUse2)
+					owner.A_StartSound(dryFireSound, CHAN_AUTO, CHANF_LOCAL | CHANF_NOSTOP);
+				else if (tensionCount < lTensionUse1 || tensionCount < lTensionUse2)
+					owner.A_StartSound(TP_FAIL_SOUND, CHAN_AUTO, CHANF_LOCAL | CHANF_NOSTOP);
 			}
+			
 			return false;
 		}
 		
@@ -161,17 +185,19 @@ class DeltaWeapon : Weapon
 	
 	override bool DepleteAmmo(bool altFire, bool checkEnough, int ammoUse, bool forceAmmoUse)
 	{
+		if (checkEnough && (!owner || !(owner is "DeltaPlayer")
+			|| DeltaPlayer(owner).GetTension(altFire? tensionUse2 : tensionUse) == DeltaPlayer.TP_FAIL))
+			return false;
 		if (!Super.DepleteAmmo(altFire, checkEnough, ammoUse, forceAmmoUse))
 			return false;
-		if (checkEnough && !TakeTension(altFire))
-			return false;
 		
+		TakeTension(altFire);
 		return true;
 	}
 	
 	override state GetUpState()
 	{
-		if (_hasBeenPickedUp)
+		if (hasBeenPickedUp)
 			return Super.GetUpState();
 		
 		let dest = FindState("SelectFirst", true);
@@ -191,7 +217,7 @@ class DeltaWeapon : Weapon
 			return Super.GetDownState();
 		if (owner.health <= 0)
 			return psp.curState;
-		if (!psp.curState.InStateSequence(_AtEaseLoopState))
+		if (!psp.curState.InStateSequence(AtEaseLoopState))
 			return Super.GetDownState();
 		
 		let dest = FindState("DeselectAtEase");
@@ -201,21 +227,10 @@ class DeltaWeapon : Weapon
 		return Super.GetDownState();
 	}
 	
-	override void AlterWeaponSprite(VisStyle vis, in out int changed)
-	{
-		if (sv_delta_blind)
-		{
-			vis.RenderStyle = STYLE_None;
-			return;
-		}
-		
-		Super.AlterWeaponSprite(vis, changed);
-	}
-	
 	virtual bool TakeTension(bool altFire)
 	{
 		let deltaOwner = DeltaPlayer(owner);
-		double amount = altFire ? _tensionUse2 : _tensionUse;
+		double amount = altFire ? tensionUse2 : tensionUse;
 		
 		if (amount < 0 || !deltaOwner)
 			return false;
@@ -225,16 +240,72 @@ class DeltaWeapon : Weapon
 		return deltaOwner.TryTakeTension(amount);
 	}
 	
+	virtual void DoFire(State stat = null)
+	{
+		let ply = owner.player;
+		if (!ply)
+			return;
+		if (!bNO_CONSUME_AMMO && !DeltaCheckAmmo(PrimaryFire, true))
+			return;
+		
+		ply.WeaponState &= ~WF_WEAPONBOBBING;
+		bAltFire = false;
+		if (stat == null)
+			stat = GetAtkState(!!ply.refire);
+		
+		ply.SetPsprite(PSP_WEAPON, stat);
+		A_ResetAtEase();
+	}
+	
+	virtual void DoAltFire(State stat = null)
+	{
+		let ply = owner.player;
+		if (!ply)
+			return;
+		if (!bNO_CONSUME_ALT_AMMO && !DeltaCheckAmmo(AltFire, true))
+			return;
+		
+		ply.WeaponState &= ~WF_WEAPONBOBBING;
+		bAltFire = true;
+		if (stat == null)
+			stat = GetAltAtkState(!!ply.refire);
+		
+		ply.SetPsprite(PSP_WEAPON, stat);
+		A_ResetAtEase();
+	}
+	
+	virtual void HandleBackpackCycle(int backpackTics)
+	{
+		if (!needsCycling)
+			return;
+		if (backpackTics < GetBackpackCycleTics())
+		{
+			Console.Printf(GetClassName() .. " can't cycle yet...");
+			return;
+		}
+		
+		Console.Printf(GetClassName() .. " cycled!");
+		needsCycling = 0; // reset cycling state
+	}
+	
+	// making this a virtual instead of a property so custom weapons could
+	// potentially override this based on, for example, what kind of cycling
+	// they need (i.e. potentially cycling for an alt-fire could take longer
+	// than cycling for primary
+	virtual int GetBackpackCycleTics()
+	{
+		return GameTicRate * 5; // five seconds by default
+	}
+	
 	action void A_ResetAtEase()
 	{
-		invoker._atEase = false;
-		invoker._easeTics = invoker.EASE_TICS_SET_ATTACK;
+		invoker.atEase = false;
+		invoker.easeTics = invoker.EASE_TICS_SET_ATTACK;
 	}
 	
 	action void A_OwnerPlayAttack(bool muzzleFlash = true)
 	{
 		let ply = PlayerPawn(invoker.owner);
-		
 		if (!ply)
 			return;
 		
@@ -246,7 +317,7 @@ class DeltaWeapon : Weapon
 	
 	action void A_StartRaiseWeapon()
 	{
-		// some code taken from A_Raise code: https://github.com/UZDoom/UZDoom/blob/41ca20c1c30decbe70da21505785fbec6bb83cd6/wadsrc/static/zscript/actors/inventory/weapons.zs#L307
+		// some code taken from original UZDoom A_Raise code and reworked
 		if (player == null)
 			return;
 		if (player.PendingWeapon != WP_NOCHANGE)
@@ -261,17 +332,16 @@ class DeltaWeapon : Weapon
 		if (!psp)
 			return;
 		
-		invoker._atEase = false;
+		invoker.atEase = false;
 		A_SetCrosshair(-1);
 		
-		// set weapon sprite upfront immediately, we want to do our own deploy animations
+		// skip native sprite raising, we want to do our own deploy animations
 		psp.y = WEAPONTOP;
 	}
 	
 	action void A_FinishRaiseWeapon()
 	{
 		let psp = player.GetPSprite(PSP_WEAPON);
-		
 		if (!psp)
 			return;
 		
@@ -282,7 +352,7 @@ class DeltaWeapon : Weapon
 		bool allowOffhand = true)
 	{
 		let ply = DeltaPlayer(invoker.owner);
-		invoker._hasBeenPickedUp = true;
+		invoker.hasBeenPickedUp = true;
 		
         if (allowOffhand && (player.cmd.buttons & BT_USER1)
 			&& !ply.GetIsUsingOffhand() && ply.TryStartOffhand())
@@ -297,22 +367,22 @@ class DeltaWeapon : Weapon
 			return ResolveState(null);
 		
 		let iter = ThinkerIterator.Create("DeltaWeaponsAtEase");
-		invoker._atEase = iter.Next();
+		invoker.atEase = iter.Next();
 		
 		// if our at ease state is not changing, don't do anything
-		if (invoker._atEase == atEase)
+		if (invoker.atEase == atEase)
 		{
-			if (invoker._easeTics < 0)
-				invoker._easeTics++;
+			if (invoker.easeTics < 0)
+				invoker.easeTics++;
 			
 			return ResolveState(null);
 		}
 		
-        if (invoker._atEase)
+        if (invoker.atEase)
 		{
-			invoker._easeTics++;
+			invoker.easeTics++;
 			
-			if (invoker._easeTics > 0)
+			if (invoker.easeTics > 0)
 				return ResolveState("AtEase");
 		}
 		else
@@ -360,7 +430,7 @@ class DeltaWeapon : Weapon
 		if (!deltaOwner.IsLunging())
 		{
 			Actor currMo, targetMo;
-			double shortestDistance = invoker._maxLungeDistance + self.radius;
+			double shortestDistance = invoker.maxLungeDistance + self.radius;
 			
 			let iter = BlockThingsIterator.Create(deltaOwner, shortestDistance);
 			
@@ -394,7 +464,7 @@ class DeltaWeapon : Weapon
 					targetMo = currMo;
 				}
 				
-				if (shortestDistance <= invoker._stopLungeDistance)
+				if (shortestDistance <= invoker.stopLungeDistance)
 					return attackState;
 			}
 			
@@ -406,7 +476,7 @@ class DeltaWeapon : Weapon
 			if (targetMo.bSkullfly)
 				return attackState;
 			
-			deltaOwner.StartLunge(targetMo, invoker._stopLungeDistance);
+			deltaOwner.StartLunge(targetMo, invoker.stopLungeDistance);
 		}
 		
 		if (invoker._lungeReadyToStop)
@@ -497,13 +567,13 @@ class DeltaWeapon : Weapon
 	
 	clearscope float GetRedCrosshairRange()
 	{
-		return _redCrosshairRange;
+		return redCrosshairRange;
 	}
 	
 	// returns a DeltaWeaponAnimType (see enum in DeltaPlayer for more info)
 	clearscope int GetAnimType()
 	{
-		return _animType;
+		return animType;
 	}
 	
 	clearscope bool GetAtEase()
@@ -515,18 +585,18 @@ class DeltaWeapon : Weapon
 		if (!psp)
 			return false;
 		
-		return InStateSequence(psp.curState, _AtEaseLoopState)
-			|| InStateSequence(psp.curState, _DeselectAtEaseState);
+		return InStateSequence(psp.curState, AtEaseLoopState)
+			|| InStateSequence(psp.curState, DeselectAtEaseState);
 	}
 	
 	clearscope double GetMinYOffset()
 	{
-		return _minYOffset;
+		return minYOffset;
 	}
 	
 	clearscope double GetMaxYOffset()
 	{
-		return _maxYOffset;
+		return maxYOffset;
 	}
 	
 	clearscope double GetCrouchFactor()

@@ -2,7 +2,7 @@ decal KrisSwordSlashL
 {
 	pic KRSSLASH
 	shade "00 00 00"
-	flipx
+	flipX
 }
 
 decal KrisSwordSlashR
@@ -17,8 +17,8 @@ decal ChargeShotScorch
 	shade "00 00 00"
 	x-scale 0.2
 	y-scale 0.2
-	randomflipx
-	randomflipy
+	randomFlipX
+	randomFlipY
 }
 
 generator KrisRevolver BulletChip

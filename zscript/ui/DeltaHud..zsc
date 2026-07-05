@@ -69,37 +69,40 @@ class DeltaHud : BaseStatusBar
 		Super.Init();
 		completeBorder = false;
 		
-		_drHudFont = HUDFont.Create("DRHUDFONT");
-		_consoleFont = HUDFont.Create(smallFont);
-		_noShadowFont = HUDFont.Create("smallFontNoShadow");
-		_tpFont = HUDFont.Create(smallFont);
+		_drHudFont 			= HUDFont.Create("DRHUDFONT");
+		_consoleFont 		= HUDFont.Create(smallFont);
+		_noShadowFont 		= HUDFont.Create("smallFontNoShadow");
+		_tpFont 			= HUDFont.Create(smallFont);
 		
-		_hpText				= TexMan.CheckForTexture("DRHPTEXT");
-		_tpBarBack			= TexMan.CheckForTexture("sprites/hud/new tp bar back.png");
-		_tpBar				= TexMan.CheckForTexture("sprites/hud/new tp bar.png");
-		_tpTimerStencil		= TexMan.CheckForTexture("sprites/hud/tp timer stencil.png");
-		_tpHighlight		= TexMan.CheckForTexture("DRTPHLGT");
-		_leftPanelBack		= TexMan.CheckForTexture("sprites/hud/new left panel back.png");
-		_leftPanelBorders	= TexMan.CheckForTexture("sprites/hud/new left panel borders.png");
-		_vignette			= TexMan.CheckForTexture("sprites/hud/vignette.png");
-		_vignette2			= TexMan.CheckForTexture("sprites/hud/vignette2.png");
-		_infiniteText		= TexMan.CheckForTexture("DRINFTXT");
-		_defaultCrosshair	= TexMan.CheckForTexture("DRMTYRET");
-		_offhandCrosshair	= TexMan.CheckForTexture("DROFHRET");
-		_reticleBarOverlay	= TexMan.CheckForTexture("DRRTBOVR");
-		_reticleBar			= TexMan.CheckForTexture("DRRETBAR");
-		_ammoBottom			= TexMan.CheckForTexture("sprites/hud/new ammo panel bottom.png");
-		_ammoBottomBorders	= TexMan.CheckForTexture("sprites/hud/new ammo panel bottom borders.png");
-		_statsBackground	= TexMan.CheckForTexture("sprites/hud/stats panel bottom.png");
-		_statsBorders		= TexMan.CheckForTexture("sprites/hud/stats panel bottom borders.png");
-		_statsKillIcon		= TexMan.CheckForTexture("sprites/hud/stats/stats kills.png");
-		_statsItemIcon		= TexMan.CheckForTexture("sprites/hud/stats/stats items.png");
-		_statsSecretIcon	= TexMan.CheckForTexture("sprites/hud/stats/stats secrets.png");
-		_statsDeathIcon		= TexMan.CheckForTexture("sprites/hud/stats/stats deaths.png");
-		_statsTimeIcon		= TexMan.CheckForTexture("sprites/hud/stats/stats time.png");
-		_statsSpeedIcon		= TexMan.CheckForTexture("sprites/hud/stats/stats speed.png");
-		_invPanel 			= TexMan.CheckForTexture("sprites/hud/item panel back.png");
-		_invPanelBorders 	= TexMan.CheckForTexture("sprites/hud/item panel back borders.png");
+		_vignette			= TexMan.CheckForTexture("graphics/hud/vignette.png");
+		_vignette2			= TexMan.CheckForTexture("graphics/hud/vignette2.png");
+		
+		_hpText				= TexMan.CheckForTexture("graphics/hud/text/hpText.png");
+		_infiniteText		= TexMan.CheckForTexture("graphics/hud/text/infiniteText.png");
+		_tpBarBack			= TexMan.CheckForTexture("graphics/hud/newTpBarBack.png");
+		_tpBar				= TexMan.CheckForTexture("graphics/hud/newTpBar.png");
+		_tpTimerStencil		= TexMan.CheckForTexture("graphics/hud/tpTimerStencil.png");
+		_leftPanelBack		= TexMan.CheckForTexture("graphics/hud/newLeftPanel.png");
+		_leftPanelBorders	= TexMan.CheckForTexture("graphics/hud/newLeftPanelBorders.png");
+		
+		_defaultCrosshair	= TexMan.CheckForTexture("graphics/hud/reticle/emptyHandedReticle.png");
+		_offhandCrosshair	= TexMan.CheckForTexture("graphics/hud/reticle/offhandReticle.png");
+		_reticleBarOverlay	= TexMan.CheckForTexture("graphics/hud/reticle/reticleBarBorder.png");
+		_reticleBar			= TexMan.CheckForTexture("graphics/hud/reticle/reticleBar.png");
+		
+		_statsBackground	= TexMan.CheckForTexture("graphics/hud/stats/statsBottom.png");
+		_statsBorders		= TexMan.CheckForTexture("graphics/hud/stats/statsBottomBorders.png");
+		_statsKillIcon		= TexMan.CheckForTexture("graphics/hud/stats/statsKills.png");
+		_statsItemIcon		= TexMan.CheckForTexture("graphics/hud/stats/statsItems.png");
+		_statsSecretIcon	= TexMan.CheckForTexture("graphics/hud/stats/statsSecrets.png");
+		_statsDeathIcon		= TexMan.CheckForTexture("graphics/hud/stats/statsDeaths.png");
+		_statsTimeIcon		= TexMan.CheckForTexture("graphics/hud/stats/statsTime.png");
+		_statsSpeedIcon		= TexMan.CheckForTexture("graphics/hud/stats/statsSpeed.png");
+		
+		_ammoBottom			= TexMan.CheckForTexture("graphics/hud/newAmmoBottom.png");
+		_ammoBottomBorders	= TexMan.CheckForTexture("graphics/hud/newAmmoBottomBorders.png");
+		_invPanel 			= TexMan.CheckForTexture("graphics/hud/itemPanel.png");
+		_invPanelBorders 	= TexMan.CheckForTexture("graphics/hud/itemPanelBorders.png");
 		
 		SetUpIndicatorTextures();
 		SetUpDamagePopups();
@@ -107,20 +110,20 @@ class DeltaHud : BaseStatusBar
 		SetUpMessages();
 		SetUpMultiplayer();
 		
-		controlIcons.Insert(DELTA_CONTROLICON_MOUSE1, TexMan.CheckForTexture("DRMSELCL"));
-		controlIcons.Insert(DELTA_CONTROLICON_MOUSE2, TexMan.CheckForTexture("DRMSERCL"));
-		controlIcons.Insert(DELTA_CONTROLICON_MOUSE3, TexMan.CheckForTexture("DRMSEMCL"));
-		controlIcons.Insert(DELTA_CONTROLICON_MOUSE4, TexMan.CheckForTexture("DRMSEBT4"));
-		controlIcons.Insert(DELTA_CONTROLICON_MOUSE5, TexMan.CheckForTexture("DRMSEBT5"));
-		controlIcons.Insert(DELTA_CONTROLICON_MOUSE6, TexMan.CheckForTexture("DRMSEBT6"));
-		controlIcons.Insert(DELTA_CONTROLICON_MOUSE7, TexMan.CheckForTexture("DRMSEBT7"));
-		controlIcons.Insert(DELTA_CONTROLICON_MOUSE8, TexMan.CheckForTexture("DRMSEBT8"));
+		controlIcons.Insert(DELTA_CONTROLICON_MOUSE1, TexMan.CheckForTexture("graphics/hud/buttons/mouse/leftClick.png"));
+		controlIcons.Insert(DELTA_CONTROLICON_MOUSE2, TexMan.CheckForTexture("graphics/hud/buttons/mouse/rightClick.png"));
+		controlIcons.Insert(DELTA_CONTROLICON_MOUSE3, TexMan.CheckForTexture("graphics/hud/buttons/mouse/middleClick.png"));
+		controlIcons.Insert(DELTA_CONTROLICON_MOUSE4, TexMan.CheckForTexture("graphics/hud/buttons/mouse/mouse4.png"));
+		controlIcons.Insert(DELTA_CONTROLICON_MOUSE5, TexMan.CheckForTexture("graphics/hud/buttons/mouse/mouse5.png"));
+		controlIcons.Insert(DELTA_CONTROLICON_MOUSE6, TexMan.CheckForTexture("graphics/hud/buttons/mouse/mouse6.png"));
+		controlIcons.Insert(DELTA_CONTROLICON_MOUSE7, TexMan.CheckForTexture("graphics/hud/buttons/mouse/mouse7.png"));
+		controlIcons.Insert(DELTA_CONTROLICON_MOUSE8, TexMan.CheckForTexture("graphics/hud/buttons/mouse/mouse8.png"));
 		
-		ammoIcons.Insert('Clip', 		TexMan.CheckForTexture("DRAMBULL"));
-		ammoIcons.Insert('Shell', 		TexMan.CheckForTexture("DRAMSHEL"));
-		ammoIcons.Insert('RocketAmmo', 	TexMan.CheckForTexture("DRAMROCK"));
-		ammoIcons.Insert('Cell', 		TexMan.CheckForTexture("DRAMPLAS"));
-		ammoIcons.Insert('ID24Fuel', 	TexMan.CheckForTexture("DRAMFUEL"));
+		ammoIcons.Insert('Clip', 		TexMan.CheckForTexture("graphics/hud/ammo/bulletAmmo.png"));
+		ammoIcons.Insert('Shell', 		TexMan.CheckForTexture("graphics/hud/ammo/shellAmmo.png"));
+		ammoIcons.Insert('RocketAmmo', 	TexMan.CheckForTexture("graphics/hud/ammo/rocketAmmo.png"));
+		ammoIcons.Insert('Cell', 		TexMan.CheckForTexture("graphics/hud/ammo/cellAmmo.png"));
+		ammoIcons.Insert('ID24Fuel', 	TexMan.CheckForTexture("graphics/hud/ammo/fuelAmmo.png"));
 		
 		_tpInterp = DynamicValueInterpolator.Create(0, 0.2, 1, 30);
 		_healthInterp = DynamicValueInterpolator.Create(0, 0.2, 1, 30);
@@ -256,17 +259,16 @@ class DeltaHud : BaseStatusBar
 			&& cl_delta_lowHealthVignette && !automapActive)
 		{
 			double
-				alpha = 1 - (GetHealthPerc() / 0.4),
-				sine = (CPlayer.health>0) ? (sin((level.time+ticFrac) * 5) * 0.125) : 0.25;
+				maxSine = 0.125,
+				alpha = (1 - (GetHealthPerc() / 0.4)) * (1 - maxSine),
+				sine = maxSine;
+			if (CPlayer.health > 0)
+				sine *= sin(3 * (level.time + ticFrac));
 			
-			sine += 0.75;
 			Screen.DrawTexture(_vignette, false, 0, 0, DTA_Fullscreen, true,
-				DTA_FullScreenScale, FSMode_ScaleToScreen, DTA_Alpha, alpha * sine,
-				DTA_Color, ply.GetPainFlash());
+				DTA_FullScreenScale, FSMode_ScaleToScreen,
+				DTA_Alpha, min(1, alpha + sine), DTA_Color, ply.GetPainFlash());
 		}
-		
-		if (ply.IsBlind())
-			return;
 		
 		let airTime = max(0, CPlayer.air_finished - level.mapTime + 1),
 			airPerc = double(airTime) / level.airSupply;

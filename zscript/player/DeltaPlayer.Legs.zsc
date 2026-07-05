@@ -13,15 +13,6 @@ extend class DeltaPlayer
 			return;
 		
 		let psp = player.FindPSprite(PSP_LEGS);
-		
-		if (!cl_delta_showLegs)
-		{
-			if (psp)
-				psp.SetState(null);
-			
-			return;
-		}
-		
 		if (!psp)
 		{
 			SetUpLegs();
@@ -38,6 +29,9 @@ extend class DeltaPlayer
 		A_OverlayOffset(PSP_LEGS, off.x, off.y, WOF_INTERPOLATE);
 		
 		AnimateLegs();
+		
+		if (!cl_delta_showLegs)
+			psp.frame = -1;
 	}
 	
 	virtual void AnimateLegs()
@@ -166,9 +160,16 @@ extend class DeltaPlayer
 		
 		let stoppedThreshold = 1.,
 			slowThreshold = 8.,
-			targetFrame = 4;
+			targetFrame = 4,
+			airTimeDrop1 = 10,		// tics in the air until our legs can start lowering
+									// (makes moving down steps look less jank)
+			airTimeDrop2 = 20;
 		
-		if (vel.z > slowThreshold)
+		if (vel.z < 0 && coyoteTimer < airTimeDrop1)
+			targetFrame = 4;
+		else if (vel.z < 0 && coyoteTimer < airTimeDrop2)
+			targetFrame = 3;
+		else if (vel.z > slowThreshold)
 			targetFrame = 0;
 		else if (vel.z > stoppedThreshold)
 			targetFrame = 1;

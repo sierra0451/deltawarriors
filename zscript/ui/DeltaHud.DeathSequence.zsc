@@ -121,7 +121,7 @@ class DeltaGameOver : ScreenJob
 		gameOverState = UNINITIALIZED;
 		curChoice = GOC_NO_CHOICE;
 		
-		gameOver = TexMan.CheckForTexture("DRGMOVER");
+		gameOver = TexMan.CheckForTexture("graphics/hud/gameOverText.png");
 		soul = TexMan.CheckForTexture("DRSLA0");
 		brokenSoul = TexMan.CheckForTexture("DRSLB0");
 		blurrySoul = TexMan.CheckForTexture("blurrySoul");
@@ -335,6 +335,9 @@ class DeltaGameOver : ScreenJob
 	
 	void CoveredInDarkness()
 	{
+		// i thought about making this crash intentionally similarly to how
+		// "you broke me" does it, but ultimately decided against it
+		
 		ThrowAbortException(
 			StringTable.Localize("$DELTAWARRIORS_DARKNESS_ABORT")
 		);
@@ -459,8 +462,7 @@ class DeltaGameOver : ScreenJob
 			DrawMessage(sc, smoothRatio);
 	}
 	
-	virtual void DrawSoul(double sc,
-		double smoothRatio)
+	virtual void DrawSoul(double sc, double smoothRatio)
 	{
 		Color soulColor = 0xff0000;
 		if (cl_delta_changeSoulColor)
@@ -471,7 +473,7 @@ class DeltaGameOver : ScreenJob
 		
 		let scrW = Screen.GetWidth(),
 			scrH = Screen.GetHeight(),
-			soulPos = (scrW/2, scrH/2 + chase_height*10);
+			soulPos = (scrW/2, scrH/2 + 40);
 		
 		if (soulState < 2)
 		{
@@ -511,7 +513,7 @@ class DeltaGameOver : ScreenJob
 			Screen.DrawTexture(blurrySoul, false,
 				_soulX, scrH * 0.65 + fnt.GetHeight()*sc*1.6,
 				DTA_ScaleX, sc, DTA_ScaleY, sc*1.2,
-				DTA_Color, soulColor, DTA_Alpha, strAlpha);
+				DTA_Color, soulColor, DTA_Alpha, strAlpha * 0.6);
 			
 			let str = StringTable.Localize("$DELTAWARRIORS_GAME_OVER_CONTINUE"),
 				strWidth = fnt.StringWidth(str) * sc;

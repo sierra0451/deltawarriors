@@ -10,12 +10,12 @@ extend class DeltaHud
 	
 	protected void SetUpMultiplayer()
 	{
-		_coopPanelBack 				= TexMan.CheckForTexture("COOPBACK");
-		_coopPanelBorders			= TexMan.CheckForTexture("sprites/hud/coop panel borders.png");
-		_deathmatchPanelBack 		= TexMan.CheckForTexture("DTHMBACK");
-		_deathmatchPanelBorders		= TexMan.CheckForTexture("sprites/hud/deathmatch score border.png");
-		_deathmatchPanelBarBorders	= TexMan.CheckForTexture("sprites/hud/deathmatch score bar border.png");
-		_deathmatchCurrentPlayer 	= TexMan.CheckForTexture("DTHMCPLY");
+		_coopPanelBack 				= TexMan.CheckForTexture("graphics/hud/multiplayer/coopPanel.png");
+		_coopPanelBorders			= TexMan.CheckForTexture("graphics/hud/multiplayer/coopPanelBorders.png");
+		_deathmatchPanelBack 		= TexMan.CheckForTexture("graphics/hud/multiplayer/deathmatchPanel.png");
+		_deathmatchPanelBorders		= TexMan.CheckForTexture("graphics/hud/multiplayer/deathmatchScoreBorder.png");
+		_deathmatchPanelBarBorders	= TexMan.CheckForTexture("graphics/hud/multiplayer/deathmatchScoreBarBorder.png");
+		_deathmatchCurrentPlayer 	= TexMan.CheckForTexture("graphics/hud/multiplayer/deathmatchCurrentPlayer.png");
 		
 		gl_proj						= new("Le_GlScreen");
 	}

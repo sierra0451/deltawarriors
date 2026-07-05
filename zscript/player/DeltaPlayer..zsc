@@ -58,16 +58,17 @@ class DeltaPlayer : PlayerPawn abstract
 	}
 	enum DeltaVoicePriority
 	{
-		VOX_LEAST_IMPORTANT = -1,
+		VOX_LEAST_IMPORTANT = -1,	// overriden by anything, overrides nothing
 		VOX_BREATHING = 0,
-		VOX_MOVEMENT = 10,
-		VOX_PAIN = 20,
-		VOX_DIALOGUE = 30,
-		VOX_DEATH = 40,
-		VOX_MOST_IMPORTANT
+		VOX_MOVEMENT = 10,			// jump/landing grunts, etc.
+		VOX_PAIN = 20,				// damage grunts
+		VOX_DIALOGUE = 30,			// dialogue for taunts, story, etc.
+		VOX_DEATH = 40,				// shut the character the fuck up if they die
+		VOX_MOST_IMPORTANT			// overrides all default voice priorities
 	}
 	
 	const COYOTE_TIME = 3;
+	const JUMP_BUFFER_TIME = 3;
 	const ANIM_GROUNDED_HANG_TIME = 3;
 	const MAX_AIR_BOB_TICS = 7;
 	const DELTA_AIR_CONTROL = 0.4;
@@ -75,7 +76,7 @@ class DeltaPlayer : PlayerPawn abstract
 	const DRAIN_TIMER_START = TICRATE * 12;			// tp lasts for 12 seconds before we start draining it
 	const DRAIN_AMOUNT = 5./TICRATE;
 	const MAX_GRAZE_TICS = 5;
-	const DEFAULT_RED_CROSSHAIR_RANGE = 500;
+	const DEFAULT_RED_CROSSHAIR_RANGE = 500.;
 	const MAX_TURN = 10;
 	const DEATH_HANG_FRAMES = TICRATE;
 	
@@ -84,11 +85,11 @@ class DeltaPlayer : PlayerPawn abstract
 	bool beingHugged;
 	
 	protected int coyoteTimer; 						// used to handle coyote time
-	protected int jumpBuffer, crouchBuffer, airBobTics, hugTimer;
+	protected int jumpBuffer, airBobTics, hugTimer;
 	protected double customBobPerc;
 	protected int damageTics; 						// invulnerability frames, essentially
 	protected int lastDamageTaken;
-	protected int deathTimer; 						// used for first person death animation and for "Press E to respawn" prompt
+	protected int deathTimer; 						// used for first person death animation
 	protected double deathPitchFP, deathPitchTP;
 	protected DeltaCrouchState crouchState;
 	
@@ -373,7 +374,6 @@ class DeltaPlayer : PlayerPawn abstract
 		CVar.FindCVar("data_delta_previousMap").SetString(level.mapName);
 		coyoteTimer = 0;
 		jumpBuffer = 0;
-		crouchBuffer = 0;
 		grazeTics = 0;
 		hugTimer = 0;
 		deathTimer = -1;
@@ -403,7 +403,6 @@ class DeltaPlayer : PlayerPawn abstract
 		
 		coyoteTimer = 0;
 		jumpBuffer = 0;
-		crouchBuffer = 0;
 		grazeTics = 0;
 		hugTimer = 0;
 		tensionPoints = 0;
@@ -551,7 +550,6 @@ class DeltaPlayer : PlayerPawn abstract
 		bobFactor *= perc * perc;
 		
 		let [fm, sm] = TweakSpeeds (cmd.forwardMove, cmd.sideMove);
-		//Console.Printf("fm, sm: (%d, %d)", fm, sm);
 		fm *= Speed / 256;
 		sm *= Speed / 256;
 		
@@ -592,13 +590,20 @@ class DeltaPlayer : PlayerPawn abstract
 			{
 				applySlowing = false;
 			}
-			else for (int i = 0; i < curSector.CountTags(); i++)
+			else
 			{
-				let events = DeltaEvents(EventHandler.Find("DeltaEvents"));
-				if (events.scrollTags.Find(curSector.GetTag(i)) != events.scrollTags.Size())
+				let events = DeltaGlobals.GetLevelEvents();
+				
+				if (events)
 				{
-					applySlowing = false;
-					break;
+					for (int i = 0; i < curSector.CountTags(); i++)
+					{
+						if (events.scrollTags.Find(curSector.GetTag(i)) != events.scrollTags.Size())
+						{
+							applySlowing = false;
+							break;
+						}
+					}
 				}
 			}
 		}
@@ -755,6 +760,7 @@ class DeltaPlayer : PlayerPawn abstract
 		
 		deathTimer = 0;
 		deathPitchFP = deathPitchTP = Pitch;
+		grazeTics = 0;
 	}
 	
 	override void PlayerSquatView(Actor onmobj)
@@ -824,7 +830,7 @@ class DeltaPlayer : PlayerPawn abstract
 		bool
 			playerWantsToRespawn = (player.cmd.buttons & BT_USE),
 			forcingRespawn = (deathmatch || alwaysApplyDMFlags) && sv_forceRespawn,
-			respawnAllowed = multiplayer || level.AllowRespawn || sv_singlePlayerRespawn
+			respawnAllowed = (multiplayer || !cl_delta_deathScreen) || level.AllowRespawn || sv_singlePlayerRespawn
 				|| G_SkillPropertyInt(SKILLP_PlayerRespawn),
 			respawnDisallowed = sv_noRespawn || (!respawnAllowed && !deathmatch);
 		
@@ -943,7 +949,7 @@ class DeltaPlayer : PlayerPawn abstract
 		
 		// Buffer jump inputs
 		if (player.cmd.buttons & BT_JUMP)
-			jumpBuffer = 3;
+			jumpBuffer = JUMP_BUFFER_TIME;
 		
 		// [RH] check for jump
 		if (jumpBuffer > 0)
@@ -972,7 +978,7 @@ class DeltaPlayer : PlayerPawn abstract
 		
 		if (!IsPredicting())
 		{
-			A_StartSound("*jump", CHAN_BODY);
+			A_StartSound("delta/jump", CHAN_BODY, volume: 0.5);
 			
 			if (frandom(0., 1.) <= jumpGruntChance)
 				DoSpeak("jump_grunt");
@@ -1142,13 +1148,7 @@ class DeltaPlayer : PlayerPawn abstract
 	override void HasReceived(Inventory item, class<Inventory> itemCls)
 	{
 		Super.HasReceived(item, itemCls);
-		if (!item)
-			return;
-		
-		if (item is "Health" && itemCls != "Health" && !item.bQuiet)
-			A_StartSound("delta/heal", CHAN_VOICE);
-		
-		if (!(item is "Weapon"))
+		if (!item && !(item is "Weapon"))
 			return;
 		if (!player || !_savedPending)
 			return;
@@ -1179,7 +1179,7 @@ class DeltaPlayer : PlayerPawn abstract
 			shakeY = max(0, (0.5+0.5*sin(1.5*t)) * 12. + shakeDiff * sin(TICRATE/2.*t));
 		Vector2 shake = (shakeX, shakeY * 0.5);
 		let result = bob + bobFlinch + shake * s + (GetTurn(ticFrac), 0),
-			zVelAdd = vel.z * 0.5 * cos(pitch + viewPitch),
+			zVelAdd = vel.z * 0.5,
 			zVelFac = clamp((airBobTics*2. / MAX_AIR_BOB_TICS)**2, 0, 1);
 		
 		zVelAdd *= zVelFac;
@@ -1207,10 +1207,7 @@ class DeltaPlayer : PlayerPawn abstract
 			if (amount < 0)
 				return;
 			
-			if (amount == 0)
-				amount = int(ceil(maxTensionPoints));
-			
-			tensionPoints = min(maxTensionPoints, tensionPoints + amount);
+			tensionPoints = amount? min(maxTensionPoints, tensionPoints + amount) : maxTensionPoints;
 			tensionDrainTimer = DRAIN_TIMER_START;
 		}
 		else
@@ -1249,16 +1246,26 @@ class DeltaPlayer : PlayerPawn abstract
 	}
 	
 	// taking from uzdoom.pk3 and retooling, removing grunts entirely
-	override void PlayerLandedMakeGruntSound(actor onmobj)
+	override void PlayerLandedMakeGruntSound(actor onMobj)
 	{
 		// [RH] only make noise if alive
-		if (self.health > 0 && !Alternative)
+		if (health < 0 || Alternative || jumpBuffer)
+			return;
+		if (onMobj == NULL && (pos.Z > floorZ || HitFloor()))
+			return;
+		
+		let landVol = 0.5, //IsCrouching()? 0.25 : 0.5
+			landVelocity = vel.z,
+			hardLandThreshold = 17.,
+			veryHardLandThreshold = 21.;
+		
+		if (landVelocity > veryHardLandThreshold)
 		{
-			bool isliquid = (pos.Z <= floorz) && HitFloor ();
-			
-			if (onmobj != NULL || !isliquid)
-				A_StartSound("*land", CHAN_AUTO);
+			landVol = 1;
+			A_StartSound("delta/thud", CHAN_AUTO);
 		}
+		
+		A_StartSound("delta/land", CHAN_BODY, volume: landVol);
 	}
 	
 	override string GetObituary(Actor victim, Actor inflictor, Name mod,
@@ -1355,51 +1362,19 @@ class DeltaPlayer : PlayerPawn abstract
 	override void FireWeapon(State stat)
 	{
 		let weapn = player.ReadyWeapon;
-		if (!weapn || !weapn.CheckAmmo(Weapon.PrimaryFire, true))
+		if (!weapn || !(weapn is "DeltaWeapon"))
 			return;
 		
-		player.WeaponState &= ~WF_WEAPONBOBBING;
-		weapn.bAltFire = false;
-		
-		if (stat == null)
-			stat = weapn.GetAtkState(!!player.refire);
-		
-		player.SetPsprite(PSP_WEAPON, stat);
-		if (!weapn.bNoAlert)
-			SoundAlert(self, false);
-		
-		let deltaWpn = DeltaWeapon(weapn);
-		if (!deltaWpn)
-			return;
-		
-		deltaWpn.A_ResetAtEase();
+		DeltaWeapon(weapn).DoFire(stat);
 	}
 
 	override void FireWeaponAlt(State stat)
 	{
 		let weapn = player.ReadyWeapon;
-		if (!weapn || weapn.FindState('AltFire') == null ||
-			!weapn.CheckAmmo(Weapon.AltFire, true))
-		{
-			return;
-		}
-		
-		player.WeaponState &= ~WF_WEAPONBOBBING;
-		weapn.bAltFire = true;
-		
-		if (stat == null)
-			stat = weapn.GetAltAtkState(!!player.refire);
-		
-		player.SetPsprite(PSP_WEAPON, stat);
-		
-		if (!weapn.bNoAlert)
-			SoundAlert (self, false);
-		
-		let deltaWpn = DeltaWeapon(weapn);
-		if (!deltaWpn)
+		if (!weapn || !(weapn is "DeltaWeapon") || !(weapn.FindState('AltFire')))
 			return;
 		
-		deltaWpn.A_ResetAtEase();
+		DeltaWeapon(weapn).DoAltFire(stat);
 	}
 	
 	override void PlayAttacking()
@@ -1642,18 +1617,19 @@ class DeltaPlayer : PlayerPawn abstract
 		
 		double
 			_maxHealth = GetMaxHealth(),
-			maxHb = _maxHealth * 0.45,
-			minHb = _maxHealth * 0.15;
-		int perc = 100 - int(100. * (Health - minHb) / (maxHb - minHb));
+			maxHb = 45.,
+			minHb = 15.,
+			perc = health * 100. / _maxHealth;
+		int targetVal = int(DeltaUtil.Map(perc, maxHb, minHb, 20, 100));
 		
 		bool heartbeatCvar = (cl_delta_heartbeatSound == HB_ON
 			|| (cl_delta_heartbeatSound == HB_LIGHTNERS_ONLY && !(self is "RalseiPlayer")));
 		
-		// make sure heartbeat only plays if we're below a third of our max
-		// health AND we aren't dead
-		if (Health <= maxHb && Health > 0 && heartbeatCvar)
-			heartbeat.Update(perc);
-		else if (Health > 0 && heartbeatCvar)
+		// make sure heartbeat only plays if we're
+		// below a threshold AND we aren't dead
+		if (perc <= maxHb && health > 0 && heartbeatCvar)
+			heartbeat.Update(targetVal);
+		else if (health > 0 && heartbeatCvar)
 			heartbeat.Update(0);
 		else if (heartbeat.GetValue() != 0)
 			heartbeat.Reset(0);
@@ -1796,7 +1772,7 @@ class DeltaPlayer : PlayerPawn abstract
 	
 	protected void HandleAirStuff()
 	{
-		if (IsGrounded() && Vel.Z <= 0)
+		if (IsGrounded() && vel.z <= 0)
 			coyoteTimer = 0;
 		else
 			coyoteTimer++;
@@ -1805,6 +1781,23 @@ class DeltaPlayer : PlayerPawn abstract
 			airBobTics--;
 		else if (!IsGrounded() && airBobTics < MAX_AIR_BOB_TICS)
 			airBobTics++;
+		
+		if (!IsGrounded())
+		{
+			let windVol = clamp(vel.z/-20. - 1, 0., 1.),
+				windPitch = DeltaUtil.Map(vel.z/-40. - 0.5, 0., 1., 0.5, 1.5);
+			
+			if (!IsActorPlayingSound(CHAN_FALL_WIND))
+				A_StartSound("delta/falling_wind", CHAN_FALL_WIND, CHANF_LOOP,
+					windVol, pitch: windPitch);
+			else
+			{
+				A_SoundVolume(CHAN_FALL_WIND, windVol);
+				A_SoundPitch(CHAN_FALL_WIND, windPitch);
+			}
+		}
+		else if (IsActorPlayingSound(CHAN_FALL_WIND))
+			A_StopSound(CHAN_FALL_WIND);
 	}
 	
 	protected void HandleFlinch()
@@ -1887,7 +1880,7 @@ class DeltaPlayer : PlayerPawn abstract
 		let ac = l.HitActor;
 		
 		if (!ac || ac.curState.InStateSequence(ac.ResolveState("Death")) || 
-			((ac is "DeltaProjectile") && ac.curState.InStateSequence(ac.ResolveState("Explode"))))
+			((ac is "DeltaGrenade") && ac.curState.InStateSequence(ac.ResolveState("Explode"))))
 		{
 			_crosshairState = DELTA_XHR_NEUTRAL;
 			return;
@@ -1939,6 +1932,8 @@ class DeltaPlayer : PlayerPawn abstract
 				continue;
 			if (!mis.CanCollideWith(self, false))
 				continue;
+			if (!CheckSight(mis, SF_IGNOREVISIBILITY | SF_IGNOREWATERBOUNDARY))
+				continue;
 			
 			double blockDist = (radius * 6) + (mis.radius * 6);
 			double blockHeight = (height * 0.5 * 6) + (mis.height * 0.5 * 6);
@@ -1970,7 +1965,7 @@ class DeltaPlayer : PlayerPawn abstract
 			e.thing = self;
 			e.grazeSource = mis.target;
 			
-			DeltaEvents(EventHandler.Find('DeltaEvents')).PlayerGrazed(e);
+			DeltaGlobals.GetLevelEvents().PlayerGrazed(e);
 			
 			if (firstGraze)
 			{
@@ -1985,6 +1980,9 @@ class DeltaPlayer : PlayerPawn abstract
 		}
 		
 		int misDmg = mis.GetMissileDamage(0, 1);
+		
+		if (mis.tracer == self)
+			misDmg /= 2;
 		if (misDmg <= 0)
 			return;
 		
@@ -1995,7 +1993,7 @@ class DeltaPlayer : PlayerPawn abstract
 		e.thing = self;
 		e.grazeSource = mis;
 		
-		DeltaEvents(EventHandler.Find('DeltaEvents')).PlayerGrazed(e);
+		DeltaGlobals.GetLevelEvents().PlayerGrazed(e);
 		
 		if (firstGraze)
 		{
@@ -2151,6 +2149,11 @@ class DeltaPlayer : PlayerPawn abstract
 	clearscope double GetCrouchFactor()
 	{
 		return crouchFactor;
+	}
+	
+	clearscope int GetCrouchState()
+	{
+		return crouchState;
 	}
 	
 	clearscope DeltaCrosshairState GetCrosshairState()

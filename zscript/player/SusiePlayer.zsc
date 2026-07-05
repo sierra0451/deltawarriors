@@ -3,7 +3,7 @@ class SusiePlayer : DeltaPlayer
 	Default
 	{
 		Height 42;
-		Radius 18;
+		Radius 16;
 		Speed 0.85;
 		Mass 120;
 		

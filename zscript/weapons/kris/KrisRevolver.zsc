@@ -1,8 +1,6 @@
 class KrisRevolver : DeltaWeapon
 {
-	bool pulledOutFirstTime, cocked;
 	int chargeTics;
-	
 	protected ui Vector2 _oldShake, _shake;
 	protected ui double _lastTime;
 	
@@ -21,11 +19,11 @@ class KrisRevolver : DeltaWeapon
 		Weapon.AmmoGive 15;
 		Weapon.AmmoType "Clip";
 		Weapon.AmmoType2 "Clip";
-		DeltaWeapon.Crosshair "DRPSTRET";
-		DeltaWeapon.TensionUse2 40;		// 16% TP
+		DeltaWeapon.Crosshair "graphics/hud/reticle/pistolReticle.png";
+		DeltaWeapon.TensionUse2 40;			// 16% TP
 		
-		+WEAPON.NOALERT; // handling this manually
 		+SQUAREPIXELS
+		+Weapon.NOALERT 					// handling this manually
 	}
 	
 	States
@@ -33,7 +31,7 @@ class KrisRevolver : DeltaWeapon
 		Ready:
 			DKRV A 1
 			{
-				if (!invoker.cocked)
+				if (invoker.needsCycling)
 					return ResolveState("Cock");
 				
 				return A_DeltaWeaponReady();
@@ -50,10 +48,14 @@ class KrisRevolver : DeltaWeapon
 			Stop;
 		Select:
 			TNT1 A 2 A_StartRaiseWeapon;
-			DKRD A 2 A_StartSound("delta/revolver/deploy1", CHAN_WEAPON,
-				CHANF_OVERLAP);
-			DKRD C 2;
-			DKRD DF 2 A_ReadyIfCocked(WRF_NOBOB | WRF_NOSWITCH);
+			DKRD A 2
+			{
+				A_StartSound("delta/revolver/deploy1", CHAN_WEAPON,
+					CHANF_OVERLAP);
+				return A_DeltaWeaponReady(WRF_NOFIRE | WRF_NOBOB);
+			}
+			DKRD C 2 A_DeltaWeaponReady(WRF_NOFIRE | WRF_NOBOB);
+			DKRD DF 2 A_ReadyIfCocked(WRF_NOBOB);
 			DKRD G 3
 			{
 				A_StartSound("delta/revolver/deploy2", CHAN_WEAPON,
@@ -63,10 +65,10 @@ class KrisRevolver : DeltaWeapon
 			DKRD H 2 A_ReadyIfCocked(WRF_NOBOB);
 			DKRD I 2 
 			{
-				if (invoker.cocked)
-					return A_ReadyIfCocked(WRF_NOBOB);
-					
-				return ResolveState("Cock");
+				if (invoker.needsCycling)
+					return ResolveState("Cock");
+				
+				return A_ReadyIfCocked(WRF_NOBOB);
 			}
 			DKRD J 2 A_ReadyIfCocked(WRF_NOBOB);
 			Goto Ready;
@@ -91,22 +93,26 @@ class KrisRevolver : DeltaWeapon
 			DKRV B 1 A_KrisRevolverFire;
 			DKRV B 1 A_AddRecoil(10, 1, p: -4);
 			DKRV C 1 A_RemoveDynamicLight("revolverMuzzle");
-			DKRV D 2 A_ZoomFactor;
-			DKRV E 2 A_DeltaWeaponReady(WRF_NOFIRE | WRF_NOBOB | WRF_NOSWITCH);
-			DKRV E 1 A_CheckReload; // fall-through is intentional
-			DKRV F 3 A_DeltaWeaponReady(WRF_NOFIRE | WRF_NOBOB | WRF_NOSWITCH);
-		Cock:
+			DKRV D 2;
+			DKRV E 2 A_DeltaWeaponReady(WRF_NOFIRE | WRF_NOBOB);
+			DKRV E 1
+			{
+				A_CheckReload();
+				return A_DeltaWeaponReady(WRF_NOFIRE | WRF_NOBOB);
+			}
+			DKRV F 3 A_DeltaWeaponReady(WRF_NOFIRE | WRF_NOBOB);
+		Cock: // fall-through is intentional
 			DKRV G 2 A_DeltaWeaponReady(WRF_NOFIRE | WRF_NOBOB);
-			DKRV H 1 A_DeltaWeaponReady(WRF_NOFIRE | WRF_NOBOB | WRF_NOSWITCH);
-			DKRV IJ 2 A_DeltaWeaponReady(WRF_NOFIRE | WRF_NOBOB | WRF_NOSWITCH);
+			DKRV H 1 A_DeltaWeaponReady(WRF_NOFIRE | WRF_NOBOB);
+			DKRV IJ 2 A_DeltaWeaponReady(WRF_NOFIRE | WRF_NOBOB);
 			DKRV J 1 A_StartSound("delta/revolver/cock1", CHAN_WEAPON,
 				CHANF_OVERLAP);
-			DKRV K 3 A_DeltaWeaponReady(WRF_NOFIRE | WRF_NOBOB | WRF_NOSWITCH);
-			DKRV L 2 A_DeltaWeaponReady(WRF_NOFIRE | WRF_NOBOB | WRF_NOSWITCH);
+			DKRV K 3 A_DeltaWeaponReady(WRF_NOFIRE | WRF_NOBOB);
+			DKRV L 2 A_DeltaWeaponReady(WRF_NOFIRE | WRF_NOBOB);
 			DKRV L 2 A_StartSound("delta/revolver/cock2", CHAN_WEAPON,
 				CHANF_OVERLAP);
 			DKRV N 4 A_Cock;
-			DKRV P 3;
+			DKRV P 3 A_DeltaWeaponReady(WRF_NOFIRE | WRF_NOBOB);
 			DKRV Q 3 A_ReFire;
 			DKRV R 2 A_ReFire;
 			Goto Ready;
@@ -146,8 +152,8 @@ class KrisRevolver : DeltaWeapon
 			DKRC G 2 A_RemoveDynamicLight("revolverCharge");
 			DKRC H 2 A_ZoomFactor;
 			DKRC I 2;
-			DKRC JKL 3;
-			DKRV G 4;
+			DKRC JKL 3 A_DeltaWeaponReady(WRF_NOFIRE | WRF_NOBOB);
+			DKRV G 4 A_DeltaWeaponReady(WRF_NOFIRE | WRF_NOBOB);
 			DKRV H 11 A_DeltaWeaponReady(WRF_NOFIRE | WRF_NOBOB);
 			Goto Cock+1;
 		Discharge:
@@ -179,7 +185,6 @@ class KrisRevolver : DeltaWeapon
 	override void BeginPlay()
 	{
 		Super.BeginPlay();
-		cocked = true;
 		chargeTics = 0;
 	}
 	
@@ -229,7 +234,7 @@ class KrisRevolver : DeltaWeapon
 		A_AlertMonsters();
 		A_OwnerPlayAttack();
 		A_AddDynamicLight("revolverMuzzle", "DeltaGenericMuzzle");
-		invoker.cocked = false;
+		invoker.needsCycling = true;
 		
 		invoker.chargeTics = 0;
 		if (IsActorPlayingSound(CHAN_CHARGE))
@@ -238,29 +243,30 @@ class KrisRevolver : DeltaWeapon
 	
 	protected action void A_Cock()
 	{
-		invoker.cocked = true;
+		invoker.needsCycling = false;
 	}
 	
 	protected action state A_ReadyIfCocked(int flags)
 	{
-		if (invoker.cocked)
-			return A_DeltaWeaponReady(flags);
+		if (invoker.needsCycling)
+			flags |= WRF_NOFIRE;
 		
-		return ResolveState(null);
+		return A_DeltaWeaponReady(flags);
 	}
 	
 	protected action state A_KrisRevolverCharge(bool looping = false)
 	{
 		let ply = invoker.owner.player;
-		
 		if (!ply)
 			return ResolveState(null);
 		
 		A_WeaponReady(WRF_NOFIRE | WRF_NOBOB | WRF_NOSWITCH);
 		
-		if (!invoker.CheckAmmo(AltFire, false) || ply.PendingWeapon != WP_NOCHANGE)
-			return invoker.chargeTics ? ResolveState("Discharge")
+		if (!invoker.DeltaCheckAmmo(AltFire, false) || ply.PendingWeapon != WP_NOCHANGE)
+		{
+			return invoker.chargeTics? ResolveState("Discharge")
 				: ResolveState("Ready");
+		}
 		
 		Weapon.DoReadyWeaponToBob(ply);
 		int input = ply.cmd.buttons, oldInput = ply.oldButtons,
@@ -348,7 +354,7 @@ class KrisRevolver : DeltaWeapon
 		A_OwnerPlayAttack();
 		A_AddDynamicLight("revolverCharge", "DeltaRevolverChargeShotMuzzle");
 		A_ZoomFactor(0.99, ZOOM_INSTANT | ZOOM_NOSCALETURNING);
-		invoker.cocked = false;
+		invoker.needsCycling = true;
 		invoker.chargeTics = 0;
 		
 		A_OwnerKnockback(0, 7.5);

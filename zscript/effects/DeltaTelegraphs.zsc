@@ -1,0 +1,63 @@
+class DeltaTelegraph : Actor
+{
+	sound telegraphSound;
+	double maxPitchShift;
+	
+	property TelegraphSound : telegraphSound;
+	property MaxPitchShift : maxPitchShift;
+	
+	Default
+	{
+		Alpha 0.999;
+		RenderStyle "Stencil";
+		StencilColor "ff ff ff";
+		DeltaTelegraph.TelegraphSound "delta/telegraph";
+		DeltaTelegraph.MaxPitchShift 0.01;
+		
+		+NOINTERACTION
+		+SQUAREPIXELS
+		+BRIGHT
+		+FORCEXYBILLBOARD
+	}
+	
+	States
+	{
+		Spawn:
+			TNT1 A 0;
+			TNT1 A 1 A_AttachLight("telegraphLight", DynamicLight.PointLight, fillColor, 24, 4);
+			EYSP A 1 A_StartSound(invoker.telegraphSound, flags: CHANF_OVERLAP,
+				pitch: 1. + cfrandom(-maxPitchShift, maxPitchShift));
+			EYSP B 2 A_AttachLight("telegraphLight", DynamicLight.PointLight, fillColor, 28, 6);
+			EYSP C 2 A_AttachLight("telegraphLight", DynamicLight.PointLight, fillColor, 32, 8);
+			EYSP D 2 A_AttachLight("telegraphLight", DynamicLight.PointLight, fillColor, 28, 6, intensity: 0.7);
+			EYSP E 2 A_AttachLight("telegraphLight", DynamicLight.PointLight, fillColor, 24, 4, intensity: 0.3);
+			Stop;
+	}
+	
+	static DeltaTelegraph SpawnTelegraph(class<DeltaTelegraph> telegraph,
+		Color col = 0x00000000)
+	{
+		let tele = DeltaTelegraph(Actor.Spawn(telegraph));
+		if (col)
+			tele.SetShade(col);
+		
+		return tele;
+	}
+}
+
+class DeltaParryTelegraph : DeltaTelegraph
+{
+	Default
+	{
+		StencilColor "ff ff 00";
+	}
+}
+
+class DeltaNoParryTelegraph : DeltaTelegraph
+{
+	Default
+	{
+		StencilColor "80 c0 ff";
+		DeltaTelegraph.TelegraphSound "delta/unparriable";
+	}
+}
