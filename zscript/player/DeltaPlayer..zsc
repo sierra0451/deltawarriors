@@ -1121,26 +1121,18 @@ class DeltaPlayer : PlayerPawn abstract
 	
 	// grabbed from uzdoom.pk3, just removed the sv_degeneration check cuz we
 	// wanna degenerate regardless :3
-	//
-	// also implemented bleeding modifier here!
 	override void CheckDegeneration()
 	{
 		if (IsVoodooDoll())
 			return;
 		
 		int maxHp = GetMaxHealth(true);
-		if (!sv_delta_bleeding && player.health <= maxHp)
+		if (player.health <= maxHp)
 			return;
 		
 		int degenInterval = (health > maxHp*1.5 || health < maxHp*0.5) ? TICRATE * 2 : TICRATE;
 		if (!level.mapTime || level.mapTime % degenInterval)
 			return;
-		
-		if (health == 1)
-		{
-			DamageMobj(null, null, 1, 'BleedingOut');
-			return;
-		}
 		
 		health = --player.health;
 	}

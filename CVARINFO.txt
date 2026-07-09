@@ -37,7 +37,6 @@ nosave float 					cl_delta_damageRecoil 			= 1.0;
 server noarchive latch bool 	sv_delta_blind					= false;		// no HUD, no on-screen weapon
 server noarchive latch bool 	sv_delta_levelOneHp				= false;		// max HP is set to that character's max at the start of chapter 1 (i.e. kris gets 90 HP instead of 200)
 server noarchive latch bool 	sv_delta_pacifist				= false;		// no damaging enemies! a player damaging an enemy will result in an automatic game over
-server noarchive latch bool		sv_delta_bleeding				= false;		// HP drains over time
 
 // Background data
 nosave cheat bool				data_delta_diedFirstTime		= false;
