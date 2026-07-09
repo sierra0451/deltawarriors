@@ -43,3 +43,10 @@ Sprite "SSRDC0", 10, 10
 	Offset 5, 5
 	Patch "SSRDC0", 0, 0
 }
+
+Graphic "DRSELECT", 16, 16
+{
+	XScale 1.500
+	YScale 1.500
+	Patch "GRAPHICS/SELECTOR.PNG", 0, 0
+}

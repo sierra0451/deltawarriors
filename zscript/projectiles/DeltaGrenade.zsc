@@ -17,11 +17,13 @@ class DeltaGrenade : Actor abstract
 	class<DeltaGrenadeHitbox> hitboxClass;
 	DeltaGrenadeHitbox hitbox;
 	
+	protected Name meansOfDamage;
 	protected double curTime;
 	protected bool fuseLit;
 	protected bool exploded;
 	protected Vector3 stickOffset;
 	
+	property MeansOfDamage: meansOfDamage;
 	property GrenadeType: grenadeType;
 	property ActorBounceFactor: actorBounceFactor;
 	property FuseTime: fuseTime;
@@ -44,6 +46,7 @@ class DeltaGrenade : Actor abstract
 		RenderStyle "Add";
 		Alpha 1;
 		
+		DeltaGrenade.MeansOfDamage "None";
 		DeltaGrenade.GrenadeType GRENADE_NORMAL;
 		DeltaGrenade.ActorBounceFactor 0.25;
 		DeltaGrenade.FuseTime 3;
@@ -220,15 +223,15 @@ class DeltaGrenade : Actor abstract
 				stickVictim = victim;
 				stickOffset = pos - victim.pos;
 				fuseLit = true;
-				A_StartSound(stickSound, CHAN_AUTO);
-				int dmg = victim.DamageMobj(self, target, random[stickyDamage](5, 10), 'None');
-				
 				vel = (0, 0, 0);
+				
+				A_StartSound(stickSound, CHAN_AUTO);
 				A_NoGravity();
-				if (dmg <= 0)
+				
+				if (victim.DamageMobj(self, target, random[stickyDamage](5, 10), meansOfDamage) <= 0)
 					break;
 				
-				victim.TriggerPainChance('None', true);
+				victim.TriggerPainChance(meansOfDamage, true);
 				break;
 			
 			case GRENADE_CONTACT:

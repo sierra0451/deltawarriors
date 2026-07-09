@@ -1358,6 +1358,97 @@ Sprite "KGLNA0", 640, 300
 	Patch "KGLNA0", 0, 0
 }
 
+Sprite "KGLNB0", 640, 300
+{
+	YScale 1.200
+	Offset 160, 68
+	Patch "KGLNB0", 0, 0
+}
+
+Sprite "KGLNC0", 640, 300
+{
+	YScale 1.200
+	Offset 160, 68
+	Patch "KGLNC0", 0, 0
+}
+
+Sprite "KGLND0", 640, 300
+{
+	YScale 1.200
+	Offset 160, 68
+	Patch "KGLND0", 0, 0
+}
+
+Sprite "KGLNE0", 640, 300
+{
+	YScale 1.200
+	Offset 160, 68
+	Patch "KGLNE0", 0, 0
+}
+
+Sprite "KGLNF0", 640, 300
+{
+	YScale 1.200
+	Offset 160, 68
+	Patch "KGLNF0", 0, 0
+}
+
+Sprite "KGLNG0", 640, 300
+{
+	YScale 1.200
+	Offset 160, 68
+	Patch "KGLNG0", 0, 0
+}
+
+Sprite "KGLNH0", 640, 300
+{
+	YScale 1.200
+	Offset 160, 68
+	Patch "KGLNH0", 0, 0
+}
+
+Sprite "KGLNI0", 640, 300
+{
+	YScale 1.200
+	Offset 160, 68
+	Patch "KGLNI0", 0, 0
+}
+
+Sprite "KGLNJ0", 640, 300
+{
+	YScale 1.200
+	Offset 160, 68
+	Patch "KGLNJ0", 0, 0
+}
+
+Sprite "KGLNK0", 640, 300
+{
+	YScale 1.200
+	Offset 160, 68
+	Patch "KGLNK0", 0, 0
+}
+
+Sprite "KGLNL0", 640, 300
+{
+	YScale 1.200
+	Offset 160, 68
+	Patch "KGLNL0", 0, 0
+}
+
+Sprite "KGLNM0", 640, 300
+{
+	YScale 1.200
+	Offset 160, 68
+	Patch "KGLNM0", 0, 0
+}
+
+Sprite "KGLNN0", 640, 300
+{
+	YScale 1.200
+	Offset 160, 68
+	Patch "KGLNN0", 0, 0
+}
+
 Sprite "DKSLA0", 640, 300
 {
 	YScale 1.200
@@ -1685,11 +1776,4 @@ Sprite "KRSLH0", 300, 240
 {
 	YScale 1.200
 	Patch "KRSLH0", 0, 0
-}
-
-Graphic "DRSELECT", 16, 16
-{
-	XScale 1.500
-	YScale 1.500
-	Patch "GRAPHICS/SELECTOR.PNG", 0, 0
 }

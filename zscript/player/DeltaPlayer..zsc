@@ -82,7 +82,7 @@ class DeltaPlayer : PlayerPawn abstract
 	
 	double tensionPoints, maxTensionPoints, bobTimer;
 	int grazeTics, tensionDrainTimer, hugReactionTime;
-	bool beingHugged;
+	bool beingHugged, canRespawn;
 	
 	protected int coyoteTimer; 						// used to handle coyote time
 	protected int jumpBuffer, airBobTics, hugTimer;
@@ -388,6 +388,7 @@ class DeltaPlayer : PlayerPawn abstract
 		_turn = 0;
 		_oldTurn = 0;
 		_targetRoll = 0;
+		canRespawn = true;
 		SetUpLegs();
 		
 		if (player && player.ReadyWeapon && player.ReadyWeapon is "DeltaWeapon")
@@ -782,6 +783,10 @@ class DeltaPlayer : PlayerPawn abstract
 			DeltaUncrouch();
 		
 		deathTimer++;
+		if (player.damageCount)
+			player.damageCount--;
+		if (player.poisonCount)
+			player.poisonCount--;
 		
 		if (IsFrozen() && deathTimer < DEATH_HANG_FRAMES)
 			return;
@@ -822,16 +827,10 @@ class DeltaPlayer : PlayerPawn abstract
 		
 		player.mo.CalcHeight();
 		
-		if (player.damageCount)
-			player.damageCount--;
-		if (player.poisonCount)
-			player.poisonCount--;
-		
 		bool
 			playerWantsToRespawn = (player.cmd.buttons & BT_USE),
 			forcingRespawn = (deathmatch || alwaysApplyDMFlags) && sv_forceRespawn,
-			respawnAllowed = (multiplayer || !cl_delta_deathScreen) || level.AllowRespawn || sv_singlePlayerRespawn
-				|| G_SkillPropertyInt(SKILLP_PlayerRespawn),
+			respawnAllowed = canRespawn || sv_singlePlayerRespawn,
 			respawnDisallowed = sv_noRespawn || (!respawnAllowed && !deathmatch);
 		
 		if (!(playerWantsToRespawn || forcingRespawn) || respawnDisallowed)

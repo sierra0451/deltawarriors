@@ -70,7 +70,7 @@ $pitchshiftrange 0
 		delta/tp_fail = "sounds/player/shared/player_tpfail.wav"
 		delta/falling_wind = "sounds/player/shared/player_fallingWind.wav"
 		
-		delta/type = "sounds/type.wav"
+		delta/type = "sounds/messages/type.wav"
 		
 		// Footstep sounds
 			// Generic
@@ -101,144 +101,30 @@ $pitchshiftrange 0
 	// Kris
 		// VOX
 			// Jumping
-			delta/kris/jump_grunt1 = "sounds/player/kris/vox/kris_jumpGrunt1.wav"
-			delta/kris/jump_grunt2 = "sounds/player/kris/vox/kris_jumpGrunt2.wav"
-			delta/kris/jump_grunt3 = "sounds/player/kris/vox/kris_jumpGrunt3.wav"
-			delta/kris/jump_grunt4 = "sounds/player/kris/vox/kris_jumpGrunt4.wav"
-			$random delta/kris/jump_grunt
-			{
-				delta/kris/jump_grunt1
-				delta/kris/jump_grunt2
-				delta/kris/jump_grunt3
-				delta/kris/jump_grunt4
-			}
+			$alias delta/kris/jump_grunt dssilent
 			
 			// Pain
 				// Light
-				delta/kris/light_pain1 = "sounds/player/kris/vox/kris_lightPain1.wav"
-				delta/kris/light_pain2 = "sounds/player/kris/vox/kris_lightPain2.wav"
-				delta/kris/light_pain3 = "sounds/player/kris/vox/kris_lightPain3.wav"
-				delta/kris/light_pain4 = "sounds/player/kris/vox/kris_lightPain4.wav"
-				delta/kris/light_pain5 = "sounds/player/kris/vox/kris_lightPain5.wav"
-				delta/kris/light_pain6 = "sounds/player/kris/vox/kris_lightPain6.wav"
-				delta/kris/light_pain7 = "sounds/player/kris/vox/kris_lightPain7.wav"
-				$random delta/kris/light_pain
-				{
-					delta/kris/light_pain1
-					delta/kris/light_pain2
-					delta/kris/light_pain3
-					delta/kris/light_pain4
-					delta/kris/light_pain5
-					delta/kris/light_pain6
-					delta/kris/light_pain7
-				}
+				$alias delta/kris/light_pain dssilent
 				
 				// Medium
-				delta/kris/medium_pain1 = "sounds/player/kris/vox/kris_mediumPain1.wav"
-				delta/kris/medium_pain2 = "sounds/player/kris/vox/kris_mediumPain2.wav"
-				delta/kris/medium_pain3 = "sounds/player/kris/vox/kris_mediumPain3.wav"
-				delta/kris/medium_pain4 = "sounds/player/kris/vox/kris_mediumPain4.wav"
-				$random delta/kris/medium_pain
-				{
-					delta/kris/medium_pain1
-					delta/kris/medium_pain2
-					delta/kris/medium_pain3
-					delta/kris/medium_pain4
-				}
+				$alias delta/kris/medium_pain dssilent
 				
 				// Severe
-				delta/kris/severe_pain1 = "sounds/player/kris/vox/kris_severePain1.wav"
-				delta/kris/severe_pain2 = "sounds/player/kris/vox/kris_severePain2.wav"
-				delta/kris/severe_pain3 = "sounds/player/kris/vox/kris_severePain3.wav"
-				delta/kris/severe_pain4 = "sounds/player/kris/vox/kris_severePain4.wav"
-				delta/kris/severe_pain5 = "sounds/player/kris/vox/kris_severePain5.wav"
-				delta/kris/severe_pain6 = "sounds/player/kris/vox/kris_severePain6.wav"
-				delta/kris/severe_pain7 = "sounds/player/kris/vox/kris_severePain7.wav"
-				$random delta/kris/severe_pain
-				{
-					delta/kris/severe_pain1
-					delta/kris/severe_pain2
-					delta/kris/severe_pain3
-					delta/kris/severe_pain4
-					delta/kris/severe_pain5
-					delta/kris/severe_pain6
-					delta/kris/severe_pain7
-				}
+				$alias delta/kris/severe_pain dssilent
 			// Drowning
 				// Medium
-				delta/kris/medium_drown1 = "sounds/player/kris/vox/kris_mediumDrown1.wav"
-				delta/kris/medium_drown2 = "sounds/player/kris/vox/kris_mediumDrown2.wav"
-				delta/kris/medium_drown3 = "sounds/player/kris/vox/kris_mediumDrown3.wav"
-				delta/kris/medium_drown4 = "sounds/player/kris/vox/kris_mediumDrown4.wav"
-				delta/kris/medium_drown5 = "sounds/player/kris/vox/kris_mediumDrown5.wav"
-				delta/kris/medium_drown6 = "sounds/player/kris/vox/kris_mediumDrown6.wav"
-				delta/kris/medium_drown7 = "sounds/player/kris/vox/kris_mediumDrown7.wav"
-				delta/kris/medium_drown8 = "sounds/player/kris/vox/kris_mediumDrown8.wav"
-				delta/kris/medium_drown9 = "sounds/player/kris/vox/kris_mediumDrown9.wav"
-				$random delta/kris/medium_drown
-				{
-					delta/kris/medium_drown1
-					delta/kris/medium_drown2
-					delta/kris/medium_drown3
-					delta/kris/medium_drown4
-					delta/kris/medium_drown5
-					delta/kris/medium_drown6
-					delta/kris/medium_drown7
-					delta/kris/medium_drown8
-					delta/kris/medium_drown9
-				}
+				$alias delta/kris/medium_drown dssilent
 				
 				// Severe
-				delta/kris/severe_drown1 = "sounds/player/kris/vox/kris_severeDrown1.wav"
-				delta/kris/severe_drown2 = "sounds/player/kris/vox/kris_severeDrown2.wav"
-				delta/kris/severe_drown3 = "sounds/player/kris/vox/kris_severeDrown3.wav"
-				delta/kris/severe_drown4 = "sounds/player/kris/vox/kris_severeDrown4.wav"
-				delta/kris/severe_drown5 = "sounds/player/kris/vox/kris_severeDrown5.wav"
-				delta/kris/severe_drown6 = "sounds/player/kris/vox/kris_severeDrown6.wav"
-				delta/kris/severe_drown7 = "sounds/player/kris/vox/kris_severeDrown7.wav"
-				delta/kris/severe_drown8 = "sounds/player/kris/vox/kris_severeDrown8.wav"
-				$random delta/kris/severe_drown
-				{
-					delta/kris/severe_drown1
-					delta/kris/severe_drown2
-					delta/kris/severe_drown3
-					delta/kris/severe_drown4
-					delta/kris/severe_drown5
-					delta/kris/severe_drown6
-					delta/kris/severe_drown7
-					delta/kris/severe_drown8
-				}
+				$alias delta/kris/severe_drown dssilent
 				
 			// Death
 				// Medium
-				delta/kris/medium_death1 = "sounds/player/kris/vox/kris_mediumDeath1.wav"
-				delta/kris/medium_death2 = "sounds/player/kris/vox/kris_mediumDeath2.wav"
-				delta/kris/medium_death3 = "sounds/player/kris/vox/kris_mediumDeath3.wav"
-				delta/kris/medium_death4 = "sounds/player/kris/vox/kris_mediumDeath4.wav"
-				delta/kris/medium_death5 = "sounds/player/kris/vox/kris_mediumDeath5.wav"
-				delta/kris/medium_death6 = "sounds/player/kris/vox/kris_mediumDeath6.wav"
-				$random delta/kris/medium_death
-				{
-					delta/kris/medium_death1
-					delta/kris/medium_death2
-					delta/kris/medium_death3
-					delta/kris/medium_death4
-					delta/kris/medium_death5
-					delta/kris/medium_death6
-				}
+				$alias delta/kris/medium_death dssilent
 				
 				// Severe
-				delta/kris/severe_death1 = "sounds/player/kris/vox/kris_severeDeath1.wav"
-				delta/kris/severe_death2 = "sounds/player/kris/vox/kris_severeDeath2.wav"
-				delta/kris/severe_death3 = "sounds/player/kris/vox/kris_severeDeath3.wav"
-				delta/kris/severe_death4 = "sounds/player/kris/vox/kris_severeDeath4.wav"
-				$random delta/kris/severe_death
-				{
-					delta/kris/severe_death1
-					delta/kris/severe_death2
-					delta/kris/severe_death3
-					delta/kris/severe_death4
-				}
+				$alias delta/kris/severe_death dssilent
 		
 		// Sliding
 		delta/kris/slide_loop = "sounds/player/kris/kris_slideLoop.wav"

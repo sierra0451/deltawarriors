@@ -4,7 +4,7 @@ pointlight DeltaGenericMuzzle
 	color 1 0.4 0
 	size 32
 	offset 0 24 0
-	dontlightself 1
+	//dontlightself 1
 }
 
 pointlight DeltaRevolverChargeShotMuzzle
@@ -12,7 +12,7 @@ pointlight DeltaRevolverChargeShotMuzzle
 	color 1 1 0
 	size 48
 	offset 0 24 0
-	dontlightself 1
+	//dontlightself 1
 }
 
 pointlight DeltaRevolverCharge1
@@ -20,7 +20,7 @@ pointlight DeltaRevolverCharge1
 	color 0.25 0.25 0
 	size 8
 	offset 0 24 0
-	dontlightself 1
+	//dontlightself 1
 }
 
 pointlight DeltaRevolverCharge2
@@ -28,7 +28,7 @@ pointlight DeltaRevolverCharge2
 	color 0.5 0.5 0
 	size 16
 	offset 0 24 0
-	dontlightself 1
+	//dontlightself 1
 }
 
 pointlight DeltaRevolverCharge3
@@ -36,7 +36,7 @@ pointlight DeltaRevolverCharge3
 	color 0.75 0.75 0
 	size 24
 	offset 0 24 0
-	dontlightself 1
+	//dontlightself 1
 }
 
 pointlight DeltaRevolverChargeFull
@@ -44,7 +44,7 @@ pointlight DeltaRevolverChargeFull
 	color 1 1 0
 	size 32
 	offset 0 24 0
-	dontlightself 1
+	//dontlightself 1
 }
 
 pointlight DeltaCourageLight

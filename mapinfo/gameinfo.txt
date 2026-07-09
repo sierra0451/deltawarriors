@@ -3,6 +3,7 @@ GameInfo
 	StatusBarClass = "DeltaHud"
 	AltHUDClass = "DeltaAltHud"
 	CorrectPrintBold = true
+	ForceNoGFXSubstitution = true
 	
 	AddEventHandlers = "DeltaGlobals", "DeltaLevelEvents"
 	CursorPic = "graphics/deltaCursor.png"

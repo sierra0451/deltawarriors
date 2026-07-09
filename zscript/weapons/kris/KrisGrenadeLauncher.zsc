@@ -22,32 +22,25 @@ class KrisGrenadeLauncher : DeltaWeapon
 	States
 	{
 		Ready:
-			MISG A 1 A_DeltaWeaponReady; // use KGLN for actual sprites
+			KGLN A 1 A_DeltaWeaponReady; // use KGLN for actual sprites
 			Loop;
 		Deselect:
-			/*
-			TNT1 A 4 A_StartSound("delta/revolver/holster2", CHAN_WEAPON,
+			KGLN A 4 A_StartSound("delta/revolver/holster2", CHAN_WEAPON,
 				CHANF_OVERLAP);
 			TNT1 A 0 A_SwapWeapon;
 			Stop;
-			*/
-			MISG A 1 A_Lower(9); // gives us 11 tics
+			//KGLN A 1 A_Lower(9); // gives us 11 tics
 			Loop;
 		Select:
-			/*
-			TNT1 A 2 A_StartRaiseWeapon;
-			TNT1 A 4;
-			*/
-			MISG A 1 A_Raise(9); // gives us 11 tics
-			Loop;
+			KGLN A 2 A_StartRaiseWeapon;
+			KGLN A 4;
+			Goto Ready;
 		Fire:
-			MISG B 8
-			{
-				A_KrisGrenadeLauncherFire();
-				A_GunFlash();
-			}
-			MISG B 12 A_DeltaWeaponReady(WRF_NOFIRE | WRF_NOBOB);
-			MISG B 0 A_ReFire;
+			KGLN B 1 A_KrisGrenadeLauncherFire;
+			KGLN CDEF 2;
+			KGLN HIJKL 2 A_DeltaWeaponReady(WRF_NOFIRE | WRF_NOBOB);
+			KGLN M 3 A_DeltaWeaponReady(WRF_NOFIRE | WRF_NOBOB);
+			KGLN N 3 A_ReFire;
 			Goto Ready;
 		AltFire:
 			MISG B 8

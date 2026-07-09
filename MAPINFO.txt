@@ -1,7 +1,7 @@
-include MAPINFO.skills.txt
-include MAPINFO.gameinfo.txt
-include MAPINFO.maps.txt
-include MAPINFO.intermissions.txt
+include "mapinfo/skills.txt"
+include "mapinfo/gameinfo.txt"
+include "mapinfo/maps.txt"
+include "mapinfo/intermissions.txt"
 
 DoomEdNums
 {

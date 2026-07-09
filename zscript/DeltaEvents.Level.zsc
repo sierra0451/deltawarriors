@@ -384,9 +384,16 @@ class DeltaLevelEvents : EventHandler
 		if (gamestate != GS_LEVEL)
 			return;
 		
-		bool gameOver = cl_delta_deathScreen && !multiplayer && !deathmatch
-			&& !level.AllowRespawn && !sv_singlePlayerRespawn
-			&& !G_SkillPropertyInt(SKILLP_PlayerRespawn);
+		let ply = players[e.playerNumber],
+			deltaPly = DeltaPlayer(ply.mo);
+		if (!deltaPly)
+			return;
+		
+		bool gameOver = ply.lastDamageType != 'Suicide' && cl_delta_deathScreen
+			&& !multiplayer && !deathmatch && !level.AllowRespawn
+			&& !sv_singlePlayerRespawn && !G_SkillPropertyInt(SKILLP_PlayerRespawn);
+		
+		deltaPly.canRespawn = !gameOver;
 		
 		for (int i = 0; i < MAXPLAYERS; i++)
 		{
@@ -426,17 +433,11 @@ class DeltaLevelEvents : EventHandler
 			}
 		}
 		
-		let ply = players[e.playerNumber];
-		
 		if (!gameOver)
 		{
-			if (ply.mo && ply.mo is "DeltaPlayer")
-			{
-				DeltaPlayer(ply.mo).A_StartDeath();
-				
-				if (ply.lastDamageType != 'Suicide')
-					ply.mo.A_StartSound("delta/hurt", CHAN_HEALTH_SOUNDS, attenuation: 0.5);
-			}
+			deltaPly.A_StartDeath();
+			if (ply.lastDamageType != 'Suicide')
+				ply.mo.A_StartSound("delta/hurt", CHAN_HEALTH_SOUNDS, attenuation: 0.5);
 			
 			return;
 		}

@@ -239,7 +239,7 @@ class DeltaHud : BaseStatusBar
 	
 	override void Draw(int state, double ticFrac)
 	{
-		//Super.Draw(state, ticFrac);
+		Super.Draw(state, ticFrac);
 		DrawDeathSequence(ticFrac);
 		
 		if (!ply || state == HUD_None || !cl_delta_showHud)

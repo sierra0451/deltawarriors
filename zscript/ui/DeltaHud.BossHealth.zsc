@@ -67,7 +67,7 @@ extend class DeltaHud
 	{
 		int bossCount = _bosses.Size(),
 			start = max(0, bossCount - MAX_BOSS_BARS),
-			end = min(bossCount, MAX_BOSS_BARS);
+			end = min(bossCount, start + MAX_BOSS_BARS);
 		
 		for (int i = start; i < end; i++)
 		{
