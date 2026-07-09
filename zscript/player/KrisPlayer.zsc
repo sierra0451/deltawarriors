@@ -414,7 +414,8 @@ class KrisPlayer : DeltaPlayer
 		
 		int buttons = player.cmd.buttons,
 			crouchDir = (buttons & BT_CROUCH) ? -1 : 1;
-		bool doingMoveInput = buttons & (BT_FORWARD | BT_BACK | BT_MOVELEFT | BT_MOVERIGHT);
+		bool doingMoveInput = player ? (player.cmd.forwardMove || player.cmd.sideMove)
+			: false;
 		
 		if (crouchState != CS_SLIDING && ((buttons & BT_CROUCH && !(player.oldButtons & BT_CROUCH))
 			|| (crouchDir == -1 && _lastCrouchedWhileAirborne && !_lastCrouchedWhileGrounded))
@@ -489,8 +490,12 @@ class KrisPlayer : DeltaPlayer
 	
 	override double GetViewRoll()
 	{
+		if (!_slideTics)
+			return Super.GetViewRoll();
+		
 		double _roll = Super.GetViewRoll();
-		_roll += 5 * (double(_slideTics) / MAX_SLIDE_TICS);
+		_roll += (5. + 3. * GetPlayerInput(INPUT_SIDEMOVE) / 10240.)
+			* _slideTics / MAX_SLIDE_TICS;
 		
 		return _roll;
 	}
