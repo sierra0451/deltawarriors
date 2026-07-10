@@ -1205,24 +1205,16 @@ class DeltaPlayer : PlayerPawn abstract
 		if (name ~== "armor")
 			return;
 		
-		if (name ~== "tensionPoints" || name ~== "tp")
+		if (name ~== "tensionPoints" || name ~== "tension" || name ~== "tp")
 		{
-			if (amount < 0)
-				return;
-			
-			tensionPoints = amount? min(maxTensionPoints, tensionPoints + amount) : maxTensionPoints;
-			tensionDrainTimer = DRAIN_TIMER_START;
+			AddTension(amount? amount : maxTensionPoints);
+			return;
 		}
-		else
-		{
-			if (name ~== "all" || name ~== "everything" || name ~== "ammo")
-			{
-				tensionPoints = maxTensionPoints;
-				tensionDrainTimer = DRAIN_TIMER_START;
-			}
-			
-			Super.CheatGive(name, amount);
-		}
+		
+		if (name ~== "all" || name ~== "everything" || name ~== "ammo")
+			AddTension(amount? amount : maxTensionPoints);
+		
+		Super.CheatGive(name, amount);
 	}
 	
 	override void CheatTake(string name, int amount)
