@@ -8,8 +8,13 @@ extend class DeltaPlayer
 	
 	void StartLunge(Actor target, double stopDistance)
 	{
+		Console.DebugPrintf(DMSG_NOTIFY, "Starting lunge.");
+		
 		if (!CanLunge())
+		{
+			Console.DebugPrintf(DMSG_NOTIFY, "Tried to start lunging but can't, exiting early.");
 			return;
+		}
 		
 		preLungeVel = Vel;
 		lungeTarget = target;
@@ -17,6 +22,7 @@ extend class DeltaPlayer
 		
 		if (LungeBlocked())
 		{
+			Console.DebugPrintf(DMSG_NOTIFY, "Tried to start lunging but was blocked, exiting early.");
 			StopLunge();
 			return;
 		}
@@ -32,18 +38,28 @@ extend class DeltaPlayer
 			return true;
 		if (!_target)
 			_target = lungeTarget;
+		if (_target.health <= 0)
+			return true;
 		
-		Vector3 diff = level.Vec3Diff(pos, _target.pos);
-		Vector3 diffUnit = diff.Unit();
-		FLineTraceData output;
+		let diff = Vec3To(_target),
+			dist = diff.Length(),
+			diffUnit = diff.Unit();
 		
-		LineTrace(AngleTo(_target), diff.Length(), PitchTo(_target), TRF_BLOCKSELF,
-			player.mo.height * 0.5 * crouchFactor,
-			data: output);
-		bool pcm = CheckMove(_target.pos.XY, PCM_NOACTORS)
-			&& output.HitActor;
+		bool blockCheck = false; // returns true if we find something blocking us
 		
-		return !pcm || _target.health <= 0;
+		for (float checkDist = 0; checkDist < dist; checkDist += lungeSpeed)
+		{
+			let ofs = diffUnit * checkDist,
+				posCheck = level.Vec3Offset(pos, ofs);
+			
+			if (CheckBlock(CBF_DROPOFF | CBF_NOACTORS | CBF_ABSOLUTEPOS, AAPTR_DEFAULT,
+				posCheck.x, posCheck.y, posCheck.z))
+			{
+				return true;
+			}
+		}
+		
+		return false;
 	}
 	
 	void HandleLunging()
@@ -54,7 +70,7 @@ extend class DeltaPlayer
 		AdjustLungeAngles();
 		
 		Vector3
-			diff = level.Vec3Diff(pos, lungeTarget.pos),
+			diff = Vec3To(lungeTarget),
 			diffUnit = diff.Unit();
 		double dist = diff.Length() - radius - lungeTarget.radius;
 		Vel = diffUnit * min(lungeSpeed, dist);
@@ -81,9 +97,9 @@ extend class DeltaPlayer
 	
 	protected void AdjustLungeAngles()
 	{
-		let diff = level.Vec3Diff(pos, lungeTarget.pos),
+		let diff = Vec3To(lungeTarget),
 			diffUnit = diff.Unit(),
-			angDiff = VectorAngle(diff.x, diff.y) - angle;
+			angDiff = DeltaAngle(angle, VectorAngle(diff.x, diff.y));
 		
 		let minChange = 0.5,
 			maxChange = 2.;
