@@ -75,6 +75,7 @@ class DeltaPlayer : PlayerPawn abstract
 	const DAMAGE_IFRAMES = 10;
 	const DRAIN_TIMER_START = TICRATE * 12;			// tp lasts for 12 seconds before we start draining it
 	const DRAIN_AMOUNT = 5./TICRATE;
+	const DRAIN_GRACE_TICS = 3;						// if we try to call for TP and it's drained below what we need for only a few ticks, let us use it anyway
 	const MAX_GRAZE_TICS = 5;
 	const DEFAULT_RED_CROSSHAIR_RANGE = 500.;
 	const MAX_TURN = 10;
@@ -1510,7 +1511,7 @@ class DeltaPlayer : PlayerPawn abstract
 		tensionPoints = clamp(amount, 0, maxTensionPoints);
 		
 		if (resetTimer)
-			tensionDrainTimer = int(ceil(DRAIN_TIMER_START * factor));
+			tensionDrainTimer = tensionPoints>0? int(ceil(DRAIN_TIMER_START * factor)) : 0.;
 	}
 	
 	void AddTension(double amount, bool graze = false, bool resetTimer = true)
@@ -1530,7 +1531,9 @@ class DeltaPlayer : PlayerPawn abstract
 		if (amount < 0)
 			amount = 0;
 		
-		if (tensionPoints < amount)
+		let factor = G_SkillPropertyFloat(SKILLP_AmmoFactor) * sv_ammoFactor,
+			graceWindow = DRAIN_AMOUNT * factor * DRAIN_GRACE_TICS;
+		if (tensionPoints < (tensionDrainTimer? amount : amount - graceWindow))
 			return TP_FAIL;
 		
 		return TP_USE;
@@ -1538,24 +1541,17 @@ class DeltaPlayer : PlayerPawn abstract
 	
 	bool TryTakeTension(double amount, bool playSound = true)
 	{
-		let DeltaTpResult = GetTension(amount);
-		
-		if (DeltaTpResult != TP_USE)
+		switch (GetTension(amount))
 		{
-			if (playSound && DeltaTpResult == TP_FAIL)
-				A_StartSound("delta/tp_fail", CHAN_ITEM, CHANF_LOCAL | CHANF_NOSTOP);
-			
-			return DeltaTpResult == TP_INFINITE; // false if fail, true if infinite
+			case TP_USE:
+				SetTension(tensionPoints - amount);
+			case TP_INFINITE:
+				return true;
 		}
 		
-		SetTension(tensionPoints - amount);
-		double factor = G_SkillPropertyFloat(SKILLP_AmmoFactor) * sv_ammofactor;
-		
-		if (tensionPoints > 0)
-			tensionDrainTimer = int(ceil(DRAIN_TIMER_START * factor));
-		else
-			tensionDrainTimer = 0;
-		return true;
+		if (playSound)
+			A_StartSound("delta/tp_fail", CHAN_ITEM, CHANF_LOCAL | CHANF_NOSTOP);
+		return false;
 	}
 	
 	protected void DrainTension()
@@ -1563,7 +1559,7 @@ class DeltaPlayer : PlayerPawn abstract
 		if (sv_infiniteAmmo || (FindInventory('PowerInfiniteAmmo', true) != null))
 			return;
 		
-		double factor = G_SkillPropertyFloat(SKILLP_AmmoFactor)*sv_ammofactor;
+		double factor = G_SkillPropertyFloat(SKILLP_AmmoFactor) * sv_ammoFactor;
 		
 		if (tensionDrainTimer > 0)
 			tensionDrainTimer--;
