@@ -81,7 +81,7 @@ class KrisPlayer : DeltaPlayer
 	States
 	{
 		Spawn:
-			TNT1 A 1 NoDelay A_DeltaGetState("Spawn");
+			KRSW A 1 NoDelay A_DeltaGetState("Spawn");
 			Loop;
 		SpawnMelee:
 			#### A 1 A_UseMeleeSprite;
@@ -895,6 +895,9 @@ class KrisPlayer : DeltaPlayer
 	
 	override Vector2 GetLegsOffset()
 	{
+		if (!player)
+			return Super.GetLegsOffset();
+		
 		let psp = player.FindPSprite(PSP_LEGS);
 		if (!psp)
 			return Super.GetLegsOffset();
