@@ -432,6 +432,7 @@ class DeltaPlayer : PlayerPawn abstract
 	override void Tick()
 	{
 		Actor.Tick();
+		HandleIFrames();
 		
 		if (IsFrozen())
 			return;
@@ -489,7 +490,6 @@ class DeltaPlayer : PlayerPawn abstract
 		HandleHandedness();
 		HandleCrosshair();
 		HandleLunging();
-		HandleIFrames();
 		DrainTension();
 		HandleRalseiHugs();
 		HandleAirStuff();
