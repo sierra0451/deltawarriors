@@ -1503,7 +1503,7 @@ class DeltaPlayer : PlayerPawn abstract
 		tensionPoints = clamp(amount, 0, maxTensionPoints);
 		
 		if (resetTimer)
-			tensionDrainTimer = tensionPoints>0? int(ceil(DRAIN_TIMER_START * factor)) : 0.;
+			tensionDrainTimer = tensionPoints>0? int(ceil(DRAIN_TIMER_START * factor)) : 0;
 	}
 	
 	void AddTension(double amount, bool graze = false, bool resetTimer = true)
