@@ -125,15 +125,18 @@ class DeltaLevelEvents : EventHandler
 					DeltaDamagePopup.SpawnNumbers(damageEvents[i].victim,
 						damageEvents[i].source, damageEvents[i].amount);
 				
-				EventHandler.SendInterfaceEvent(
-					playerNum: damageEvents[i].victim.PlayerNumber(),
-					name: "DeltaPlayerDamage",
-					arg1 : damageEvents[i].source ?
-						damageEvents[i].source.GetNetworkID() : 0,
-					arg2 : damageEvents[i].inflictor ?
-						damageEvents[i].inflictor.GetNetworkID() : 0,
-					arg3: damageEvents[i].amount
-				);
+				if (damageEvents[i].victim.player)
+				{
+					EventHandler.SendInterfaceEvent(
+						playerNum: damageEvents[i].victim.PlayerNumber(),
+						name: "DeltaPlayerDamage",
+						arg1 : damageEvents[i].source ?
+							damageEvents[i].source.GetNetworkID() : 0,
+						arg2 : damageEvents[i].inflictor ?
+							damageEvents[i].inflictor.GetNetworkID() : 0,
+						arg3: damageEvents[i].amount
+					);
+				}
 			}
 			else
 				DeltaDamagePopup.SpawnNumbers(damageEvents[i].victim,
