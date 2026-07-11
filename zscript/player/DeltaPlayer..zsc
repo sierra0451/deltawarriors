@@ -506,7 +506,7 @@ class DeltaPlayer : PlayerPawn abstract
 		HandleBlindness();
 	}
 	
-	// grabbing code from uzdoom.pk3 and retooling for more preferred feeling
+	// grabbing code from uzdoom.pk3 and retooling for cleaner, snappier feeling
 	override void MovePlayer()
 	{
 		if (!player)
@@ -556,7 +556,21 @@ class DeltaPlayer : PlayerPawn abstract
 		sm *= Speed / 256;
 		
 		if (!player.onGround && !bNoGravity && !waterlevel)
+		{
 			ApplyAirControl(moveFactor, bobFactor);
+			
+			let airFriction = level.airFriction,
+				oldXY = vel.xy;
+			
+			if (!fm && !sm && airFriction != 0)
+			{
+				vel.x /= airFriction;
+				vel.y /= airFriction;
+				
+				if (player.mo == self)
+					player.vel /= airFriction;
+			}
+		}
 		
 		// When crouching, speed and bobbing have to be reduced
 		if (CanCrouch() && crouchFactor != 1)
