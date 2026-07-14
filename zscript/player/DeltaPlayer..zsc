@@ -1100,7 +1100,7 @@ class DeltaPlayer : PlayerPawn abstract
 				// doesn't fit
 				crouchFactor -= crouchSpeed;
 				
-				if (!IsGrounded())
+				if (coyoteTimer > COYOTE_TIME)
 					SetOrigin((pos.x, pos.y, pos.z + ViewHeight*crouchSpeed), false);
 				return;
 			}
@@ -1112,7 +1112,7 @@ class DeltaPlayer : PlayerPawn abstract
 		player.viewHeight = ViewHeight * crouchFactor;
 		player.crouchViewDelta = player.viewHeight - ViewHeight;
 		
-		if (!IsGrounded())
+		if (coyoteTimer > COYOTE_TIME)
 			SetOrigin((pos.x, pos.y, pos.z - ViewHeight*crouchSpeed), true);
 		
 		// Check for eyes going above/below fake floor due to crouching motion.

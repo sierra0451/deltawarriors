@@ -419,7 +419,7 @@ class KrisPlayer : DeltaPlayer
 		
 		if (crouchState != CS_SLIDING && ((buttons & BT_CROUCH && !(player.oldButtons & BT_CROUCH))
 			|| (crouchDir == -1 && _lastCrouchedWhileAirborne && !_lastCrouchedWhileGrounded))
-			&& IsGrounded() && IsCrouching())
+			&& coyoteTimer <= COYOTE_TIME && IsCrouching())
 		{
 			let dir = (GetPlayerInput(INPUT_FORWARDMOVE) / 12800., GetPlayerInput(INPUT_SIDEMOVE) / 10240.);
 			
@@ -431,12 +431,12 @@ class KrisPlayer : DeltaPlayer
 		else if ((crouchDir == 1 && _slideTime >= MIN_SLIDE_TIME) && crouchState == CS_SLIDING)
 			EndSlide();
 		
-		if (IsGrounded() && crouchState != CS_SLIDING && buttons & BT_CROUCH)
+		if (coyoteTimer <= COYOTE_TIME && crouchState != CS_SLIDING && buttons & BT_CROUCH)
 			_lastCrouchedWhileGrounded = true;
 		else if (crouchState == CS_SLIDING || !(buttons & BT_CROUCH))
 			_lastCrouchedWhileGrounded = false;
 		
-		if (!IsGrounded() && crouchDir == -1)
+		if (coyoteTimer > COYOTE_TIME && crouchDir == -1)
 			_lastCrouchedWhileAirborne = true;
 		else if (crouchDir != -1 || !doingMoveInput || crouchState == CS_SLIDING)
 			_lastCrouchedWhileAirborne = false;
@@ -665,7 +665,7 @@ class KrisPlayer : DeltaPlayer
 	
 	protected void StartSlide(double angOffset, bool resetSpeed = true)
 	{
-		if (!IsGrounded() || GetIsUsingOffhand())
+		if (coyoteTimer > COYOTE_TIME || GetIsUsingOffhand())
 			return;
 		
 		slideAngleOffset = angOffset;
