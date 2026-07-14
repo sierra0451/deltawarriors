@@ -476,10 +476,8 @@ class KrisPlayer : DeltaPlayer
 	
 	override void Step(double curVel)
 	{
-		if (crouchState == CS_SLIDING)
-			return;
-		
-		Super.Step(curVel);
+		if (crouchState != CS_SLIDING)
+			Super.Step(curVel);
 	}
 	
 	override void PlayerLandedMakeGruntSound(actor onmobj)

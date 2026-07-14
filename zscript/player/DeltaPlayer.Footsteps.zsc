@@ -36,6 +36,9 @@ extend class DeltaPlayer
 	
 	virtual void Step(double curVel)
 	{
+		if (reactionTime)
+			return;
+		
 		let terrain = GetFloorTerrain();
 		if (!terrain)
 			return;
