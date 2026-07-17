@@ -655,15 +655,20 @@ class DeltaPlayer : PlayerPawn abstract
 	override int TakeSpecialDamage(Actor inflictor, Actor source, int damage, Name mod)
 	{
 		let oldDmg = Super.TakeSpecialDamage(inflictor, source, damage, mod);
-		
 		if (!source || source.player)
 			return oldDmg;
 		
-		let dmg = damage * 1.,
-			healthBeforeDmg = Health + lastDamageTaken,
-			perc = healthBeforeDmg * 1. / GetMaxHealth();
+		foreach (ignore : DAMAGE_TYPES_IGNORE_IFRAMES)
+		{
+			if (mod == ignore)
+				return oldDmg;
+		}
 		
-		if (perc >= 0.5 && dmg >= Health)
+		let dmg = (damage + lastDamageTaken) * 1.,
+			healthBeforeDmg = Health + lastDamageTaken;
+		
+		// if we're at 80 or more HP, damage cannot be lethal
+		if (healthBeforeDmg >= 80 && dmg >= Health)
 			dmg = Health - 1;
 		
 		return int(dmg);
