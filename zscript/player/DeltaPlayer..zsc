@@ -1781,7 +1781,7 @@ class DeltaPlayer : PlayerPawn abstract
 	
 	protected void HandleAirStuff()
 	{
-		coyoteTimer = IsGrounded()? 0 : coyoteTimer+1;
+		coyoteTimer = (IsGrounded() && vel.z <= 0)? 0 : coyoteTimer+1;
 		
 		if (IsGrounded() && airBobTics)
 			airBobTics--;
