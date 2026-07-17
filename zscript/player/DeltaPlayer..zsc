@@ -1015,7 +1015,7 @@ class DeltaPlayer : PlayerPawn abstract
 			}
 		}
 		
-		if (!IsGrounded())
+		if (coyoteTimer > COYOTE_TIME)
 			return jumpZ * jumpFac;
 		
 		let fric = GetFriction();
@@ -1070,19 +1070,19 @@ class DeltaPlayer : PlayerPawn abstract
 			crouchFactor = 1;
 	}
 	
-	// modifying uzdoom's source code (not using Super.CrouchMove cuz i need to insert some stuff more directly)
+	// modifying uzdoom's source code (not using Super.CrouchMove cuz i need to
+	// insert some stuff more directly)
 	override void CrouchMove(int direction)
 	{
 		if (!player)
 			return;
 		
-		double defaultHeight = FullHeight;
-		double savedHeight = Height;
-		double crouchSpeed = direction * CROUCHSPEED;
-		double oldHeight = player.viewHeight;
+		let defaultHeight = FullHeight * 1.,
+			savedHeight = Height * 1.,
+			crouchSpeed = direction * 1. * CROUCHSPEED,
+			oldHeight = player.viewHeight * 1.;
 		
 		player.crouchDir = direction;
-		
 		if (crouchFactor + crouchSpeed < 0.5 || crouchFactor + crouchSpeed > 1)
 			return;
 		
@@ -1100,7 +1100,7 @@ class DeltaPlayer : PlayerPawn abstract
 				// doesn't fit
 				crouchFactor -= crouchSpeed;
 				
-				if (coyoteTimer > COYOTE_TIME)
+				if (!IsGrounded())
 					SetOrigin((pos.x, pos.y, pos.z + ViewHeight*crouchSpeed), false);
 				return;
 			}
@@ -1112,7 +1112,7 @@ class DeltaPlayer : PlayerPawn abstract
 		player.viewHeight = ViewHeight * crouchFactor;
 		player.crouchViewDelta = player.viewHeight - ViewHeight;
 		
-		if (coyoteTimer > COYOTE_TIME)
+		if (!IsGrounded())
 			SetOrigin((pos.x, pos.y, pos.z - ViewHeight*crouchSpeed), true);
 		
 		// Check for eyes going above/below fake floor due to crouching motion.
@@ -1776,10 +1776,7 @@ class DeltaPlayer : PlayerPawn abstract
 	
 	protected void HandleAirStuff()
 	{
-		if (IsGrounded() && vel.z <= 0)
-			coyoteTimer = 0;
-		else
-			coyoteTimer++;
+		coyoteTimer = IsGrounded()? 0 : coyoteTimer+1;
 		
 		if (IsGrounded() && airBobTics)
 			airBobTics--;
