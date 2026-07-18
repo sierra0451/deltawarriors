@@ -61,7 +61,7 @@ class DeltaLevelEvents : EventHandler
 				continue;
 			
 			level.sectors[j].damageInterval = 15;
-			level.sectors[j].damageAmount = max(3, level.sectors[j].damageAmount / 3);
+			level.sectors[j].damageAmount = max(1, level.sectors[j].damageAmount / 3);
 		}
 	}
 	
