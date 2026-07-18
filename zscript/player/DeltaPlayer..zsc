@@ -1784,11 +1784,12 @@ class DeltaPlayer : PlayerPawn abstract
 		
 		if (IsGrounded() && airBobTics)
 			airBobTics--;
-		else if (!IsGrounded() && airBobTics < MAX_AIR_BOB_TICS)
-			airBobTics++;
 		
 		if (!IsGrounded())
 		{
+			if (airBobTics < MAX_AIR_BOB_TICS)
+				airBobTics++;
+			
 			let windVol = clamp(vel.z/-20. - 1, 0., 1.),
 				windPitch = DeltaUtil.Map(vel.z/-40. - 0.5, 0., 1., 0.5, 1.5);
 			
@@ -1911,9 +1912,7 @@ class DeltaPlayer : PlayerPawn abstract
 		if (damageTics != 0)
 			return;
 		
-		ThinkerIterator it = ThinkerIterator.Create("Actor", STAT_DEFAULT);
-		bool grazeSound;
-		
+		let it = ThinkerIterator.Create("Actor", STAT_DEFAULT);
 		foreach (Actor mis : it)
 		{
 			if (mis is "ArchvileFire")
