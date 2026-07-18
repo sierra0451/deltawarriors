@@ -233,7 +233,7 @@ class DeltaPlayer : PlayerPawn abstract
 		DeltaPlayer.MeleeCrouchSprite "";
 		DeltaPlayer.MagicCrouchSprite "";
 		
-		DeltaPlayer.ShakinessMaxHealth 50;
+		DeltaPlayer.ShakinessMaxHealth 80;
 		DeltaPlayer.MinShakiness 0.2;
 		DeltaPlayer.MaxShakiness 1;
 		
@@ -1193,13 +1193,12 @@ class DeltaPlayer : PlayerPawn abstract
 		if (_flinchTics)
 			bobFlinch = _currentFlinch * ((_flinchTics - ticFrac) / startFlinchTics);
 		
-		int t = level.time;
 		double
+			t = level.time,
 			s = shakiness ? DeltaUtil.Lerp(oldShakiness, shakiness.GetValue(), ticFrac)/100. : 0,
-			shakeDiff = s - minShakiness,
-			shakeX = sin(t/11.) * 2 - shakeDiff * sin(TICRATE*0.85*t),
-			shakeY = max(0, (0.5+0.5*sin(1.5*t)) * 12. + shakeDiff * sin(TICRATE/2.*t));
-		Vector2 shake = (shakeX, shakeY * 0.5);
+			shakeX = sin(t/11.) - sin(TICRATE * t * 0.85),
+			shakeY = 1 + sin(1.5*t) + 0.5 * sin(TICRATE/2.*t);
+		Vector2 shake = (shakeX, shakeY);
 		let result = bob + bobFlinch + shake * s + (GetTurn(ticFrac), 0),
 			zVelAdd = vel.z * 0.5,
 			zVelFac = clamp((airBobTics*2. / MAX_AIR_BOB_TICS)**2, 0, 1);
@@ -1816,11 +1815,16 @@ class DeltaPlayer : PlayerPawn abstract
 		
 		oldShakiness = shakiness.GetValue();
 		
-		double shakeMaxFactor = double(shakinessMaxHealth)/GetMaxHealth();
-		double targetShake = DeltaUtil.Lerp(maxShakiness*100., minShakiness*100.,
-			(Health-1) / (shakeMaxFactor*(GetMaxHealth()-1)));
+		if (health > shakinessMaxHealth)
+		{
+			shakiness.Update(0);
+			return;
+		}
 		
-		if (Health > 0)
+		let targetShake = DeltaUtil.Map(health, 1, shakinessMaxHealth,
+			maxShakiness*100., minShakiness*100.);
+		
+		if (health > 0)
 			shakiness.Update(int(targetShake));
 		else if (shakiness.GetValue() != 0)
 			shakiness.Reset(0);
