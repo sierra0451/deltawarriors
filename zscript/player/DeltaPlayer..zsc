@@ -1182,13 +1182,82 @@ class DeltaPlayer : PlayerPawn abstract
 		player.PendingWeapon = (_savedPending==player.ReadyWeapon)? WP_NOCHANGE : _savedPending;
 	}
 	
-	override Vector2 BobWeapon(double ticfrac)
+	virtual Vector2 GetDefaultWBob(double ticFrac)
+	{
+		if (!player)
+			return (0, 0);
+		if (lunging)
+			return (0, 0);
+		
+		let weapon = player.ReadyWeapon;
+		if (weapon == null || weapon.bDontBob || player.GetWBobSpeed() == 0)
+			return (0, 0);
+		
+		// [XA] Get the current weapon's bob properties.
+		let bobSpeed = 360.,
+			rangeX = 0.667,
+			rangeY = 0.667;
+		
+		Vector2 p1, p2, r;
+		
+		for (int i = 0; i < 2; i++)
+		{
+			// Bob the weapon based on movement speed. ([SP] And user's bob speed setting)
+			double angle = (bobSpeed * player.GetWBobSpeed() * 35 /
+				TICRATE*(player.BobTimer - 1 + i)) * (360. / 8192.);
+			
+			Console.Printf("curbob is %.1f, player.bob is %.1f", curbob, player.bob);
+			
+			// [RH] Smooth transitions between bobbing and not-bobbing frames.
+			// This also fixes the bug where you can "stick" a weapon off-center by
+			// shooting it when it's at the peak of its swing.
+			if (curbob != player.bob)
+			{
+				if (abs(player.bob - curbob) <= 1)
+					curbob = player.bob;
+				else
+				{
+					double zoom = MAX(1., abs(curbob - player.bob) / 40);
+					curbob += (curbob > player.bob)? -zoom : zoom;
+				}
+			}
+			
+			// The weapon bobbing intensity while firing can be adjusted by the player.
+			double BobIntensity = (player.WeaponState & WF_WEAPONBOBBING) ? 1. : player.GetWBobFire();
+			
+			if (curbob != 0)
+			{
+				double bobVal = player.bob;
+				if (i == 0)
+					bobVal = prevBob;
+				
+				//[SP] Added in decorate player.viewbob checks
+				double
+					bobx = (bobVal * BobIntensity * RangeX * ViewBob),
+					boby = (bobVal * BobIntensity * RangeY * ViewBob);
+				
+				r.X = bobx*cos(angle);
+				r.Y = 0.5f * (boby * (1. - (cos(angle * 2))));
+			}
+			else
+				r = (0, 0);
+			
+			if (i == 0)
+				p1 = r;
+			else
+				p2 = r;
+		}
+		
+		return p1 * (1. - ticFrac) + p2 * ticFrac;
+	}
+	
+	override Vector2 BobWeapon(double ticFrac)
 	{
 		if (IsFrozen())
 			return _lastBob;
 		
-		let bob = lunging? (0, 0) : Super.BobWeapon(ticFrac),
-			bobFlinch = (0, 0);
+		let bobFlinch = (0, 0),
+			bob = GetDefaultWBob(ticFrac);
 		
 		if (_flinchTics)
 			bobFlinch = _currentFlinch * ((_flinchTics - ticFrac) / startFlinchTics);
@@ -1213,7 +1282,6 @@ class DeltaPlayer : PlayerPawn abstract
 		}
 		
 		result.y = clamp(result.y + zVelAdd + _landPunch, minYOffset, maxYOffset);
-		
 		_lastBob = result;
 		return result;
 	}

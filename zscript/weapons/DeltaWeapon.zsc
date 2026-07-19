@@ -41,10 +41,6 @@ class DeltaWeapon : Weapon
 	
 	Default
 	{
-		Weapon.BobStyle "Smooth";
-		Weapon.BobRangeX 0.667;
-		Weapon.BobRangeY 0.667;
-		Weapon.BobSpeed 2.75;
 		DeltaWeapon.AnimType DeltaPlayer.DELTA_WEAPONANIM_GUN;
 		DeltaWeapon.RedCrosshairRange PLAYERMISSILERANGE / 2.;
 		DeltaWeapon.MaxLungeDistance -1;
