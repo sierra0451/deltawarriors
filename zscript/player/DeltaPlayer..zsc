@@ -1230,7 +1230,7 @@ class DeltaPlayer : PlayerPawn abstract
 		}
 		
 		if (name ~== "all" || name ~== "everything" || name ~== "ammo")
-			AddTension(amount? amount : maxTensionPoints);
+			AddTension(maxTensionPoints);
 		
 		Super.CheatGive(name, amount);
 	}
