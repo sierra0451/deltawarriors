@@ -16,9 +16,6 @@ version "4.14.3"
 #include "zscript/effects/DeltaTelegraphs.zsc"
 #include "zscript/effects/DeltaTrails.zsc"
 
-// custom enemies
-// #include "zscript/enemies/DoomEnemyReplacements.zsc"		// intentionally commented out!! will revisit these at a later time
-
 // items
 #include "zscript/items/HealthItems.zsc"
 #include "zscript/items/InventoryUtil.zsc"
