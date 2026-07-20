@@ -57,11 +57,6 @@ class DeltaWeapon : Weapon
 		AtEaseLoop:
 			TNT1 A 1 A_DeltaWeaponReady(atEase: true);
 			Loop;
-		OffhandStart:
-			TNT1 A 1 A_StartOffhand;
-		OffhandLoop:
-			TNT1 A 1 A_CheckOffhand;
-			Wait;
 	}
 	
 	override void BeginPlay()
@@ -341,18 +336,10 @@ class DeltaWeapon : Weapon
 		psp.SetState(invoker.GetReadyState());
 	}
 	
-	action state A_DeltaWeaponReady(int flags = 0, bool atEase = false,
-		bool allowOffhand = true)
+	action state A_DeltaWeaponReady(int flags = 0, bool atEase = false)
 	{
 		let ply = DeltaPlayer(invoker.owner);
 		invoker.hasBeenPickedUp = true;
-		
-        if (allowOffhand && (player.cmd.buttons & BT_USER1)
-			&& !ply.GetIsUsingOffhand() && ply.TryStartOffhand())
-		{
-			A_ResetAtEase();
-			return ResolveState("OffhandStart");
-		}
         
 		A_WeaponReady(flags);
 		
@@ -493,11 +480,6 @@ class DeltaWeapon : Weapon
 		
 		let kbVec = DeltaUtil.GetActorForward(player.mo) * kb;
 		player.mo.vel -= kbVec;
-	}
-	
-	action void A_StartOffhand()
-	{
-		
 	}
 	
 	action state A_CheckOffhand(bool bob = false, statelabel dest = "Select")

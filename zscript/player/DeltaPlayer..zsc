@@ -502,7 +502,45 @@ class DeltaPlayer : PlayerPawn abstract
 		if (IsFrozen())
 			return;
 		
-		Super.TickPSprites();
+		let player = self.player;
+		let pspr = player.psprites;
+		while (pspr)
+		{
+			// Destroy the psprite if it's from a weapon that isn't currently selected by the player
+			// or if it's from an inventory item that the player no longer owns.
+			if ((pspr.Caller == null ||
+				(pspr.Caller is "Inventory" && Inventory(pspr.Caller).Owner != pspr.Owner.mo) ||
+				(pspr.Caller is "Weapon" && pspr.Caller != pspr.Owner.ReadyWeapon)))
+			{
+				pspr.Destroy();
+			}
+			else
+			{
+				pspr.Tick();
+			}
+
+			pspr = pspr.Next;
+		}
+
+		if ((health > 0) || (player.ReadyWeapon != null && !player.ReadyWeapon.bNoDeathInput))
+		{
+			if (player.ReadyWeapon == null)
+			{
+				if (player.PendingWeapon != WP_NOCHANGE)
+					player.mo.BringUpWeapon();
+			}
+			else
+			{
+				CheckWeaponChange();
+				if (player.WeaponState & (WF_WEAPONREADY | WF_WEAPONREADYALT))
+				{
+					CheckWeaponFire();
+					CheckUseOffhand();
+				}
+				// Check custom buttons
+				CheckWeaponButtons();
+			}
+		}
 		HandleBlindness();
 	}
 	
@@ -1206,8 +1244,6 @@ class DeltaPlayer : PlayerPawn abstract
 			double angle = (bobSpeed * player.GetWBobSpeed() * 35 /
 				TICRATE*(player.BobTimer - 1 + i)) * (360. / 8192.);
 			
-			Console.Printf("curbob is %.1f, player.bob is %.1f", curbob, player.bob);
-			
 			// [RH] Smooth transitions between bobbing and not-bobbing frames.
 			// This also fixes the bug where you can "stick" a weapon off-center by
 			// shooting it when it's at the peak of its swing.
@@ -1367,8 +1403,13 @@ class DeltaPlayer : PlayerPawn abstract
 	override void PlayIdle()
 	{
 		let curAnimType = DELTA_WEAPONANIM_MELEE;
-		if (player && player.ReadyWeapon && (player.ReadyWeapon is "DeltaWeapon"))
-			curAnimType = DeltaWeapon(player.ReadyWeapon).GetAnimType();
+		if (player && player.ReadyWeapon)
+		{
+			if (player.ReadyWeapon is "DeltaWeapon")
+				curAnimType = DeltaWeapon(player.ReadyWeapon).GetAnimType();
+			else
+				curAnimType = DELTA_WEAPONANIM_GUN;
+		}
 		
 		if (curAnimType != lastAnimType || InAirState() || InAirPainState() || InSeeState())
 			SetStateSafe(A_DeltaGetState("Spawn"));
@@ -1443,8 +1484,13 @@ class DeltaPlayer : PlayerPawn abstract
 	override void FireWeapon(State stat)
 	{
 		let weapn = player.ReadyWeapon;
-		if (!weapn || !(weapn is "DeltaWeapon"))
+		if (!weapn)
 			return;
+		if (!(weapn is "DeltaWeapon"))
+		{
+			Super.FireWeapon(stat);
+			return;
+		}
 		
 		DeltaWeapon(weapn).DoFire(stat);
 	}
@@ -1452,8 +1498,13 @@ class DeltaPlayer : PlayerPawn abstract
 	override void FireWeaponAlt(State stat)
 	{
 		let weapn = player.ReadyWeapon;
-		if (!weapn || !(weapn is "DeltaWeapon") || !(weapn.FindState('AltFire')))
+		if (!weapn || !(weapn.FindState('AltFire')))
 			return;
+		if (!(weapn is "DeltaWeapon"))
+		{
+			Super.FireWeaponAlt(stat);
+			return;
+		}
 		
 		DeltaWeapon(weapn).DoAltFire(stat);
 	}

@@ -290,8 +290,6 @@ class KrisPlayer : DeltaPlayer
 		//   OFFHAND OVERLAYS  
 		// ====================
 		OffhandOverlay:
-			TNT1 A 0;
-		ParryOverlay:
 			DKSL B 2 A_KrisShieldParry;
 			DKSL C 2;
 			DKSL D 4;
