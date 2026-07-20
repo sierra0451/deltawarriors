@@ -8,6 +8,24 @@ class DeltaHealthBonus : HealthBonus replaces HealthBonus
 	}
 }
 
+class DeltaHealth : Health abstract
+{
+	override bool TryPickup (in out Actor other)
+	{
+		PrevHealth = other.player != NULL ? other.player.health : other.health;
+		
+		// P_GiveBody adds one new feature, applied only if it is possible to
+		// pick up negative health: Negative values are treated as positive
+		// percentages, ie Amount -100 means 100% health, ignoring max amount.
+		if (DeltaGlobals.GetLevelEvents().Heal(other, Amount, MaxAmount))
+		{
+			GoAwayAndDie();
+			return true;
+		}
+		return false;
+	}
+}
+
 class DeltaHealthPickup : HealthPickup abstract
 {
 	int maxHealth;
@@ -59,16 +77,12 @@ class DeltaHealthPickup : HealthPickup abstract
 	}
 }
 
-class DeltaStimpack : DeltaHealthPickup replaces Stimpack
+class DeltaStimpack : DeltaHealth replaces Stimpack
 {
 	Default
 	{
-		Tag "$TAG_STIMPACK";
-		
-		Health 20;
-		Inventory.Icon "STIMA0";
+		Inventory.Amount 20;
 		Inventory.PickupMessage "$GOTSTIM";
-		DeltaHealthPickup.UseMessage "$DELTA_USE_STIMPACK";
 	}
 	
 	States
@@ -79,17 +93,13 @@ class DeltaStimpack : DeltaHealthPickup replaces Stimpack
 	}
 }
 
-class DeltaMedikit : DeltaHealthPickup replaces Medikit
+class DeltaMedikit : DeltaHealth replaces Medikit
 {
 	Default
 	{
-		Tag "$TAG_MEDIKIT";
-		
-		Health 50;
-		Inventory.Icon "MEDIA0";
+		Inventory.Amount 50;
 		Inventory.PickupMessage "$GOTMEDIKIT";
-		DeltaHealthPickup.UseMessage "$DELTA_USE_MEDIKIT";
-		DeltaHealthPickup.LowUseMessage "$DELTA_USE_MEDIKITLOW";
+		Health.LowMessage 50, "$GOTMEDINEED";
 	}
 	
 	States
