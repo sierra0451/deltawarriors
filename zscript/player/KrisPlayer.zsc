@@ -277,7 +277,7 @@ class KrisPlayer : DeltaPlayer
 			#### BCD 2;
 			Goto FinishIce;
 		FinishIce:
-			DKRF E GameTicRate;
+			DKRF E TICRATE;
 			#### # 1 A_SpawnDeathSoul;
 			#### # -1;
 			Stop;
