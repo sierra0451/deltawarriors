@@ -1,6 +1,6 @@
 class DeltaWeaponPickup : Weapon
 {
-	protected Map<string, class<DeltaWeapon> > actualPickups;
+	protected Map<string, class<Weapon> > actualPickups;
 	
 	Default
 	{}
@@ -27,7 +27,7 @@ class DeltaWeaponPickup : Weapon
 	
 	virtual void AddPickups() {}
 	
-	class<DeltaWeapon> GetWeapon(PlayerPawn ply = null)
+	class<Weapon> GetWeapon(PlayerPawn ply = null)
 	{
 		if (!ply)
 			ply = players[consoleplayer].mo;
