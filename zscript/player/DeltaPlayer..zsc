@@ -528,6 +528,9 @@ class DeltaPlayer : PlayerPawn abstract
 			{
 				if (player.PendingWeapon != WP_NOCHANGE)
 					player.mo.BringUpWeapon();
+				
+				if (CanUseOffhand())
+					CheckUseOffhand();
 			}
 			else
 			{

@@ -10,11 +10,9 @@ extend class DeltaPlayer
 	
 	virtual void CheckUseOffhand()
 	{
-		if (!(player.weaponState & (WF_WEAPONREADY | WF_WEAPONREADYALT)))
-			return;
 		if (!(player.cmd.buttons & BT_USER1))
 			return;
-		if (GetIsUsingOffhand())
+		if (!CanUseOffhand())
 			return;
 		
 		TryStartOffhand();
@@ -22,9 +20,6 @@ extend class DeltaPlayer
 	
 	virtual bool TryStartOffhand()
 	{
-		if (!CanUseOffhand())
-			return false;
-		
 		preOffhandTp = tensionPoints;
 		preOffhandTpTimer = tensionDrainTimer;
 		
