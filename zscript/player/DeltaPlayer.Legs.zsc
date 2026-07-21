@@ -14,12 +14,6 @@ extend class DeltaPlayer
 		
 		let psp = player.FindPSprite(PSP_LEGS);
 		if (!psp)
-		{
-			SetUpLegs();
-			psp = player.FindPSprite(PSP_LEGS);
-		}
-		
-		if (!psp)
 			return;
 		
 		psp.bAddBob = false;
