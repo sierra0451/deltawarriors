@@ -121,13 +121,14 @@ AddOptionMenu "OptionsMenu"
 	Title "$MENU_UZDOOM_OPTIONS"
 }
 
+/*
 AddOptionMenu "SoundOptions"
 {
 	Title "$MENU_AUDIO_HEADER"
 	
 	StaticText ""
-	Option "$MENU_CHAR_VOICES", "cl_delta_voice", "YesNo"
 }
+*/
 
 OptionMenu "DeltaOptions"
 {
