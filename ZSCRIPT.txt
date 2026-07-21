@@ -63,7 +63,7 @@ version "4.14.3"
 	#include "zscript/weapons/kris/KrisRevolverChargeShot.zsc"
 	#include "zscript/weapons/kris/KrisShotgun.zsc"
 	#include "zscript/weapons/kris/KrisSMG.zsc"
-	#include "zscript/weapons/kris/KrisGrenadeLauncher.zsc"
+	//#include "zscript/weapons/kris/KrisGrenadeLauncher.zsc"
 
 // ------------------------------------------------------------------------------------
 // libeye library by KeksDose!
