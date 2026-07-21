@@ -469,7 +469,8 @@ class KrisPlayer : DeltaPlayer
 		if (crouchState != CS_SLIDING)
 			return Super.CanCollideWith(other, passive);
 		
-		if (other.bIsMonster && other.mass <= 200 && (!other.player || !other.player.cheats & CF_PREDICTING))
+		if (other.bIsMonster && (other.mass <= 200 || other.health <= 0)
+			&& (!other.player || !other.player.cheats & CF_PREDICTING))
 			return false;
 		
 		return Super.CanCollideWith(other, passive);
