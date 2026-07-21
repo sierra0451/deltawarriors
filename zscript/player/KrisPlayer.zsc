@@ -47,9 +47,9 @@ class KrisPlayer : DeltaPlayer
 		Player.WeaponSlot 2, "KrisRevolver";
 		Player.WeaponSlot 3, "KrisShotgun";
 		Player.WeaponSlot 4, "KrisSMG";
-		Player.WeaponSlot 5, "KrisGrenadeLauncher";
-		Player.WeaponSlot 6, "TempIncinerator", "TempPlasmaRifle";//"KrisCrossbow";
-		Player.WeaponSlot 7, "TempCalamityBlade", "TempBFG9000";
+		Player.WeaponSlot 5, "RocketLauncher";
+		Player.WeaponSlot 6, "ID24Incinerator", "PlasmaRifle";//"KrisCrossbow";
+		Player.WeaponSlot 7, "ID24CalamityBlade", "BFG9000";
 		
 		Player.StartItem "KrisSword";
 		Player.StartItem "KrisRevolver";
