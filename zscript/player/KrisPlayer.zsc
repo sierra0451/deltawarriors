@@ -865,8 +865,13 @@ class KrisPlayer : DeltaPlayer
 	void PlaySliding()
 	{
 		let curAnimType = DELTA_WEAPONANIM_MELEE;
-		if (player.ReadyWeapon && (player.ReadyWeapon is "DeltaWeapon"))
-			curAnimType = DeltaWeapon(player.ReadyWeapon).GetAnimType();
+		if (player && player.ReadyWeapon)
+		{
+			if (player.ReadyWeapon is "DeltaWeapon")
+				curAnimType = DeltaWeapon(player.ReadyWeapon).GetAnimType();
+			else
+				curAnimType = DELTA_WEAPONANIM_GUN;
+		}
 		
 		if (curAnimType != lastAnimType || InSeeState() || InSpawnState() || InAirState())
 			SetStateSafe(A_DeltaGetState("Slide"));
