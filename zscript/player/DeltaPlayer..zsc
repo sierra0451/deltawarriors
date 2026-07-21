@@ -1278,13 +1278,10 @@ class DeltaPlayer : PlayerPawn abstract
 		if (_flinchTics)
 			bobFlinch = _currentFlinch * ((_flinchTics - ticFrac) / startFlinchTics);
 		
-		double
-			t = level.time,
-			s = shakiness ? DeltaUtil.Lerp(oldShakiness, shakiness.GetValue(), ticFrac)/100. : 0,
-			shakeX = sin(t/11.) - sin(TICRATE * t * 0.85),
-			shakeY = 1 + sin(1.5*t) + 0.5 * sin(TICRATE/2.*t);
-		Vector2 shake = (shakeX, shakeY);
-		let result = bob + bobFlinch + shake * s + (GetTurn(ticFrac), 0),
+		let s = shakiness ? DeltaUtil.Lerp(oldShakiness, shakiness.GetValue(), ticFrac)/100. : 0.,
+			shake =
+				( sin(level.time/11.) - sin(TICRATE * level.time * 0.85), 		// shake x
+				  1 + sin(1.5*level.time) + 0.5 * sin(TICRATE/2.*level.time) ), // shake y
 			zVelAdd = vel.z * 0.5,
 			zVelFac = clamp((airBobTics*2. / MAX_AIR_BOB_TICS)**2, 0, 1);
 		
@@ -1297,7 +1294,11 @@ class DeltaPlayer : PlayerPawn abstract
 			maxYOffset = deltaWeap.GetMaxYOffset();
 		}
 		
-		result.y = clamp(result.y + zVelAdd + _landPunch, minYOffset, maxYOffset);
+		let breatheBob = sin(level.time * M_PI*3/8.) * 1.5,
+			result = bob + bobFlinch + shake * s
+				+ (GetTurn(ticFrac), breatheBob + zVelAdd + _landPunch);
+		
+		result.y = clamp(result.y, minYOffset, maxYOffset);
 		_lastBob = result;
 		return result;
 	}
