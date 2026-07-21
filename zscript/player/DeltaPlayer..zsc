@@ -1195,31 +1195,8 @@ class DeltaPlayer : PlayerPawn abstract
 		health = --player.health;
 	}
 	
-	override void AddInventory(Inventory item)
-	{
-		if (!CountInv(item.GetClass()) && player.PendingWeapon)
-			_savedPending = player.PendingWeapon;
-		else
-			_savedPending = null;
-		
-		Super.AddInventory(item);
-	}
-	
-	override void HasReceived(Inventory item, class<Inventory> itemCls)
-	{
-		Super.HasReceived(item, itemCls);
-		if (!item && !(item is "Weapon"))
-			return;
-		if (!player || !_savedPending)
-			return;
-		if (player.PendingWeapon == WP_NOCHANGE || !player.ReadyWeapon)
-			return;
-		if (!(player.cmd.buttons & (BT_ATTACK|BT_ALTATTACK)))
-			return;
-		
-		player.PendingWeapon = (_savedPending==player.ReadyWeapon)? WP_NOCHANGE : _savedPending;
-	}
-	
+	// slightly modified implementation to keep the look of weapons bobbing
+	// consistent
 	virtual Vector2 GetDefaultWBob(double ticFrac)
 	{
 		if (!player)
