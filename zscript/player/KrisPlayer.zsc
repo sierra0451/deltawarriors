@@ -290,6 +290,9 @@ class KrisPlayer : DeltaPlayer
 		//   OFFHAND OVERLAYS  
 		// ====================
 		OffhandOverlay:
+			DKSL B 1; 	// need this to get shield sprite on-screen before the hitstop
+						// NOTE: THIS SHOULD BE 1 TIC! We tick immediately when
+						// offhand is successful :)
 			DKSL B 2 A_KrisShieldParry;
 			DKSL C 2;
 			DKSL D 4;

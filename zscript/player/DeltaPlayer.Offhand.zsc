@@ -39,8 +39,12 @@ extend class DeltaPlayer
 	{
 		isUsingOffhand = true;
 		A_Overlay(PSP_WEAPON, "Null");
-		
 		A_Overlay(PSP_OFFHAND, "OffhandOverlay");
+		
+		let psp = player.FindPSprite(PSP_OFFHAND);
+		if (psp)
+			psp.Tick();
+		
 		A_OverlayFlags(PSP_OFFHAND, PSPF_ADDBOB, true);
 		A_OverlayFlags(PSP_OFFHAND, PSPF_ADDWEAPON, false);
 		A_OverlayOffset(PSP_OFFHAND, 0, 32);
