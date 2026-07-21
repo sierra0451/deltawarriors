@@ -1286,7 +1286,7 @@ class DeltaPlayer : PlayerPawn abstract
 			zVelFac = clamp((airBobTics*2. / MAX_AIR_BOB_TICS)**2, 0, 1);
 		
 		zVelAdd *= zVelFac;
-		double minYOffset = -30, maxYOffset = 30;
+		double minYOffset = 0, maxYOffset = 30;
 		if (player && player.ReadyWeapon && player.ReadyWeapon is "DeltaWeapon")
 		{
 			let deltaWeap = DeltaWeapon(player.ReadyWeapon);
