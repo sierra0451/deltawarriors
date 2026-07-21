@@ -171,6 +171,6 @@ class RocketLauncherReplacer : DeltaWeaponPickup replaces RocketLauncher
 {
 	override void AddPickups()
 	{
-		actualPickups.Insert("KrisPlayer", "KrisGrenadeLauncher");
+		actualPickups.Insert("KrisPlayer", "RocketLauncher");
 	}
 }
