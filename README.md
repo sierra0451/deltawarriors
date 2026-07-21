@@ -27,7 +27,7 @@ The single biggest new mechanic introduced by DeltaWarriors (a mechanic borrowed
 - **Slot 1: Sword**
     - Good for getting up close and quickly taking out weaker demons or finishing off stronger ones while saving ammo. They'll slash it out in front of them, able to strike multiple demons at once for decent damage, so it can also work for crowd control. Pairs well with an invulnerability sphere, but without one, getting up close and personal with the forces of Hell can be a dangerous gamble.
 - **Slot 2: Revolver**
-    - Good for picking off targets from far away. Kris isn't entirely sure how they got it, but considering what they're having to face, they're happy to have it nonetheless. Being a hand-cannon type of weapon, it can deal decent damage at a long range, making it useful for engagements from further away. It does, however, take some time for Kris to cock the hammer, which slows down the rate at which they can put out rounds with it.
+    - Good for picking off targets from far away. Kris isn't entirely sure how they got it, but considering what they're having to face, they're happy to have it nonetheless. Being a hand-cannon type of weapon, it can deal decent damage at a long range, making it useful for engagements from further away. It does, however, take some time for Kris to cock the hammer, which slows down the rate at which they can put out rounds with it. Can also charge up for a BIG SHOT, requiring some of their TP but can pierce through enemies.
 - **Slot 3: Pump-action shotgun**
     - Good for dealing big bursts of damage up-close, although slightly slow to follow up on. Its alt-fire is an even bigger blast, although it takes two shells and has such strong recoil that it'll physically knock Kris back, which they may need a second to recover from before readying the shotgun for further firing. The alt-fire... also somehow requires some of their TP? Odd-
 - **Slot 4: SMG**
@@ -44,6 +44,7 @@ And, of course, credits go to:
 - Comrade1280 on Sketchfab for [Kris's revolver model](https://sketchfab.com/3d-models/high-caliber-revolver-038416d7fb2649e2833d5989b47885db)
 - NotARealStudio on Sketchfab for [Kris's shotgun model](https://sketchfab.com/3d-models/model-d00m-1-shotgun-200ed3469c024e4e991fabb6eb200869)
 - 会飞的购物清单 on Sketchfab for [the original version of Kris's SMG model](https://sketchfab.com/3d-models/pp19-01-9a76f2e01f074732aa697f44ef2a67bf)
+- KeksDose on the ZDoom forums for [the LibEye library](https://forum.zdoom.org/viewtopic.php?f=105&t=64566#p1102157)
 - id Software for making and maintaining [this wonderful piece of gaming history](https://store.steampowered.com/app/2280/DOOM__DOOM_II/)
 - That fucking little white Pomeranian, Toby Fox, for creating [Deltarune](https://deltarune.com/), the first video game that's ever made me cry <3
 
@@ -51,4 +52,5 @@ None of this would have been possible without y'all. <3
 
 ## Links
 - Discord: https://discord.gg/FV5H38tZFx
-- 
+- Twitter: https://twitter.com/dltawarriorsMod
+- Bluesky: https://bsky.app/profile/deltawarriors.bsky.social
