@@ -19,7 +19,7 @@ class KrisSword : DeltaWeapon
 		+SQUAREPIXELS
 		+Weapon.AXEBLOOD
 		+Weapon.MELEEWEAPON
-		+Weapon.NOALERT				// wanna handle alerting manually
+		+Weapon.NOALERT				// sword swings do not alert enemies!
 	}
 	
 	States

@@ -24,7 +24,6 @@ class KrisShotgun : DeltaWeapon
 		DeltaWeapon.TensionUse2 50;
 		
 		+SQUAREPIXELS
-		+Weapon.NOALERT
 	}
 	
 	States
@@ -160,8 +159,6 @@ class KrisShotgun : DeltaWeapon
 		invoker.needsCycling = NEEDS_PUMP_PRIMARY;
 		
 		A_StartSound("delta/shotgun/fire", CHAN_WEAPON, CHANF_OVERLAP);
-		A_AlertMonsters();
-		
 		A_OwnerPlayAttack();
 	}
 	
@@ -173,8 +170,6 @@ class KrisShotgun : DeltaWeapon
 		invoker.needsCycling = NEEDS_PUMP_ALT;
 		
 		A_StartSound("delta/shotgun/fire", CHAN_WEAPON, CHANF_OVERLAP);
-		A_AlertMonsters();
-		
 		A_OwnerPlayAttack();
 		A_OwnerKnockback(5, 10);
 	}

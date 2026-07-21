@@ -16,7 +16,6 @@ class KrisGrenadeLauncher : DeltaWeapon
 		DeltaWeapon.TensionUse2 80;
 		
 		+SQUAREPIXELS
-		+Weapon.NOALERT; // handling this manually
 	}
 	
 	States
@@ -71,7 +70,6 @@ class KrisGrenadeLauncher : DeltaWeapon
 		A_FireProjectile("KrisGrenade");
 		// temporarily using doom rocket launcher sound
 		A_StartSound("weapons/rocklf", CHAN_WEAPON, CHANF_OVERLAP);
-		A_AlertMonsters();
 		A_OwnerPlayAttack(false);
 		
 		A_AddRecoil(12, 2, p: -5);
@@ -83,7 +81,6 @@ class KrisGrenadeLauncher : DeltaWeapon
 		A_FireProjectile("KrisStunGrenade");
 		// temporarily using doom rocket launcher sound
 		A_StartSound("weapons/rocklf", CHAN_WEAPON, CHANF_OVERLAP);
-		A_AlertMonsters();
 		A_OwnerPlayAttack(false);
 		
 		A_AddRecoil(12, 2, p: -5);

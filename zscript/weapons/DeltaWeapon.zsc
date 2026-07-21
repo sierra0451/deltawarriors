@@ -247,6 +247,9 @@ class DeltaWeapon : Weapon
 		if (stat == null)
 			stat = GetAtkState(!!ply.refire);
 		
+		if (!bNoAlert)
+			A_AlertMonsters();
+		
 		ply.SetPsprite(PSP_WEAPON, stat);
 		A_ResetAtEase();
 	}
@@ -263,6 +266,9 @@ class DeltaWeapon : Weapon
 		bAltFire = true;
 		if (stat == null)
 			stat = GetAltAtkState(!!ply.refire);
+		
+		if (!bNoAlert)
+			A_AlertMonsters();
 		
 		ply.SetPsprite(PSP_WEAPON, stat);
 		A_ResetAtEase();
