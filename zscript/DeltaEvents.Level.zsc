@@ -63,6 +63,9 @@ class DeltaLevelEvents : EventHandler
 			level.sectors[j].damageInterval = 15;
 			level.sectors[j].damageAmount = max(1, level.sectors[j].damageAmount / 3);
 		}
+		
+		if (r_deathcamera)
+			Console.Printf("\c[DeltaRed]NOTE: Highly recommend setting r_deathcamera to 0!\c-");
 	}
 	
 	override void WorldUnloaded(WorldEvent e)
