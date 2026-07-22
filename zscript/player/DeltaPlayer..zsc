@@ -502,8 +502,9 @@ class DeltaPlayer : PlayerPawn abstract
 		if (IsFrozen())
 			return;
 		
-		let player = self.player;
-		let pspr = player.psprites;
+		let player = self.player,
+			pspr = player.psprites;
+		
 		while (pspr)
 		{
 			// Destroy the psprite if it's from a weapon that isn't currently selected by the player
@@ -518,7 +519,7 @@ class DeltaPlayer : PlayerPawn abstract
 			{
 				pspr.Tick();
 			}
-
+			
 			pspr = pspr.Next;
 		}
 		
