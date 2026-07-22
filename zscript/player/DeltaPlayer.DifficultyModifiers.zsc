@@ -8,8 +8,6 @@ extend class DeltaPlayer
 	{
 		if (sv_delta_levelOneHp)
 			maxHealth = health = levelOneHp;
-		if (sv_delta_blind)
-			blind = true;
 	}
 }
 
