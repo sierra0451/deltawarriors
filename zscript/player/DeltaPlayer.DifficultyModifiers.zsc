@@ -4,27 +4,12 @@ extend class DeltaPlayer
 	
 	property LevelOneHP : levelOneHp;
 	
-	virtual void HandleBlindness()
-	{
-		if (!player || !IsBlind())
-			return;
-		
-		let offhandPsp = player.FindPSprite(PSP_OFFHAND);
-		if (offhandPsp)
-			offhandPsp.sprite = -1;
-	}
-	
 	virtual void ApplyDifficultyModifiers()
 	{
 		if (sv_delta_levelOneHp)
 			maxHealth = health = levelOneHp;
 		if (sv_delta_blind)
 			blind = true;
-	}
-	
-	bool IsBlind() const
-	{
-		return blind;
 	}
 }
 

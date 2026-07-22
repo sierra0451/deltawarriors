@@ -107,7 +107,7 @@ class DeltaPlayer : PlayerPawn abstract
 	protected Color characterColor, overhealColor;
 	
 	protected LinearValueInterpolator heartbeat, shakiness;
-	protected bool didFirstDeathAnim, blind;
+	protected bool didFirstDeathAnim;
 	
 	protected double angleDiff;
 	
@@ -521,7 +521,7 @@ class DeltaPlayer : PlayerPawn abstract
 
 			pspr = pspr.Next;
 		}
-
+		
 		if ((health > 0) || (player.ReadyWeapon != null && !player.ReadyWeapon.bNoDeathInput))
 		{
 			if (player.ReadyWeapon == null)
@@ -544,7 +544,6 @@ class DeltaPlayer : PlayerPawn abstract
 				CheckWeaponButtons();
 			}
 		}
-		HandleBlindness();
 	}
 	
 	// grabbing code from uzdoom.pk3 and retooling for cleaner, snappier feeling
