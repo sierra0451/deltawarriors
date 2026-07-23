@@ -13,8 +13,7 @@ struct GrazeIndicatorInfo
 
 extend class DeltaHud
 {
-	private TextureID _damageIndicator, _grazeIndicator, _grazeStencil,
-		_grazeMarker;
+	private TextureID _damageIndicator, _grazeStencil, _grazeMarker;
 	
 	private DamageIndicatorInfo[10] _damageIndicators;
 	private GrazeIndicatorInfo[10] _grazeIndicators;
@@ -114,28 +113,20 @@ extend class DeltaHud
 		
 		Screen.SetStencil(1, SOP_Keep, SF_AllOn);
 		
-		if (ply.grazeTics)
-		{
-			let alpha = 160. * ply.grazeTics / DeltaPlayer.MAX_GRAZE_TICS;
-			
-			DrawTexture(_grazeStencil, (0, 0), DI_SCREEN_CENTER | DI_ITEM_OFFSETS,
-				scale: _universalScale * 2, col: Color(int(alpha), 160, 160, 160));
-		}
-		
-		float indicatorSize = 2;
-		float distance = 80;
-		Vector2 indicatorScale = _inverseUniversalScale / indicatorSize;
+		let indicatorSize = 2.,
+			distance = 80.,
+			indicatorScale = _inverseUniversalScale / indicatorSize;
 		
 		for (int i = 0; i < _grazeIndicators.Size(); i++)
 		{
 			if (_grazeIndicators[i].timer <= 0 || !_grazeIndicators[i].grazing)
 				continue;
 			
-			Vector3 targetPos = _grazeIndicators[i].sourcePos;
-			let player = CPlayer.mo;
-			Vector3 diff = level.Vec3Diff(pos, targetPos);
-			float ang = player.DeltaAngle(angles.z, VectorAngle(diff.x, diff.y));
-			float alpha = min(1, (_grazeIndicators[i].timer - ticFrac) / GRAZE_INDICATOR_TIME);
+			let targetPos = _grazeIndicators[i].sourcePos,
+				player = CPlayer.mo,
+				diff = level.Vec3Diff(pos, targetPos),
+				ang = player.DeltaAngle(angles.z, VectorAngle(diff.x, diff.y)),
+				alpha = min(1., (_grazeIndicators[i].timer - ticFrac) / GRAZE_INDICATOR_TIME);
 			
 			DrawTextureRotated(
 				_grazeMarker,
