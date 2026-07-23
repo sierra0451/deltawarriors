@@ -392,17 +392,11 @@ class KrisPlayer : DeltaPlayer
 		slideAngleOffset -= angleDiff;
 	}
 	
-	override void CheckJump()
+	override void DoJump()
 	{
-		if (!level.IsJumpingAllowed() || crouchState != CS_SLIDING)
-		{
-			Super.CheckJump();
-			return;
-		}
+		Super.DoJump();
 		
-		float oldVel = vel.z;
-		Super.CheckJump();
-		if (vel.z > oldVel && vel.z == JumpZ * 35 / GameTicRate)
+		if (crouchState == CS_SLIDING)
 			EndSlide();
 	}
 	
@@ -413,10 +407,10 @@ class KrisPlayer : DeltaPlayer
 		if (!player || totallyFrozen)
 			return;
 		
-		int buttons = player.cmd.buttons,
-			crouchDir = (buttons & BT_CROUCH) ? -1 : 1;
-		bool doingMoveInput = player ? (player.cmd.forwardMove || player.cmd.sideMove)
-			: false;
+		let buttons = player.cmd.buttons,
+			crouchDir = (buttons & BT_CROUCH) ? -1 : 1,
+			doingMoveInput = player ? bool(player.cmd.forwardMove || player.cmd.sideMove)
+				: false;
 		
 		if (crouchState != CS_SLIDING && ((buttons & BT_CROUCH && !(player.oldButtons & BT_CROUCH))
 			|| (crouchDir == -1 && _lastCrouchedWhileAirborne && !_lastCrouchedWhileGrounded))
