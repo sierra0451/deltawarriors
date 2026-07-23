@@ -69,6 +69,7 @@ class DeltaPlayer : PlayerPawn abstract
 	
 	const COYOTE_TIME = 3;
 	const JUMP_BUFFER_TIME = 3;
+	const MAX_WALL_JUMPS = 3;
 	const ANIM_GROUNDED_HANG_TIME = 3;
 	const MAX_AIR_BOB_TICS = 7;
 	const DELTA_AIR_CONTROL = 0.4;
@@ -87,6 +88,7 @@ class DeltaPlayer : PlayerPawn abstract
 	
 	protected int coyoteTimer; 						// used to handle coyote time
 	protected int jumpBuffer, airBobTics, hugTimer;
+	protected int wallJumps;
 	protected double customBobPerc;
 	protected int damageTics; 						// invulnerability frames, essentially
 	protected int lastDamageTaken;
@@ -579,6 +581,9 @@ class DeltaPlayer : PlayerPawn abstract
 		}
 		
 		player.onGround = IsGrounded();
+		if (player.onGround)
+			wallJumps = 0;
+		
 		double perc = 1 - airBobTics*1. / MAX_AIR_BOB_TICS;
 		
 		// killough 10/98:
