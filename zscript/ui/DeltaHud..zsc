@@ -30,7 +30,7 @@ class DeltaHud : BaseStatusBar
 	DeltaPlayer ply;
 	Vector3 pos, angles;
 	protected bool _infiniteAmmo;
-	protected double _hBorder, _vBorder;
+	protected double _hBorder, _vBorder, _oldTp, _oldHealth;
 	protected Vector2 _universalScale, _inverseUniversalScale;
 	protected HUDFont _consoleFont, _noShadowFont, _drHudFont, _tpFont;
 	protected TextureID _hpText, _tpBarBack, _tpBarBackMax, _tpBar,
@@ -40,9 +40,7 @@ class DeltaHud : BaseStatusBar
 		_ammoBottomBorders, _statsBackground, _statsBorders,
 		_statsKillIcon, _statsItemIcon, _statsSecretIcon, _statsDeathIcon,
 		_statsTimeIcon, _statsSpeedIcon, _invPanel, _invPanelBorders;
-	
 	protected InventoryBarState _bar;
-	protected double _oldTp, _oldHealth;
 	protected DynamicValueInterpolator _tpInterp, _healthInterp;
 	
 	private Array<class<Ammo> > _ammos;
