@@ -12,7 +12,7 @@ extend class DeltaPlayer
 			return;
 		
 		let cmd = player.cmd,
-			velFactor = max(abs(cmd.forwardMove/12800.), abs(cmd.sideMove/10240.));
+			velFactor = max(abs(desiredMove.y), abs(desiredMove.x));
 		
 		if (velFactor > 1)
 			velFactor = 1;

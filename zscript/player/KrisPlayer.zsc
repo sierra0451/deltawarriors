@@ -422,10 +422,8 @@ class KrisPlayer : DeltaPlayer
 			|| (crouchDir == -1 && _lastCrouchedWhileAirborne && !_lastCrouchedWhileGrounded))
 			&& coyoteTimer <= COYOTE_TIME && IsCrouching())
 		{
-			let dir = (GetPlayerInput(INPUT_FORWARDMOVE) / 12800., GetPlayerInput(INPUT_SIDEMOVE) / 10240.);
-			
-			if (buttons & BT_RUN && (abs(dir.x) > 0.1 || abs(dir.y) > 0.1))
-				StartSlide(-VectorAngle(dir.x, dir.y));
+			if (buttons & BT_RUN && (abs(desiredMove.x) > 0.1 || abs(desiredMove.y) > 0.1))
+				StartSlide(-VectorAngle(desiredMove.y, desiredMove.x));
 		}
 		else if (crouchDir == -1 && crouchState == CS_SLIDING)
 			CrouchMove(-2);
@@ -494,7 +492,7 @@ class KrisPlayer : DeltaPlayer
 			return Super.GetViewRoll();
 		
 		double _roll = Super.GetViewRoll();
-		_roll += (5. + 3. * GetPlayerInput(INPUT_SIDEMOVE) / 10240.)
+		_roll += (5. + 3. * desiredMove.x)
 			* _slideTics / MAX_SLIDE_TICS;
 		
 		return _roll;
@@ -560,10 +558,8 @@ class KrisPlayer : DeltaPlayer
 			if (reactionTime)
 				return;
 			
-			let
-				sideInput = GetPlayerInput(INPUT_SIDEMOVE) / 10240.,
-				speedPerc = _currentSlideSpeed / slideSpeed,
-				adjustFactor = sideInput * slideAdjustSpeed * speedPerc;
+			let speedPerc = _currentSlideSpeed / slideSpeed,
+				adjustFactor = desiredMove.x * slideAdjustSpeed * speedPerc;
 			
 			slideX += sin(Angle) * adjustFactor;
 			slideY -= cos(Angle) * adjustFactor;

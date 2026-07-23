@@ -110,6 +110,7 @@ class DeltaPlayer : PlayerPawn abstract
 	protected bool didFirstDeathAnim;
 	
 	protected double angleDiff;
+	protected Vector2 desiredMove;
 	
 	protected state
 		SpawnGunState,				SpawnMeleeState,		SpawnMagicState,
@@ -131,8 +132,6 @@ class DeltaPlayer : PlayerPawn abstract
 	
 	private double _targetRoll;
 	private bool _frozenDeath;				// using this for custom ice death that doesn't automatically shatter us lol
-	
-	private Vector2 _desiredMove, _move;
 	
 	private Vector2 _currentFlinch;			// used for weapon flinching when taking damage
 	private int _flinchTics;
@@ -579,7 +578,7 @@ class DeltaPlayer : PlayerPawn abstract
 			_turn = clamp(_turn + angleDiff*0.2, -MAX_TURN, MAX_TURN);
 		}
 		
-		player.onGround = !(player.cheats & (CF_NOCLIP2|CF_FLY)) && pos.z <= floorZ;
+		player.onGround = IsGrounded();
 		double perc = 1 - airBobTics*1. / MAX_AIR_BOB_TICS;
 		
 		// killough 10/98:
@@ -596,6 +595,8 @@ class DeltaPlayer : PlayerPawn abstract
 		fm *= Speed / 256;
 		sm *= Speed / 256;
 		
+		desiredMove = (cmd.sideMove / 10240., cmd.forwardMove / 12800.);
+		
 		if (!player.onGround && !bNoGravity && !waterlevel)
 		{
 			ApplyAirControl(moveFactor, bobFactor);
@@ -605,10 +606,10 @@ class DeltaPlayer : PlayerPawn abstract
 			
 			if (!fm && !sm && airFriction != 0)
 			{
-				vel.x /= airFriction;
-				vel.y /= airFriction;
+				vel.x = airFriction? (vel.x/airFriction) : 0.;
+				vel.y = airFriction? (vel.y/airFriction) : 0.;
 				
-				if (player.mo == self)
+				if (player.mo == self && airFriction)
 					player.vel /= airFriction;
 			}
 		}
@@ -1012,16 +1013,23 @@ class DeltaPlayer : PlayerPawn abstract
 			jumpBuffer = JUMP_BUFFER_TIME;
 		
 		// [RH] check for jump
-		if (jumpBuffer > 0)
+		if (jumpBuffer <= 0)
+			return;
+		
+		jumpBuffer--;
+		
+		if (waterLevel >= 2)
+			Vel.Z = 4 * Speed;
+		else if (bNoGravity)
+			Vel.Z = 3.;
+		else if (level.IsJumpingAllowed())
 		{
-			jumpBuffer--;
-			
-			if (waterLevel >= 2)
-				Vel.Z = 4 * Speed;
-			else if (bNoGravity)
-				Vel.Z = 3.;
-			else if (level.IsJumpingAllowed() && coyoteTimer <= COYOTE_TIME && Vel.Z <= 0)
+			if (coyoteTimer <= COYOTE_TIME && Vel.Z <= 0)
 				DoJump();
+			else
+			{
+				
+			}
 		}
 	}
 	
