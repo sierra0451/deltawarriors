@@ -88,11 +88,22 @@ extend class DeltaHud
 	
 	protected void DrawGrazeIndicators(double ticFrac)
 	{
-		if (!cl_delta_showGrazeIndicators)
-			return;
-		
 		let ply = DeltaPlayer(CPlayer.mo);
 		if (!ply)
+			return;
+		
+		let showInd = cl_delta_showGrazeIndicators;
+		
+		if (ply.grazeTics)
+		{
+			let val = showInd? 120 : 200,
+				alpha = 1. * val * ply.grazeTics / DeltaPlayer.MAX_GRAZE_TICS;
+			
+			DrawTexture(_grazeStencil, (0, 0), DI_SCREEN_CENTER | DI_ITEM_OFFSETS,
+				scale: _universalScale * 2, col: Color(int(alpha), val, val, val));
+		}
+		
+		if (!showInd)
 			return;
 		
 		Screen.EnableStencil(true);
