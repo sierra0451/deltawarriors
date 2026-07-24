@@ -943,7 +943,7 @@ class DeltaPlayer : PlayerPawn abstract
 			
 			// [Sierra0451] adjusted this to account for weapons bobbing less
 			// when we're in the air, or depending on our player class (Kris
-			// reduces bobbing when they're sliding, for example
+			// reduces bobbing when they're sliding, for example)
 			player.bob *= player.GetMoveBob() * perc * perc * customBobPerc;
 			
 			if (player.bob > MAXBOB)
@@ -956,10 +956,10 @@ class DeltaPlayer : PlayerPawn abstract
 		
 		if (player.cheats & CF_NOVELOCITY)
 		{
-			player.viewz = pos.Z + defaultviewheight;
+			player.viewZ = pos.Z + defaultViewHeight;
 			
-			if (player.viewz > ceilingz-4)
-				player.viewz = ceilingz-4;
+			if (player.viewZ > ceilingZ-4)
+				player.viewZ = ceilingZ-4;
 			
 			return;
 		}
@@ -970,44 +970,40 @@ class DeltaPlayer : PlayerPawn abstract
 			bob = player.bob * sin(bobSpeed) * (waterlevel > 1 ? 0.25f : 0.5f);
 		}
 		
-		// move viewheight
+		// move viewHeight
 		if (player.playerstate == PST_LIVE)
 		{
-			player.viewheight += player.deltaviewheight;
-
-			if (player.viewheight > defaultviewheight)
+			player.viewHeight += player.deltaViewHeight;
+			
+			if (player.viewHeight > defaultViewHeight)
 			{
-				player.viewheight = defaultviewheight;
-				player.deltaviewheight = 0;
+				player.viewHeight = defaultViewHeight;
+				player.deltaViewHeight = 0;
 			}
-			else if (player.viewheight < (defaultviewheight/2))
+			else if (player.viewHeight < defaultViewHeight/2)
 			{
-				player.viewheight = defaultviewheight/2;
-				if (player.deltaviewheight <= 0)
-					player.deltaviewheight = 1 / 65536.;
+				player.viewHeight = defaultViewHeight/2;
+				if (player.deltaViewHeight <= 0)
+					player.deltaViewHeight = double.EQUAL_EPSILON;
 			}
-
-			if (player.deltaviewheight)
+			
+			if (player.deltaViewHeight)
 			{
-				player.deltaviewheight += 0.25;
-				if (!player.deltaviewheight)
-					player.deltaviewheight = 1/65536.;
+				player.deltaViewHeight += 0.25;
+				if (!player.deltaViewHeight)
+					player.deltaViewHeight = double.EQUAL_EPSILON;
 			}
 		}
-
+		
 		if (Alternative)
 			bob = 0;
 		
 		player.viewZ = pos.Z + player.viewHeight + (bob * clamp(ViewBob, 0. , 1.5)); // [SP] Allow DECORATE changes to view bobbing speed.
-
+		
 		if (FloorClip && player.playerState != PST_DEAD && pos.Z <= floorz)
 			player.viewZ -= FloorClip;
 		
-		if (player.viewZ > ceilingZ - 4)
-			player.viewZ = ceilingZ - 4;
-		
-		if (player.viewZ < floorZ + 4)
-			player.viewZ = floorZ + 4;
+		player.viewZ = clamp(player.viewZ, floorZ + 4, ceilingZ - 4);
 	}
 	
 	// Grabbing GZDoom's player code and retooling it to work with coyote time and jump buffering
