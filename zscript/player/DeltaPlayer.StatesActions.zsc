@@ -145,7 +145,12 @@ extend class DeltaPlayer
 		// use deselect state, which would look weird since it's actually
 		// animated
 		if (player)
-			A_ClearOverlays(safety: false); // safety is false, we wanna remove EVERYTHING
+		{
+			if (player.ReadyWeapon)
+				player.ReadyWeapon.bNoDeathDeselect = true;
+			
+			player.mo.A_ClearOverlays(safety: false); // safety is false, we wanna remove EVERYTHING
+		}
 		
 		if (!freeze)
 			invoker.bCanPass = false;		// make sure our corpse doesn't get
