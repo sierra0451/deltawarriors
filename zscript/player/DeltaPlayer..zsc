@@ -823,6 +823,9 @@ class DeltaPlayer : PlayerPawn abstract
 			let exp = Spawn("DeltaBadExplosion");
 			exp.SetOrigin(pos.PlusZ(fullHeight / 2.), false);
 			
+			if (vel.z <= -15.)
+				vel.z = 0;
+			
 			vel.z += frandom[explodeLaunch](10, 15);
 		}
 		
