@@ -248,7 +248,7 @@ class DeltaWeapon : Weapon
 			stat = GetAtkState(!!ply.refire);
 		
 		if (!bNoAlert)
-			SoundAlert(owner);
+			owner.A_AlertMonsters();
 		
 		ply.SetPsprite(PSP_WEAPON, stat);
 		A_ResetAtEase();
@@ -268,7 +268,7 @@ class DeltaWeapon : Weapon
 			stat = GetAltAtkState(!!ply.refire);
 		
 		if (!bNoAlert)
-			SoundAlert(owner);
+			owner.A_AlertMonsters();
 		
 		ply.SetPsprite(PSP_WEAPON, stat);
 		A_ResetAtEase();
@@ -285,7 +285,7 @@ class DeltaWeapon : Weapon
 	// making this a virtual instead of a property so custom weapons could
 	// potentially override this based on, for example, what kind of cycling
 	// they need (i.e. potentially cycling for an alt-fire could take longer
-	// than cycling for primary
+	// than cycling for primary)
 	virtual int GetBackpackCycleTics()
 	{
 		return GameTicRate * 5; // five seconds by default

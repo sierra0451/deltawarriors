@@ -50,7 +50,7 @@ class KrisRevolver : DeltaWeapon
 			TNT1 A 2 A_StartRaiseWeapon;
 			DKRD A 2
 			{
-				A_StartSound("delta/revolver/deploy1", CHAN_WEAPON,
+				self.A_StartSound("delta/revolver/deploy1", CHAN_WEAPON,
 					CHANF_OVERLAP);
 				return A_DeltaWeaponReady(WRF_NOFIRE | WRF_NOBOB);
 			}
@@ -58,7 +58,7 @@ class KrisRevolver : DeltaWeapon
 			DKRD DF 2 A_ReadyIfCocked(WRF_NOBOB);
 			DKRD G 3
 			{
-				A_StartSound("delta/revolver/deploy2", CHAN_WEAPON,
+				self.A_StartSound("delta/revolver/deploy2", CHAN_WEAPON,
 					CHANF_OVERLAP);
 				return A_ReadyIfCocked(WRF_NOBOB);
 			}
@@ -230,15 +230,15 @@ class KrisRevolver : DeltaWeapon
 	{
 		A_FireBullets(1, 1, 1, random[revolverDmg](40, 50), "KrisRevolverPuff",
 			FBF_USEAMMO | FBF_NORANDOM, spawnHeight: 32 * invoker.GetCrouchFactor());
-		A_StartSound("delta/revolver/fire", CHAN_WEAPON, CHANF_OVERLAP);
+		self.A_StartSound("delta/revolver/fire", CHAN_WEAPON, CHANF_OVERLAP);
 		A_AlertMonsters();
 		A_OwnerPlayAttack();
 		A_AddDynamicLight("revolverMuzzle", "DeltaGenericMuzzle");
 		invoker.needsCycling = true;
 		
 		invoker.chargeTics = 0;
-		if (IsActorPlayingSound(CHAN_CHARGE))
-			A_StopSound(CHAN_CHARGE);
+		if (self.IsActorPlayingSound(CHAN_CHARGE))
+			self.A_StopSound(CHAN_CHARGE);
 	}
 	
 	protected action void A_Cock()
@@ -293,13 +293,13 @@ class KrisRevolver : DeltaWeapon
 		
 		double perc = invoker.GetChargePercent();
 		
-		if (IsActorPlayingSound(CHAN_CHARGE))
+		if (self.IsActorPlayingSound(CHAN_CHARGE))
 		{
-			A_SoundVolume(CHAN_CHARGE, perc);
-			A_SoundPitch(CHAN_CHARGE, perc);
+			self.A_SoundVolume(CHAN_CHARGE, perc);
+			self.A_SoundPitch(CHAN_CHARGE, perc);
 		}
 		else
-			A_StartSound("delta/revolver/charge", CHAN_CHARGE, CHANF_LOOPING,
+			self.A_StartSound("delta/revolver/charge", CHAN_CHARGE, CHANF_LOOPING,
 				volume: perc, pitch: perc);
 		
 		return ResolveState(null);
@@ -348,8 +348,8 @@ class KrisRevolver : DeltaWeapon
 				-aimPitchVec.y) * proj.Speed;
 		}
 		
-		A_StopSound(CHAN_CHARGE);
-		A_StartSound("delta/revolver/charge_shot", CHAN_WEAPON, CHANF_OVERLAP);
+		self.A_StopSound(CHAN_CHARGE);
+		self.A_StartSound("delta/revolver/charge_shot", CHAN_WEAPON, CHANF_OVERLAP);
 		A_AlertMonsters();
 		A_OwnerPlayAttack();
 		A_AddDynamicLight("revolverCharge", "DeltaRevolverChargeShotMuzzle");

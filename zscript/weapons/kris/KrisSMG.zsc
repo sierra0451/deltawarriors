@@ -66,7 +66,11 @@ class KrisSmg : DeltaWeapon
 				return ResolveState(null);
 			}
 		Hold: // fallthrough is intentional
-			DKSM B 1 A_KrisSmgFire;
+			DKSM B 1
+			{
+				A_KrisSmgFire();
+				A_AlertMonsters();
+			}
 			DKSM B 1 A_ZoomFactor(1, ZOOM_NOSCALETURNING);
 			DKSM C 2 A_RemoveDynamicLight("smgMuzzle");
 			DKSM D 1;

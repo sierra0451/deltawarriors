@@ -447,12 +447,11 @@ class KrisPlayer : DeltaPlayer
 	override void CalcHeight()
 	{
 		let tempZ = pos.Z + ViewHeight + player.crouchViewDelta;
-
+		
 		if (tempZ > ceilingZ-4)
 			tempZ = ceilingZ-4;
 		
 		Super.CalcHeight();
-		
 		player.viewZ = player.viewZ + (tempZ - player.viewZ) * (double(_slideTics) / MAX_SLIDE_TICS);
 	}
 	
@@ -461,8 +460,8 @@ class KrisPlayer : DeltaPlayer
 		if (crouchState != CS_SLIDING)
 			return Super.CanCollideWith(other, passive);
 		
-		if (other.bIsMonster && (other.mass <= 200 || other.health <= 0)
-			&& (!other.player || !other.player.cheats & CF_PREDICTING))
+		if (other.bIsMonster && (other.health <= 0 || (other.mass <= 200
+			&& (!other.player || !other.player.cheats & CF_PREDICTING))))
 			return false;
 		
 		return Super.CanCollideWith(other, passive);
