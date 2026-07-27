@@ -1234,7 +1234,7 @@ class DeltaPlayer : PlayerPawn abstract
 		{
 			// Bob the weapon based on movement speed. ([SP] And user's bob speed setting)
 			double angle = (bobSpeed * player.GetWBobSpeed() * 35 /
-				TICRATE*(player.BobTimer - 1 + i)) * (360. / 8192.);
+				TICRATE*(level.mapTime - 1 + i)) * (360. / 8192.);
 			
 			// [RH] Smooth transitions between bobbing and not-bobbing frames.
 			// This also fixes the bug where you can "stick" a weapon off-center by

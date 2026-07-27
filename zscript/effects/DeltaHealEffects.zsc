@@ -60,9 +60,8 @@ class DeltaHealSparkle : Actor
 			lightId: "sparkleLight",
 			type: DynamicLight.PointLight,
 			lightColor: "00ff00",
-			radius1: 16,
-			radius2: 0,
-			intensity: showLight? alpha : 0.
+			radius1: showLight? (16. * alpha) : 0.,
+			radius2: 0
 		);
 	}
 }
