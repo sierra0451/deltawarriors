@@ -742,8 +742,13 @@ class KrisPlayer : DeltaPlayer
 				continue;
 			
 			let parriable = DeltaParriable(mis.FindInventory("DeltaParriable", true));
-			if (!mis.bMissile && !mis.bSkullfly && (!parriable || !parriable.CanBeParried()))
-				continue;
+			if (!mis.bMissile && !mis.bSkullfly &&
+				(!mis.bIsMonster || !mis.curState.InStateSequence(mis.ResolveState("Melee"))))
+			{
+				if (!parriable || !parriable.CanBeParried())
+					continue;
+			}
+			
 			if (mis.curState.InStateSequence(mis.ResolveState("Death")))
 				continue;
 			
