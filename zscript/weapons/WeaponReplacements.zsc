@@ -69,11 +69,10 @@ class DeltaWeaponPickup : Weapon
 			return false;
 		
 		let realWeap = Weapon(Spawn(weap));
+		realWeap.bDropped = bDropped;
+		
 		if (bDropped)
-		{
-			realWeap.bDropped = true;
 			realWeap.ModifyDropAmount(-1);
-		}
 		
 		if (!realWeap.TryPickup(toucher))
 		{
