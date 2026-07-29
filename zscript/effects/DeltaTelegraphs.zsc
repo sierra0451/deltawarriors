@@ -29,8 +29,8 @@ class DeltaTelegraph : Actor
 				pitch: 1. + cfrandom(-maxPitchShift, maxPitchShift));
 			EYSP B 2 A_AttachLight("telegraphLight", DynamicLight.PointLight, fillColor, 28, 6);
 			EYSP C 2 A_AttachLight("telegraphLight", DynamicLight.PointLight, fillColor, 32, 8);
-			EYSP D 2 A_AttachLight("telegraphLight", DynamicLight.PointLight, fillColor, 28 * 0.7, 6);
-			EYSP E 2 A_AttachLight("telegraphLight", DynamicLight.PointLight, fillColor, 24 * 0.3, 4);
+			EYSP D 2 A_AttachLight("telegraphLight", DynamicLight.PointLight, fillColor, int(28 * 0.7), 6);
+			EYSP E 2 A_AttachLight("telegraphLight", DynamicLight.PointLight, fillColor, int(24 * 0.3), 4);
 			Stop;
 	}
 	
