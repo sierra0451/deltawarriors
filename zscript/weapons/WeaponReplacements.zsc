@@ -166,6 +166,7 @@ class ChaingunReplacer : DeltaWeaponPickup replaces Chaingun
 	}
 }
 
+/*
 class RocketLauncherReplacer : DeltaWeaponPickup replaces RocketLauncher
 {
 	override void AddPickups()
@@ -173,3 +174,4 @@ class RocketLauncherReplacer : DeltaWeaponPickup replaces RocketLauncher
 		actualPickups.Insert("KrisPlayer", "RocketLauncher");
 	}
 }
+*/
