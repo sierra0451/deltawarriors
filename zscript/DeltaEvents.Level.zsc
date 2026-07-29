@@ -554,13 +554,12 @@ class DeltaLevelEvents : EventHandler
 		
 		hud.pos = e.viewPos;
 		hud.angles = (e.viewPitch, e.viewRoll, e.viewAngle);
-		EventHandler.SendNetworkEvent("DeltaUpdateViewPos",
-			int(e.viewPos.x), int(e.viewPos.y), int(e.viewPos.z));
+		//viewPos = e.viewPos;
 	}
 	
 	override void UiTick()
 	{
-		EventHandler.SendNetworkEvent("DeltaUpdateTime", SystemTime.Now());
+		//EventHandler.SendNetworkEvent("DeltaUpdateTime", SystemTime.Now());
 	}
 	
 	override bool InputProcess(InputEvent e)
