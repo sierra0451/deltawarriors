@@ -42,30 +42,6 @@ class DeltaLevelEvents : EventHandler
 		else if (mapset ~== "BTSX2" && (_name ~== "map05" || _name ~== "map11"
 			|| _name ~== "map16" || _name ~== "map23" || _name ~== "map27"))
 			Actor.Spawn("DeltaWeaponsAtEase");
-		
-		scrollTags.Clear();
-		
-		for (int i = 0; i < level.lines.Size(); i++)
-		{
-			// gross ass hack but scrollers aren't exposed, so this is the best i got for the moment
-			if (level.lines[i].special || level.lines[i].args[2] == 0
-				|| scrollTags.Find(level.lines[i].args[0]) != scrollTags.Size())
-				continue;
-			
-			scrollTags.Push(level.lines[i].args[0]);
-		}
-		
-		for (int j = 0; j < level.sectors.Size(); j++)
-		{
-			if (!level.sectors[j].damageAmount || level.sectors[j].damageInterval != 32)
-				continue;
-			
-			level.sectors[j].damageInterval = 15;
-			level.sectors[j].damageAmount = max(1, level.sectors[j].damageAmount / 3);
-		}
-		
-		if (r_deathcamera)
-			Console.Printf("\c[DeltaRed]NOTE: Highly recommend setting r_deathcamera to 0!\c-");
 	}
 	
 	override void WorldUnloaded(WorldEvent e)
