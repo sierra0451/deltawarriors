@@ -473,30 +473,6 @@ class DeltaLevelEvents : EventHandler
 		}
 	}
 	
-	/*
-	override void NetworkCommandProcess(NetworkCommand cmd)
-	{
-		if (cmd.Command == "CreateDebugMarker")
-		{
-			Vector3 pos = cmd.ReadVector3();
-			
-			int lifetime = -1;
-			if (!cmd.EndOfStream())
-				lifetime = cmd.ReadInt();
-			
-			Color col = 0xffffffff;
-			if (!cmd.EndOfStream())
-				col = uint(cmd.ReadInt());
-			
-			double alpha = 1.;
-			if (!cmd.EndOfStream())
-				alpha = cmd.ReadDouble();
-			
-			DeltaDebugPositionMarker.SpawnMarker(pos, lifetime, col, alpha);
-		}
-	}
-	*/
-	
 	override void InterfaceProcess(ConsoleEvent e)
 	{
 		if (e.IsManual)
