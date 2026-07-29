@@ -473,6 +473,7 @@ class DeltaLevelEvents : EventHandler
 		}
 	}
 	
+	/*
 	override void NetworkCommandProcess(NetworkCommand cmd)
 	{
 		if (cmd.Command == "CreateDebugMarker")
@@ -494,6 +495,7 @@ class DeltaLevelEvents : EventHandler
 			DeltaDebugPositionMarker.SpawnMarker(pos, lifetime, col, alpha);
 		}
 	}
+	*/
 	
 	override void InterfaceProcess(ConsoleEvent e)
 	{
