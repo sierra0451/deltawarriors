@@ -383,7 +383,9 @@ class KrisPlayer : DeltaPlayer
 	{
 		_oldSlideVel = vel;
 		Super.PlayerThink();
-		HandleSlide();
+		
+		if (!IsPredicting())
+			HandleSlide();
 	}
 	
 	override void MovePlayer()
