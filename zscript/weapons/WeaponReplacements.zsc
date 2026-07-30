@@ -62,6 +62,15 @@ class DeltaWeaponPickup : Weapon
 		return GetDefaultByType(weap).PickupMessage();
 	}
 	
+	override bool CanPickup(Actor toucher)
+	{
+		let weap = GetWeapon();
+		if (!weap)
+			return false;
+		
+		return GetDefaultByType(weap).CanPickup(toucher);
+	}
+	
 	override bool TryPickup(in out Actor toucher)
 	{
 		let weap = GetWeapon();
@@ -74,7 +83,7 @@ class DeltaWeaponPickup : Weapon
 		if (bDropped)
 			realWeap.ModifyDropAmount(-1);
 		
-		if (!realWeap.TryPickup(toucher))
+		if (!realWeap.CallTryPickup(toucher))
 		{
 			realWeap.Destroy();
 			return false;
@@ -82,15 +91,6 @@ class DeltaWeaponPickup : Weapon
 		
 		GoAwayAndDie();
 		return true;
-	}
-	
-	override bool CanPickup(Actor toucher)
-	{
-		let weap = GetWeapon();
-		if (!weap)
-			return false;
-		
-		return GetDefaultByType(weap).CanPickup(toucher);
 	}
 	
 	override void AttachToOwner(Actor other) { }
@@ -166,7 +166,6 @@ class ChaingunReplacer : DeltaWeaponPickup replaces Chaingun
 	}
 }
 
-/*
 class RocketLauncherReplacer : DeltaWeaponPickup replaces RocketLauncher
 {
 	override void AddPickups()
@@ -174,4 +173,3 @@ class RocketLauncherReplacer : DeltaWeaponPickup replaces RocketLauncher
 		actualPickups.Insert("KrisPlayer", "RocketLauncher");
 	}
 }
-*/
