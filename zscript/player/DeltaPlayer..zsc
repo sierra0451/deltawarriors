@@ -1329,6 +1329,40 @@ class DeltaPlayer : PlayerPawn abstract
 		if (name ~== "all" || name ~== "everything" || name ~== "ammo")
 			AddTension(maxTensionPoints);
 		
+		if ((name ~== "all" || name ~== "everything" || name ~== "weapons") && player)
+		{
+			let savedPending = player.PendingWeapon,
+				weaps = player.weapons;
+			
+			for (int i = 0; i <= 9; i++)
+			{
+				let slotSize = weaps.SlotSize(i);
+				if (!slotSize)
+					continue;
+				
+				for (int j = 0; j < slotSize; j++)
+				{
+					let weap = weaps.GetWeapon(i, j);
+					if (!weap)
+						continue;
+					
+					let replace = GetReplacement(weap);
+					if (!replace)
+						continue;
+					
+					let pick = DeltaWeaponPickup(Spawn(replace));
+					if (!pick || !pick.GetWeapon(self))
+						continue;
+					
+					GiveInventory(pick.GetWeapon(self), 1, true);
+					Console.Printf("Got pickup! " .. pick.GetClassName()
+						.. " gave us a " .. pick.GetWeapon(self).GetClassName());
+				}
+			}
+			
+			player.PendingWeapon = savedPending;
+		}
+		
 		Super.CheatGive(name, amount);
 	}
 	
