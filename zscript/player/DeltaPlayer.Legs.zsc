@@ -42,7 +42,7 @@ extend class DeltaPlayer
 		if (inJurisdiction && waterLevel >= 2 && !IsGrounded())
 		{
 			if (psp)
-				psp.SetState(null);
+				psp.frame = -1;
 			
 			return;
 		}
