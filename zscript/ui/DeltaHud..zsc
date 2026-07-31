@@ -519,7 +519,7 @@ class DeltaHud : BaseStatusBar
 		
 		if (levelStats >= LVLSTATS_INFO || automapActive)
 		{
-			let author = level.authorName,
+			let author = StringTable.Localize(level.authorName),
 				fontH = _consoleFont.mFont.GetHeight(),
 				infoY = -_vBorder - fontH*_universalScale.y;
 			
