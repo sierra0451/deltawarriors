@@ -15,32 +15,6 @@ $pitchshiftrange 0
 		delta/generic_badExplosion = "sounds/weapons/generic_badExplosion.wav"
 		
 		// Jumping/landing
-		delta/jump1 = "sounds/player/shared/jump/player_jump1.wav"
-		delta/jump2 = "sounds/player/shared/jump/player_jump2.wav"
-		delta/jump3 = "sounds/player/shared/jump/player_jump3.wav"
-		delta/jump4 = "sounds/player/shared/jump/player_jump4.wav"
-		delta/jump5 = "sounds/player/shared/jump/player_jump5.wav"
-		delta/land1 = "sounds/player/shared/land/player_land1.wav"
-		delta/land2 = "sounds/player/shared/land/player_land2.wav"
-		delta/land3 = "sounds/player/shared/land/player_land3.wav"
-		
-		/*
-		$random delta/jump
-		{
-			delta/jump1
-			delta/jump2
-			delta/jump3
-			delta/jump4
-			delta/jump5
-		}
-		$random delta/land
-		{
-			delta/land1
-			delta/land2
-			delta/land3
-		}
-		*/
-		
 		delta/jump = "sounds/player/shared/jump/player_newJump.wav"
 		delta/land = "sounds/player/shared/land/player_newLand.wav"
 		
