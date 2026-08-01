@@ -81,6 +81,7 @@ extend class DeltaPlayer
 	{
 		if (damage <= 0 || health <= 0)
 			return;
+		
 		if (painTimer > 0)
 			return;
 		if (mod == "Drowning")
@@ -96,6 +97,8 @@ extend class DeltaPlayer
 		if (health > 0 || mod == "Drowning" || mod == "Falling")
 			return;
 		
+		painTimer = -1;
+		painAmount = 0;
 		string deathSnd = "medium_death";
 		
 		if (health <= -GetMaxHealth()/2)
