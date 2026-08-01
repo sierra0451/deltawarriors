@@ -530,12 +530,19 @@ class DeltaLevelEvents : EventHandler
 		
 		hud.pos = e.viewPos;
 		hud.angles = (e.viewPitch, e.viewRoll, e.viewAngle);
-		//viewPos = e.viewPos;
+		
+		if (!e.fracTic || e.camera != players[consolePlayer].camera)
+			return;
+		
+		EventHandler.SendNetworkEvent("DeltaUpdateViewPos", int(e.viewPos.x), int(e.viewPos.y), int(e.viewPos.z));
 	}
 	
-	override void UiTick()
+	override void PostUiTick()
 	{
-		//EventHandler.SendNetworkEvent("DeltaUpdateTime", SystemTime.Now());
+		if (level.time % GameTicRate)
+			return;
+		
+		EventHandler.SendNetworkEvent("DeltaUpdateTime", SystemTime.Now());
 	}
 	
 	override bool InputProcess(InputEvent e)
