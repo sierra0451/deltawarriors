@@ -326,7 +326,7 @@ class DeltaLevelEvents : EventHandler
 			{
 				DeltaPlayer ply = DeltaPlayer(e.damageSource);
 				
-				if (!ply.GetDamageTics() && !e.inflictor.CountInv("DeltaNoGiveDamageTP"))
+				if (!ply.GetDamageTics() && (!e.inflictor || !e.inflictor.CountInv("DeltaNoGiveDamageTP")))
 					ply.AddTension(e.damage / 8);
 			}
 		}
