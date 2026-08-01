@@ -196,6 +196,7 @@ $pitchshiftrange 0
 
 // Player sounds
 	$playeralias	delta	neutral	*usefail	delta/use
+	$playeralias	delta	neutral	*grunt		dssilent
 	
 	// Overriding UZDoom sounds!
 	misc/i_pkup 		= 	"sounds/player/shared/player_pickupitem.wav"
