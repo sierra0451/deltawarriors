@@ -135,7 +135,6 @@ class DeltaLevelEvents : EventHandler
 		for (int i = reviving.Size() - 1; i >= 0; i--)
 		{
 			Actor revivee = reviving[i];
-			
 			if (!revivee)
 				continue;
 			if (revivee.InStateSequence(revivee.curState, revivee.FindState("Raise")))
@@ -143,8 +142,7 @@ class DeltaLevelEvents : EventHandler
 			if (revivee.Health <= 0)
 				continue;
 			
-			DeltaPopup.SpawnPopup("DeltaHealMaxPopup", revivee);
-			revivee.A_StartSound("delta/heal", CHAN_AUTO);
+			SpawnHealEffects(revivee, 1); // using 1 because it'll get overridden for us being at maxHealth
 			reviving[i] = null;
 		}
 	}
@@ -259,22 +257,17 @@ class DeltaLevelEvents : EventHandler
 		}
 	}
 	
-	virtual bool Heal(Actor target, int amount, int max = 0, bool useEffects = true)
+	virtual void SpawnHealEffects(Actor target, int amount, int max = 0)
 	{
-		let oldHealth = target.health;
-		if (!target.GiveBody(amount, max))
-			return false;
-		
 		target.A_StartSound("delta/heal", CHAN_HEALTH_SOUNDS);
 		if (target.health != (max? max : target.GetMaxHealth(true)))
-			DeltaHealPopup.SpawnNumbers(target, target.health - oldHealth);
+			DeltaHealPopup.SpawnNumbers(target, amount);
 		else
 			DeltaPopup.SpawnPopup("DeltaHealMaxPopup", target);
 		
 		let healEffect = DeltaHealEffect(Actor.Spawn("DeltaHealEffect", target.pos));
 		healEffect.A_SetSize(target.radius, target.height);
 		healEffect.master = target;
-		return true;
 	}
 	
 	override void WorldThingRevived(WorldEvent e)

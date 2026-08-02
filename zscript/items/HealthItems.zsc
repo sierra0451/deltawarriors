@@ -1,8 +1,13 @@
 class DeltaHealthBonus : HealthBonus replaces HealthBonus
 {
+	Default
+	{
+		Inventory.Amount 5; // make sure healing numbers pop up correctly
+	}
+	
 	override bool TryPickup(in out Actor toucher)
 	{
-		DeltaGlobals.GetLevelEvents().Heal(toucher, 5, toucher.GetMaxHealth() * 2);
+		toucher.GiveBody(5, toucher.GetMaxHealth() * 2);
 		GoAwayAndDie();
 		return true;
 	}
@@ -10,6 +15,11 @@ class DeltaHealthBonus : HealthBonus replaces HealthBonus
 
 class DeltaHealth : Health abstract
 {
+	Default
+	{
+		Inventory.MaxAmount 0;
+	}
+	
 	override bool TryPickup (in out Actor other)
 	{
 		PrevHealth = other.player != NULL ? other.player.health : other.health;
@@ -17,7 +27,7 @@ class DeltaHealth : Health abstract
 		// P_GiveBody adds one new feature, applied only if it is possible to
 		// pick up negative health: Negative values are treated as positive
 		// percentages, ie Amount -100 means 100% health, ignoring max amount.
-		if (DeltaGlobals.GetLevelEvents().Heal(other, Amount, MaxAmount))
+		if (other.GiveBody(Amount, MaxAmount))
 		{
 			GoAwayAndDie();
 			return true;
@@ -67,7 +77,7 @@ class DeltaHealthPickup : HealthPickup abstract
 	override bool Use(bool pickup)
 	{
 		_prevHealth = owner.health;
-		let result = DeltaGlobals.GetLevelEvents().Heal(owner, health, maxHealth);
+		let result = owner.GiveBody(health, maxHealth);
 		if (_alwaysAllowUse)
 			result = true;
 		if (result)
@@ -150,10 +160,10 @@ class DeltaSoulsphere : Soulsphere replaces Soulsphere
 {
 	override bool TryPickup(in out Actor toucher)
 	{
-		let amt = toucher.GetMaxHealth(true),
-			maxAmt = amt*2;
+		Amount = toucher.GetMaxHealth(true);
+		MaxAmount = Amount*2;
 		
-		if (DeltaGlobals.GetLevelEvents().Heal(toucher, amt, maxAmt))
+		if (toucher.GiveBody(Amount, MaxAmount))
 		{
 			GoAwayAndDie();
 			return true;
@@ -196,8 +206,8 @@ class DeltaMegasphereHealth : Health replaces MegasphereHealth
 	// making sure no matter who picks this thing up, we always give max overheal!
 	override bool TryPickup(in out Actor toucher)
 	{
-		let amt = toucher.GetMaxHealth()*2;
-		if (DeltaGlobals.GetLevelEvents().Heal(toucher, amt, amt))
+		Amount = MaxAmount = toucher.GetMaxHealth()*2;
+		if (toucher.GiveBody(Amount, Amount))
 		{
 			GoAwayAndDie();
 			return true;
