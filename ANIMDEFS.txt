@@ -1,9 +1,9 @@
 // Soul shards
 texture SSRDA0
-	pic SSRDA0 tics 5
-	pic SSRDB0 tics 5
-	pic SSRDC0 tics 5
-	pic SSRDB0 tics 5
+	pic SSRDA0 rand 4 7
+	pic SSRDB0 rand 4 7
+	pic SSRDC0 rand 4 7
+	pic SSRDB0 rand 4 7
 
 // Title screen
 texture DELTATT1

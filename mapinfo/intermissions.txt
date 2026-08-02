@@ -1,0 +1,31 @@
+/*
+// DOOM I episode 1 (or Ancient Aliens episode 1 part 1)
+cluster 1 {}
+
+// DOOM I episode 2 (or Ancient Aliens episode 1 part 2)
+cluster 2 {}
+
+// DOOM I episode 3 (or Ancient Aliens episode 2 part 1)
+cluster 3 {}
+
+// DOOM I episode 4 (or Ancient Aliens episode 2 part 2)
+cluster 4 {}
+
+// DOOM II first cluster (exiting map06) (or Ancient Aliens episode 3 part 1)
+cluster 5 {}
+
+// DOOM II second cluster (exiting map11) (or Ancient Aliens ending)
+cluster 6 {}
+
+// DOOM II third cluster (exiting map20)
+cluster 7 {}
+
+// DOOM II fourth cluster (beating map30, DOOM II ending)
+cluster 8 {}
+
+// DOOM II fifth cluster (finding secret level)
+cluster 9 {}
+
+// DOOM II sixth cluster (finding super-secret level)
+cluster 10 {}
+*/

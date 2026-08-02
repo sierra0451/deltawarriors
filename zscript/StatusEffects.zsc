@@ -1,0 +1,99 @@
+class DeltaStatusEffect : Inventory abstract
+{
+	protected int lifetime, statusTics, maxStatusTics;
+	protected bool additive;
+	
+	property StatusTics : statusTics;
+	property MaxStatusTics : maxStatusTics;
+	property Additive : additive;
+	
+	override void Tick()
+	{
+		Super.Tick();
+		
+		if (!owner)
+			Destroy();
+	}
+	
+	override void DoEffect()
+	{
+		Super.DoEffect();
+		statusTics--;
+		
+		if (!statusTics || owner.health <= 0)
+		{
+			EndStatus();
+			Destroy();
+			return;
+		}
+		
+		ApplyStatus();
+		lifetime++;
+	}
+	
+	protected virtual void InitStatus() { }
+	protected virtual void ApplyStatus() { }
+	protected virtual void EndStatus() { }
+	
+	protected void GiveTics(int effectTics)
+	{
+		if (effectTics < 0 || (!effectTics && additive))
+			return;
+		if (!maxStatusTics)
+			maxStatusTics = 0x7fffffff;
+		
+		statusTics = clamp(effectTics, 0, maxStatusTics);
+	}
+	
+	static void GiveStatus(class<DeltaStatusEffect> cls, Actor target, int effectTics = -1)
+	{
+		if (!cls || !target)
+			return;
+		
+		let effect = DeltaStatusEffect(target.FindInventory(cls));
+		if (!effect)
+		{
+			effect = DeltaStatusEffect(Actor.Spawn(cls));
+			effect.AttachToOwner(target);
+			effect.InitStatus();
+		}
+		
+		effect.GiveTics(effectTics);
+	}
+}
+
+class DeltaStun : DeltaStatusEffect
+{
+	override void ApplyStatus()
+	{
+		if (lifetime % 2)
+			return;
+		
+		for (int i; i < int(ceil(owner.height/10.)); i++)
+		{
+			FSpawnParticleParams p;
+			p.color1 = "00 ff ff";
+			p.flags = SPF_FULLBRIGHT;
+			p.lifetime = crandom(15, 25);
+			p.size = cfrandom(8., 10.);
+			p.startAlpha = 1;
+			p.fadeStep = -1;
+			
+			double pAng = cfrandom(-180, 180);
+			p.pos = owner.pos + (cos(pAng) * owner.radius, sin(pAng) * owner.radius, owner.height * cfrandom(0.1, 0.9));
+			
+			level.SpawnParticle(p);
+		}
+		
+		if (owner.player)
+			return;
+		
+		owner.TriggerPainChance("Electric", true);
+		owner.freezeTics++;
+	}
+	
+	override double GetSpeedFactor()
+	{
+		return 0.15;
+	}
+}

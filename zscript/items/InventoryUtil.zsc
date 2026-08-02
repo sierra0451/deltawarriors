@@ -7,6 +7,16 @@ class DeltaNoHud : Inventory
 	}
 }
 
+// used for making sure things that cost TP don't also give us back TP by dealing damage
+class DeltaNoGiveDamageTP : Inventory
+{
+	Default
+	{
+		+Inventory.UNDROPPABLE;
+		+Inventory.UNTOSSABLE;
+	}
+}
+
 // used to modify projectile damage directly!
 class DeltaParryDamage : Inventory
 {
@@ -16,15 +26,18 @@ class DeltaParryDamage : Inventory
 		+Inventory.UNTOSSABLE;
 	}
 	
-	override void ModifyDamage(int damage, Name damageType, out int newDamage, bool passive, Actor inflictor, Actor source, int flags)
+	override void ModifyDamage(int damage, Name damageType, out int newDamage,
+		bool passive, Actor inflictor, Actor source, int flags)
 	{
 		if (passive || !inflictor || !inflictor.CountInv("DeltaParried"))
 			return;
+		if (flags & DMG_EXPLOSION)
+			return;
 		
-		bool selfDmg = (source && source == self);
+		bool selfDmg = (source && source == owner);
 		int dmgMult = selfDmg ? random[parryDamage](1, 4) : random[parryDamage](22, 24);
-		newDamage = dmgMult * max(5, inflictor.GetMissileDamage(0, 1))
-            * max(1, int(!selfDmg) * G_SkillPropertyFloat(SKILLP_MonsterHealth));
+		newDamage = int(dmgMult * max(5, inflictor.GetMissileDamage(0, 1))
+            * max(1, int(!selfDmg) * G_SkillPropertyFloat(SKILLP_MonsterHealth)));
 	}
 }
 
@@ -34,4 +47,18 @@ class DeltaParried : Inventory
 	// between killing a player with their own projectile and killing them with
 	// someone else's
 	Actor oldTarget;
+}
+
+class DeltaParriable : Inventory
+{
+	Default
+	{
+		+Inventory.UNDROPPABLE;
+		+Inventory.UNTOSSABLE;
+	}
+	
+	virtual bool CanBeParried()
+	{
+		return true;
+	}
 }

@@ -37,8 +37,8 @@ class DeltaSoul : Actor
 			{
 				A_StartSound("delta/soul_shatter", attenuation: 0.5);
 				
-				let ang = cfrandom(0, 89);
-				for (int i = 0; i < 360; i += 360. / SOUL_SHARD_COUNT)
+				let ang = cfrandom(0., 89.);
+				for (double i = 0; i < 360.; i += 360. / SOUL_SHARD_COUNT)
 				{
 					A_SpawnParticleEx(
 						fillColor,											// Color

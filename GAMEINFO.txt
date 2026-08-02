@@ -1,4 +1,3 @@
 StartupTitle = "DeltaWarriors"
-StartupType = "Doom"
 StartupColors = "ff ff ff", "00 00 00"
 DiscordAppID = "1467675234864857120"

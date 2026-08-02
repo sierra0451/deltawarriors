@@ -8,18 +8,18 @@ extend class DeltaPlayer
 	
 	private TextureID _offhandIconId;
 	
-	virtual void StartOffhand()
+	virtual void CheckUseOffhand()
 	{
-		isUsingOffhand = true;
-		A_Overlay(PSP_OFFHAND, "OffhandOverlay");
-		A_OverlayFlags(PSP_OFFHAND, PSPF_ADDBOB, true);
+		if (!(player.cmd.buttons & BT_USER1))
+			return;
+		if (!CanUseOffhand())
+			return;
+		
+		TryStartOffhand();
 	}
 	
 	virtual bool TryStartOffhand()
 	{
-		if (!CanUseOffhand())
-			return false;
-		
 		preOffhandTp = tensionPoints;
 		preOffhandTpTimer = tensionDrainTimer;
 		
@@ -30,15 +30,37 @@ extend class DeltaPlayer
 		return true;
 	}
 	
+	virtual void StartOffhand()
+	{
+		isUsingOffhand = true;
+		A_Overlay(PSP_WEAPON, "Null");
+		A_Overlay(PSP_OFFHAND, "OffhandOverlay");
+		
+		let psp = player.FindPSprite(PSP_OFFHAND);
+		if (psp)
+			psp.Tick();
+		
+		A_OverlayFlags(PSP_OFFHAND, PSPF_ADDBOB, true);
+		A_OverlayFlags(PSP_OFFHAND, PSPF_ADDWEAPON, false);
+		A_OverlayOffset(PSP_OFFHAND, 0, 32);
+	}
+	
 	// Wrap up
 	action void A_EndOffhand()
 	{
 		invoker.isUsingOffhand = false;
+		A_OverlayOffset(PSP_WEAPON, 0, WEAPONBOTTOM);
+		
+		let weap = player.ReadyWeapon,
+			psp = player.GetPSprite(PSP_WEAPON);
+		
+		if (weap)
+			psp.SetState(weap.GetUpState());
 	}
 	
 	clearscope virtual bool CanUseOffhand()
 	{
-		return true;
+		return !GetIsUsingOffhand();
 	}
 	
 	clearscope bool GetIsUsingOffhand()

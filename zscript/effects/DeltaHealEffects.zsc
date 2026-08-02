@@ -1,0 +1,67 @@
+class DeltaHealEffect : Actor
+{
+	States
+	{
+		Spawn:
+			TNT1 AAA 3 A_SpawnSparkle;
+			Stop;
+	}
+	
+	action void A_SpawnSparkle()
+	{
+		let sparkle = Spawn("DeltaHealSparkle",
+			pos + (
+				radius * cfrandom(-1.1, 1.1),
+				radius * cfrandom(-1.1, 1.1),
+				height * cfrandom(0, 1.1)
+			)
+		);
+		
+		let ang = cfrandom(-180, 180),
+			pitch = cfrandom(0, 90);
+		sparkle.vel = (cos(ang) * sin(pitch), sin(ang) * sin(pitch), cos(pitch)) * 0.02;
+		sparkle.master = master;
+	}
+}
+
+class DeltaHealSparkle : Actor
+{
+	Default
+	{
+		Scale 1;
+		Translation "HealNumbers";
+		
+		+NOINTERACTION
+		+SQUAREPIXELS
+		+BRIGHT
+		+FORCEXYBILLBOARD
+		+MASTERNOSEE
+	}
+	
+	States
+	{
+		Spawn:
+			HSPK ABCDAE 3;
+			Loop;
+	}
+	
+	override void Tick()
+	{
+		Super.Tick();
+		
+		A_FadeOut(0.05);
+		scale += (0.08, 0.08);
+		vel += (vel.x * 0.04, vel.y * 0.04, 0.08);
+		
+		bool showLight = (!players[consolePlayer].camera || master != players[consolePlayer].camera)
+			|| (players[consolePlayer].cheats & CF_CHASECAM);
+		
+		A_AttachLight(
+			lightId: "sparkleLight",
+			type: DynamicLight.PointLight,
+			lightColor: "00ff00",
+			radius1: showLight? int(16 * alpha) : 0,
+			radius2: 0
+		);
+	}
+}

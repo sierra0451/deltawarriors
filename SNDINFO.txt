@@ -1,9 +1,10 @@
 $pitchshiftrange 0
 
 // Delta menu sounds
-	delta/menu_back 	=	"sounds/menu/menu_back.wav"
-	delta/menu_change 	= 	"sounds/menu/menu_change.wav"
-	delta/menu_confirm 	= 	"sounds/menu/menu_confirm.wav"
+	delta/menu_back 	=   "sounds/menu/menu_back.wav"
+	delta/menu_change 	=   "sounds/menu/menu_change.wav"
+	delta/menu_confirm 	=   "sounds/menu/menu_confirm.wav"
+	delta/menu_persist	=   "sounds/menu/menu_persist.ogg"
 
 // Delta player sounds
 	// Shared
@@ -14,29 +15,8 @@ $pitchshiftrange 0
 		delta/generic_badExplosion = "sounds/weapons/generic_badExplosion.wav"
 		
 		// Jumping/landing
-		delta/jump1 = "sounds/player/shared/jump/player_jump1.wav"
-		delta/jump2 = "sounds/player/shared/jump/player_jump2.wav"
-		delta/jump3 = "sounds/player/shared/jump/player_jump3.wav"
-		delta/jump4 = "sounds/player/shared/jump/player_jump4.wav"
-		delta/jump5 = "sounds/player/shared/jump/player_jump5.wav"
-		delta/land1 = "sounds/player/shared/land/player_land1.wav"
-		delta/land2 = "sounds/player/shared/land/player_land2.wav"
-		delta/land3 = "sounds/player/shared/land/player_land3.wav"
-		
-		$random delta/jump
-		{
-			delta/jump1
-			delta/jump2
-			delta/jump3
-			delta/jump4
-			delta/jump5
-		}
-		$random delta/land
-		{
-			delta/land1
-			delta/land2
-			delta/land3
-		}
+		delta/jump = "sounds/player/shared/jump/player_newJump.wav"
+		delta/land = "sounds/player/shared/land/player_newLand.wav"
 		
 		// Heal
 		delta/heal = "sounds/player/shared/player_heal.wav"
@@ -47,7 +27,7 @@ $pitchshiftrange 0
 		delta/impact = "sounds/player/shared/damage/player_impact.wav"
 		delta/fall_damage = "sounds/player/shared/damage/player_fallDamage.wav"
 		delta/freeze = "sounds/player/shared/damage/player_freeze.wav"
-		delta/heartbeat = "sounds/player/shared/damage/player_heartbeat.wav"
+		delta/heartbeat = "sounds/player/shared/damage/player_heartbeat_new.wav"
 		
 		delta/drown1 = "sounds/player/shared/damage/player_drown1.wav"
 		delta/drown2 = "sounds/player/shared/damage/player_drown2.wav"
@@ -60,9 +40,11 @@ $pitchshiftrange 0
 		// Miscellaneous sounds
 		delta/graze = "sounds/player/shared/player_graze.wav"
 		delta/use = "sounds/player/shared/player_usefail.wav"
+		delta/use_powerup = "sounds/player/shared/player_usePowerup.wav"
 		delta/tp_fail = "sounds/player/shared/player_tpfail.wav"
+		delta/falling_wind = "sounds/player/shared/player_fallingWind.wav"
 		
-		delta/type = "sounds/type.wav"
+		delta/type = "sounds/messages/type.wav"
 		
 		// Footstep sounds
 			// Generic
@@ -93,144 +75,30 @@ $pitchshiftrange 0
 	// Kris
 		// VOX
 			// Jumping
-			delta/kris/jump_grunt1 = "sounds/player/kris/vox/kris_jumpGrunt1.wav"
-			delta/kris/jump_grunt2 = "sounds/player/kris/vox/kris_jumpGrunt2.wav"
-			delta/kris/jump_grunt3 = "sounds/player/kris/vox/kris_jumpGrunt3.wav"
-			delta/kris/jump_grunt4 = "sounds/player/kris/vox/kris_jumpGrunt4.wav"
-			$random delta/kris/jump_grunt
-			{
-				delta/kris/jump_grunt1
-				delta/kris/jump_grunt2
-				delta/kris/jump_grunt3
-				delta/kris/jump_grunt4
-			}
+			$alias delta/kris/jump_grunt dssilent
 			
 			// Pain
 				// Light
-				delta/kris/light_pain1 = "sounds/player/kris/vox/kris_lightPain1.wav"
-				delta/kris/light_pain2 = "sounds/player/kris/vox/kris_lightPain2.wav"
-				delta/kris/light_pain3 = "sounds/player/kris/vox/kris_lightPain3.wav"
-				delta/kris/light_pain4 = "sounds/player/kris/vox/kris_lightPain4.wav"
-				delta/kris/light_pain5 = "sounds/player/kris/vox/kris_lightPain5.wav"
-				delta/kris/light_pain6 = "sounds/player/kris/vox/kris_lightPain6.wav"
-				delta/kris/light_pain7 = "sounds/player/kris/vox/kris_lightPain7.wav"
-				$random delta/kris/light_pain
-				{
-					delta/kris/light_pain1
-					delta/kris/light_pain2
-					delta/kris/light_pain3
-					delta/kris/light_pain4
-					delta/kris/light_pain5
-					delta/kris/light_pain6
-					delta/kris/light_pain7
-				}
+				$alias delta/kris/light_pain dssilent
 				
 				// Medium
-				delta/kris/medium_pain1 = "sounds/player/kris/vox/kris_mediumPain1.wav"
-				delta/kris/medium_pain2 = "sounds/player/kris/vox/kris_mediumPain2.wav"
-				delta/kris/medium_pain3 = "sounds/player/kris/vox/kris_mediumPain3.wav"
-				delta/kris/medium_pain4 = "sounds/player/kris/vox/kris_mediumPain4.wav"
-				$random delta/kris/medium_pain
-				{
-					delta/kris/medium_pain1
-					delta/kris/medium_pain2
-					delta/kris/medium_pain3
-					delta/kris/medium_pain4
-				}
+				$alias delta/kris/medium_pain dssilent
 				
 				// Severe
-				delta/kris/severe_pain1 = "sounds/player/kris/vox/kris_severePain1.wav"
-				delta/kris/severe_pain2 = "sounds/player/kris/vox/kris_severePain2.wav"
-				delta/kris/severe_pain3 = "sounds/player/kris/vox/kris_severePain3.wav"
-				delta/kris/severe_pain4 = "sounds/player/kris/vox/kris_severePain4.wav"
-				delta/kris/severe_pain5 = "sounds/player/kris/vox/kris_severePain5.wav"
-				delta/kris/severe_pain6 = "sounds/player/kris/vox/kris_severePain6.wav"
-				delta/kris/severe_pain7 = "sounds/player/kris/vox/kris_severePain7.wav"
-				$random delta/kris/severe_pain
-				{
-					delta/kris/severe_pain1
-					delta/kris/severe_pain2
-					delta/kris/severe_pain3
-					delta/kris/severe_pain4
-					delta/kris/severe_pain5
-					delta/kris/severe_pain6
-					delta/kris/severe_pain7
-				}
+				$alias delta/kris/severe_pain dssilent
 			// Drowning
 				// Medium
-				delta/kris/medium_drown1 = "sounds/player/kris/vox/kris_mediumDrown1.wav"
-				delta/kris/medium_drown2 = "sounds/player/kris/vox/kris_mediumDrown2.wav"
-				delta/kris/medium_drown3 = "sounds/player/kris/vox/kris_mediumDrown3.wav"
-				delta/kris/medium_drown4 = "sounds/player/kris/vox/kris_mediumDrown4.wav"
-				delta/kris/medium_drown5 = "sounds/player/kris/vox/kris_mediumDrown5.wav"
-				delta/kris/medium_drown6 = "sounds/player/kris/vox/kris_mediumDrown6.wav"
-				delta/kris/medium_drown7 = "sounds/player/kris/vox/kris_mediumDrown7.wav"
-				delta/kris/medium_drown8 = "sounds/player/kris/vox/kris_mediumDrown8.wav"
-				delta/kris/medium_drown9 = "sounds/player/kris/vox/kris_mediumDrown9.wav"
-				$random delta/kris/medium_drown
-				{
-					delta/kris/medium_drown1
-					delta/kris/medium_drown2
-					delta/kris/medium_drown3
-					delta/kris/medium_drown4
-					delta/kris/medium_drown5
-					delta/kris/medium_drown6
-					delta/kris/medium_drown7
-					delta/kris/medium_drown8
-					delta/kris/medium_drown9
-				}
+				$alias delta/kris/medium_drown dssilent
 				
 				// Severe
-				delta/kris/severe_drown1 = "sounds/player/kris/vox/kris_severeDrown1.wav"
-				delta/kris/severe_drown2 = "sounds/player/kris/vox/kris_severeDrown2.wav"
-				delta/kris/severe_drown3 = "sounds/player/kris/vox/kris_severeDrown3.wav"
-				delta/kris/severe_drown4 = "sounds/player/kris/vox/kris_severeDrown4.wav"
-				delta/kris/severe_drown5 = "sounds/player/kris/vox/kris_severeDrown5.wav"
-				delta/kris/severe_drown6 = "sounds/player/kris/vox/kris_severeDrown6.wav"
-				delta/kris/severe_drown7 = "sounds/player/kris/vox/kris_severeDrown7.wav"
-				delta/kris/severe_drown8 = "sounds/player/kris/vox/kris_severeDrown8.wav"
-				$random delta/kris/severe_drown
-				{
-					delta/kris/severe_drown1
-					delta/kris/severe_drown2
-					delta/kris/severe_drown3
-					delta/kris/severe_drown4
-					delta/kris/severe_drown5
-					delta/kris/severe_drown6
-					delta/kris/severe_drown7
-					delta/kris/severe_drown8
-				}
+				$alias delta/kris/severe_drown dssilent
 				
 			// Death
 				// Medium
-				delta/kris/medium_death1 = "sounds/player/kris/vox/kris_mediumDeath1.wav"
-				delta/kris/medium_death2 = "sounds/player/kris/vox/kris_mediumDeath2.wav"
-				delta/kris/medium_death3 = "sounds/player/kris/vox/kris_mediumDeath3.wav"
-				delta/kris/medium_death4 = "sounds/player/kris/vox/kris_mediumDeath4.wav"
-				delta/kris/medium_death5 = "sounds/player/kris/vox/kris_mediumDeath5.wav"
-				delta/kris/medium_death6 = "sounds/player/kris/vox/kris_mediumDeath6.wav"
-				$random delta/kris/medium_death
-				{
-					delta/kris/medium_death1
-					delta/kris/medium_death2
-					delta/kris/medium_death3
-					delta/kris/medium_death4
-					delta/kris/medium_death5
-					delta/kris/medium_death6
-				}
+				$alias delta/kris/medium_death dssilent
 				
 				// Severe
-				delta/kris/severe_death1 = "sounds/player/kris/vox/kris_severeDeath1.wav"
-				delta/kris/severe_death2 = "sounds/player/kris/vox/kris_severeDeath2.wav"
-				delta/kris/severe_death3 = "sounds/player/kris/vox/kris_severeDeath3.wav"
-				delta/kris/severe_death4 = "sounds/player/kris/vox/kris_severeDeath4.wav"
-				$random delta/kris/severe_death
-				{
-					delta/kris/severe_death1
-					delta/kris/severe_death2
-					delta/kris/severe_death3
-					delta/kris/severe_death4
-				}
+				$alias delta/kris/severe_death dssilent
 		
 		// Sliding
 		delta/kris/slide_loop = "sounds/player/kris/kris_slideLoop.wav"
@@ -238,6 +106,8 @@ $pitchshiftrange 0
 		// Shield
 		delta/kris/shield_swing = "sounds/player/kris/kris_shieldSwing.wav"
 		delta/kris/shield_parry = "sounds/player/kris/kris_shieldParry.wav"
+		delta/telegraph = "sounds/telegraph.wav"
+		delta/unparriable = "sounds/unparriable.wav"
 	
 	// Susie
 		// Laughing
@@ -257,38 +127,38 @@ $pitchshiftrange 0
 	
 	// Kris
 		// Sword
-		delta/sword/deploy = "sounds/weapons/sword/sword_unsheathe.wav"
+		delta/sword/deploy = "sounds/weapons/kris/sword/sword_unsheathe.wav"
 		$alias delta/sword/deploy_hit delta/generic_pullweapon
-		delta/sword/holster = "sounds/weapons/sword/sword_sheathe.wav"
+		delta/sword/holster = "sounds/weapons/kris/sword/sword_sheathe.wav"
 		$alias delta/sword/swing delta/generic_attack
 		$alias delta/sword/hit delta/generic_hit
 		
 		// Revolver
-		delta/revolver/deploy1 = "sounds/weapons/revolver/revolver_deploy1.wav"
-		delta/revolver/deploy2 = "sounds/weapons/revolver/revolver_deploy2.wav"
+		delta/revolver/deploy1 = "sounds/weapons/kris/revolver/revolver_deploy1.wav"
+		delta/revolver/deploy2 = "sounds/weapons/kris/revolver/revolver_deploy2.wav"
 		$alias delta/revolver/holster1 delta/shotgun/holster
-		delta/revolver/holster2 = "sounds/weapons/revolver/revolver_holster.wav"
-		delta/revolver/fire = "sounds/weapons/revolver/revolver_fire2.wav"
-		delta/revolver/cock1 = "sounds/weapons/revolver/revolver_cock1.wav"
-		delta/revolver/cock2 = "sounds/weapons/revolver/revolver_cock2.wav"
-		delta/revolver/charge = "sounds/weapons/revolver/revolver_charge.wav"
-		delta/revolver/charge_shot = "sounds/weapons/revolver/revolver_chargeShot.wav"
+		delta/revolver/holster2 = "sounds/weapons/kris/revolver/revolver_holster.wav"
+		delta/revolver/fire = "sounds/weapons/kris/revolver/revolver_fire2.wav"
+		delta/revolver/cock1 = "sounds/weapons/kris/revolver/revolver_cock1.wav"
+		delta/revolver/cock2 = "sounds/weapons/kris/revolver/revolver_cock2.wav"
+		delta/revolver/charge = "sounds/weapons/kris/revolver/revolver_charge.wav"
+		delta/revolver/charge_shot = "sounds/weapons/kris/revolver/revolver_chargeShot.wav"
 		
 		// Shotgun
-		delta/shotgun/deploy1 = "sounds/weapons/shotgun/shotgun_deploy1.wav"
-		delta/shotgun/deploy2 = "sounds/weapons/shotgun/shotgun_deploy2.wav"
-		delta/shotgun/fire = "sounds/weapons/shotgun/shotgun_fire.wav"
-		delta/shotgun/pumpIn = "sounds/weapons/shotgun/shotgun_pumpIn.wav"
-		delta/shotgun/pumpOut = "sounds/weapons/shotgun/shotgun_pumpOut.wav"
-		delta/shotgun/holster = "sounds/weapons/shotgun/shotgun_holster.wav"
+		delta/shotgun/deploy1 = "sounds/weapons/kris/shotgun/shotgun_deploy1.wav"
+		delta/shotgun/deploy2 = "sounds/weapons/kris/shotgun/shotgun_deploy2.wav"
+		delta/shotgun/fire = "sounds/weapons/kris/shotgun/shotgun_fire.wav"
+		delta/shotgun/pumpIn = "sounds/weapons/kris/shotgun/shotgun_pumpIn.wav"
+		delta/shotgun/pumpOut = "sounds/weapons/kris/shotgun/shotgun_pumpOut.wav"
+		delta/shotgun/holster = "sounds/weapons/kris/shotgun/shotgun_holster.wav"
 		
 		// SMG
 		$alias delta/smg/deploy1 delta/shotgun/deploy1
 		$alias delta/smg/deploy2 delta/shotgun/deploy2
-		delta/smg/fire1 = "sounds/weapons/smg/smg_fire1.wav"
-		delta/smg/fire2 = "sounds/weapons/smg/smg_fire2.wav"
-		delta/smg/fire3 = "sounds/weapons/smg/smg_fire3.wav"
-		delta/smg/fire4 = "sounds/weapons/smg/smg_fire4.wav"
+		delta/smg/fire1 = "sounds/weapons/kris/smg/smg_fire1.wav"
+		delta/smg/fire2 = "sounds/weapons/kris/smg/smg_fire2.wav"
+		delta/smg/fire3 = "sounds/weapons/kris/smg/smg_fire3.wav"
+		delta/smg/fire4 = "sounds/weapons/kris/smg/smg_fire4.wav"
 		
 		$random delta/smg/fire
 		{
@@ -298,12 +168,12 @@ $pitchshiftrange 0
 			delta/smg/fire4
 		}
 		
-		delta/smg/alt_fire = "sounds/weapons/smg/smg_altFire.wav"
-		delta/smg/grenade_explosion = "sounds/weapons/smg/smg_grenadeExplosion.wav"
-		delta/smg/grenade_hit1 = "sounds/weapons/smg/smg_grenadeHit1.wav"
-		delta/smg/grenade_hit2 = "sounds/weapons/smg/smg_grenadeHit2.wav"
-		delta/smg/grenade_hit3 = "sounds/weapons/smg/smg_grenadeHit3.wav"
-		$limit delta/smg/grenade_explosion 4
+		delta/smg/alt_fire = "sounds/weapons/kris/smg/smg_altFire.wav"
+		delta/smg/grenade_explosion = "sounds/weapons/kris/smg/smg_grenadeExplosion.wav"
+		delta/smg/grenade_hit1 = "sounds/weapons/kris/smg/smg_grenadeHit1.wav"
+		delta/smg/grenade_hit2 = "sounds/weapons/kris/smg/smg_grenadeHit2.wav"
+		delta/smg/grenade_hit3 = "sounds/weapons/kris/smg/smg_grenadeHit3.wav"
+		$limit delta/smg/grenade_explosion 0
 		
 		$random delta/smg/grenade_hit
 		{
@@ -312,9 +182,9 @@ $pitchshiftrange 0
 			delta/smg/grenade_hit3
 		}
 		
-		delta/smg/grenade_hit_map1 = "sounds/weapons/smg/smg_grenadeHitMap1.wav"
-		delta/smg/grenade_hit_map2 = "sounds/weapons/smg/smg_grenadeHitMap2.wav"
-		delta/smg/grenade_hit_map3 = "sounds/weapons/smg/smg_grenadeHitMap3.wav"
+		delta/smg/grenade_hit_map1 = "sounds/weapons/kris/smg/smg_grenadeHitMap1.wav"
+		delta/smg/grenade_hit_map2 = "sounds/weapons/kris/smg/smg_grenadeHitMap2.wav"
+		delta/smg/grenade_hit_map3 = "sounds/weapons/kris/smg/smg_grenadeHitMap3.wav"
 		
 		$random delta/smg/grenade_hit_map
 		{
@@ -325,24 +195,15 @@ $pitchshiftrange 0
 		$alias delta/smg/holster delta/shotgun/holster
 
 // Player sounds
-	$playeralias		delta	neutral	*jump		delta/jump
-	$playersound		delta	neutral	*grunt		dsempty
-	$playeralias		delta	neutral	*land		delta/land
-
-	$playeralias		delta	neutral	*pain100	delta/pain
-	$playeralias 		delta	neutral	*pain75		*pain100
-	$playeralias 		delta	neutral	*pain50		*pain100
-	$playeralias 		delta	neutral	*pain25		*pain100
-	$playeralias		delta	neutral	*death		*pain100
-	$playeralias		delta	neutral	*crazydeath	*death
-
-	$playeralias		delta	neutral	*usefail	delta/use
-
-// Overriding Doom sounds!
+	$playeralias	delta	neutral	*usefail	delta/use
+	$playeralias	delta	neutral	*grunt		dssilent
+	
+	// Overriding UZDoom sounds!
 	misc/i_pkup 		= 	"sounds/player/shared/player_pickupitem.wav"
 	misc/w_pkup 		= 	"sounds/player/shared/player_pickupweapon.wav"
 	misc/k_pkup 		= 	"sounds/player/shared/player_pickupkey.wav"
 	misc/secret			=	"sounds/player/shared/player_findsecret.wav"
+	$alias misc/invchange	delta/menu_change
 	
 	$alias menu/activate	delta/menu_confirm
 	$alias menu/backup 		delta/menu_back
@@ -353,19 +214,6 @@ $pitchshiftrange 0
 	$alias menu/choose		delta/menu_confirm
 	$alias menu/cursor		dsempty
 	$alias menu/invalid		delta/tp_fail
-	
-	/*
-	menu/activate			dsswtchn	// Activate a new menu
-	menu/backup				dsswtchn	// Backup to previous menu
-	menu/prompt				dsswtchn	// Activate a prompt "menu"
-	menu/cursor				dspstop		// Move cursor up/down
-	menu/change				dsstnmov	// Select new value for option
-	menu/invalid			dsoof		// Menu not available
-	menu/dismiss			dsswtchx	// Dismiss a prompt message
-	menu/choose				dspistol	// Choose a menu item
-	menu/clear				dsswtchx	// Close top menu
-	$alias menu/advance 	menu/choose	// Open a submenu
-	*/
 	
 	$alias menu/quit1_1		delta/hurt
 	$alias menu/quit1_2 	delta/susie/laugh

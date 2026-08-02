@@ -4,25 +4,3 @@ script "Delta_AirControl" ENTER
 {
 	SetAirControl(0.6);
 }
-
-script "Delta_FirstTimeDeath" (void)
-{
-	SetCvar("data_delta_diedFirstTime", true);
-}
-
-script "Delta_CountDeath" (void)
-{
-	SetCvar("data_delta_currentDeathsLevel", GetCvar("data_delta_currentDeathsLevel")+1);
-	SetCvar("data_delta_currentDeathsSngSeg", GetCvar("data_delta_currentDeathsSngSeg")+1);
-}
-
-script "Delta_ResetLevelDeaths" (void)
-{
-	SetCvar("data_delta_currentDeathsLevel", 0);
-}
-
-script "Delta_ResetAllDeaths" (void)
-{
-	SetCvar("data_delta_currentDeathsLevel", 0);
-	SetCvar("data_delta_currentDeathsSngSeg", 0);
-}

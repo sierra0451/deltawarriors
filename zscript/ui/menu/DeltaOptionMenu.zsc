@@ -8,6 +8,8 @@ class DeltaOptionMenu : OptionMenu
 	
 	override void Init(Menu parent, OptionMenuDescriptor desc)
 	{
+		desc.mFont = smallFont;
+		//desc.mTooltipFont = smallFont;
 		Super.Init(parent, desc);
 		oldSelect = desc.mSelectedItem;
 	}

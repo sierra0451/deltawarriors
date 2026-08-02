@@ -1,19 +1,29 @@
-class DeltaGrenade : DeltaProjectile abstract
+class DeltaGrenade : Actor abstract
 {
+	enum DeltaGrenadeType
+	{
+		GRENADE_NORMAL,
+		GRENADE_STICKY,
+		GRENADE_CONTACT
+	}
+	
 	DeltaGrenadeType grenadeType;
 	Array<Actor> hitActors;
+	int dmgTaken;
 	double actorBounceFactor, fuseTime;
 	sound armedSound, stickSound, explosionSound;
+	Actor stickVictim;
+	
 	class<DeltaGrenadeHitbox> hitboxClass;
 	DeltaGrenadeHitbox hitbox;
 	
+	protected Name meansOfDamage;
 	protected double curTime;
 	protected bool fuseLit;
 	protected bool exploded;
 	protected Vector3 stickOffset;
-	protected Actor stickVictim;
-	protected float extraDamageFactor;
 	
+	property MeansOfDamage: meansOfDamage;
 	property GrenadeType: grenadeType;
 	property ActorBounceFactor: actorBounceFactor;
 	property FuseTime: fuseTime;
@@ -26,7 +36,7 @@ class DeltaGrenade : DeltaProjectile abstract
 	{
 		Radius 6;
 		Height 8;
-		Speed 35;
+		Speed 0;
 		DamageFunction random[grenadeDamage](3, 5);
 		Gravity 0.5;
 		Projectile;
@@ -36,6 +46,7 @@ class DeltaGrenade : DeltaProjectile abstract
 		RenderStyle "Add";
 		Alpha 1;
 		
+		DeltaGrenade.MeansOfDamage "None";
 		DeltaGrenade.GrenadeType GRENADE_NORMAL;
 		DeltaGrenade.ActorBounceFactor 0.25;
 		DeltaGrenade.FuseTime 3;
@@ -50,9 +61,22 @@ class DeltaGrenade : DeltaProjectile abstract
 		+BRIGHT
 	}
 	
+	States
+	{
+		Spawn:
+			TNT1 A 1;
+			Loop;
+		XDeath:
+			Goto Spawn;
+		Explode:
+			Stop;
+	}
+	
 	override void BeginPlay()
 	{
 		Super.BeginPlay();
+		A_GiveInventory("DeltaParriable");
+		
 		curTime = fuseTime;
 		fuseLit = false;
 		exploded = false;
@@ -89,7 +113,6 @@ class DeltaGrenade : DeltaProjectile abstract
 	{
 		if (!victim || !target || victim == target)
 			return Super.SpecialMissileHit(victim);
-		
 		if (victim is "DeltaGrenadeHitbox" && DeltaGrenadeHitbox(victim).parent
 			&& DeltaGrenadeHitbox(victim).parent == self)
 			return MHIT_PASS;
@@ -110,26 +133,24 @@ class DeltaGrenade : DeltaProjectile abstract
 	override int SpecialBounceHit(Actor bounceMobj, Line bounceLine,
 		readonly<SecPlane> bouncePlane, bool is3dFloor)
 	{
-		if (exploded || !bouncePlane)
+		if (exploded || (!bouncePlane && grenadeType != GRENADE_CONTACT))
 			return Super.SpecialBounceHit(bounceMobj, bounceLine, bouncePlane, is3dFloor);
 		
-		//A_Log("negiC " .. bouncePlane.negiC .. ", 3d floor " .. is3dFloor);
-		bool isFloor = is3dFloor ? (bouncePlane.negiC > 0) : (bouncePlane.negiC < 0);
+		Vel *= bounceFactor;
 		
-		if (grenadeType == GRENADE_STICKY && isFloor)
+		if (grenadeType != GRENADE_STICKY)
+		{
+			fuseLit = true;
+			return Super.SpecialBounceHit(bounceMobj, bounceLine, bouncePlane, is3dFloor);
+		}
+		
+		if (!fuseLit && (is3dFloor? 1 : -1) * bouncePlane.negiC > 0)
 		{
 			Vel = (0, 0, 0);
-			if (!fuseLit)
-				A_StartSound(armedSound, CHAN_AUTO);
+			A_StartSound(armedSound, CHAN_AUTO);
 			fuseLit = true;
 		}
-		else
-		{
-			if (grenadeType != GRENADE_STICKY)
-				fuseLit = true;
-			
-			Vel *= bounceFactor;
-		}
+		
 		return Super.SpecialBounceHit(bounceMobj, bounceLine, bouncePlane, is3dFloor);
 	}
 	
@@ -145,24 +166,6 @@ class DeltaGrenade : DeltaProjectile abstract
 			return false;
 		
 		return Super.CanCollideWith(other, passive);
-	}
-	
-	override void OnParry(Actor parrier)
-	{
-		grenadeType = GRENADE_CONTACT;
-	}
-	
-	override bool CanBeParried()
-	{
-		switch (grenadeType)
-		{
-			case GRENADE_STICKY:
-				if (stickVictim || fuseLit)
-					return false;
-			
-			default: // fallthrough is intentional
-				return !exploded;
-		}
 	}
 	
 	virtual void StickyLogic()
@@ -194,8 +197,12 @@ class DeltaGrenade : DeltaProjectile abstract
 	virtual void Explode()
 	{
 		A_NoGravity();
+		ClearInterpolation();
 		Vel = (0, 0, 0);
 		A_StartSound(explosionSound, CHAN_AUTO, attenuation: 0.5);
+		
+		if (hitbox)
+			hitbox.bShootable = false;
 	}
 	
 	virtual void OnGrenadeHitActor(Actor victim)
@@ -216,21 +223,21 @@ class DeltaGrenade : DeltaProjectile abstract
 				stickVictim = victim;
 				stickOffset = pos - victim.pos;
 				fuseLit = true;
-				A_StartSound(stickSound, CHAN_AUTO);
-				int dmg = victim.DamageMobj(self, target, random[stickyDamage](5, 10), 'None');
+				vel = (0, 0, 0);
 				
-				Vel = (0, 0, 0);
+				A_StartSound(stickSound, CHAN_AUTO);
 				A_NoGravity();
-				if (dmg <= 0)
+				
+				if (victim.DamageMobj(self, target, random[stickyDamage](5, 10), meansOfDamage) <= 0)
 					break;
 				
-				DeltaUtil.ForceActorPain(victim, 'None');
+				victim.TriggerPainChance(meansOfDamage, true);
 				break;
-				
+			
 			case GRENADE_CONTACT:
 				TryStartExplosion();
 				break;
-				
+			
 			case GRENADE_NORMAL:
 			default:
 				Vel *= actorBounceFactor;
@@ -287,7 +294,6 @@ class DeltaGrenadeHitbox : Actor abstract
 	{
 		if (!(flags & DMG_INFLICTOR_IS_PUFF))
 			return 0;
-		
 		if (source == parent.target)
 			return Super.DamageMobj(inflictor, source, damage * 2, mod, flags, angle);
 		
@@ -297,9 +303,36 @@ class DeltaGrenadeHitbox : Actor abstract
 	override void Die(Actor source, Actor inflictor, int dmgFlags,
 		Name meansOfDeath)
 	{
-		if (parent)
-			parent.TryStartExplosion();
+		Array<Actor> affected;
 		
+		if (parent)
+		{
+			parent.dmgTaken = clamp(-health, 0, 100);
+			
+			if (source == parent.target && parent.target is "DeltaPlayer")
+				DeltaPlayer(source).AddTension(20.);
+			
+			parent.TryStartExplosion();
+		}
+		
+		if (!source)
+		{
+			Super.Die(source, inflictor, dmgFlags, meansOfDeath);
+			return;
+		}
+		
+		affected.Push(source);
+		
+		if (inflictor)
+			affected.Push(inflictor);
+		if (parent)
+		{
+			affected.Push(parent);
+			if (parent.stickVictim)
+				affected.Push(parent.stickVictim);
+		}
+		
+		DeltaUtil.StartHitstop(source, affected);
 		Super.Die(source, inflictor, dmgFlags, meansOfDeath);
 	}
 }

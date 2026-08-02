@@ -12,14 +12,14 @@ extend class DeltaPlayer
 			return;
 		
 		let cmd = player.cmd,
-			velFactor = max(abs(cmd.forwardMove/12800.), abs(cmd.sideMove/10240.));
+			velFactor = max(abs(desiredMove.y), abs(desiredMove.x));
 		
 		if (velFactor > 1)
 			velFactor = 1;
 		
 		velFactor *= crouchFactor;
 		
-		if (velFactor < 0.05 || reactionTime || !IsGrounded())
+		if (velFactor < 0.05 || health <= 0 || reactionTime || !IsGrounded())
 		{
 			curFootstepTimer = 0;
 			return;
@@ -36,6 +36,9 @@ extend class DeltaPlayer
 	
 	virtual void Step(double curVel)
 	{
+		if (reactionTime)
+			return;
+		
 		let terrain = GetFloorTerrain();
 		if (!terrain)
 			return;

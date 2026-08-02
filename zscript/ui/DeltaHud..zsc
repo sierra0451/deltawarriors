@@ -1,18 +1,46 @@
 class DeltaHud : BaseStatusBar
 {
-	Vector3 _pos, _angles;
-	protected double _hBorder, _vBorder;
+	enum DeathCounterType
+	{
+		DC_OFF,
+		DC_LEVEL,
+		DC_ENTIRE_RUN
+	}
+	enum SpeedrunStats
+	{
+		SPD_OFF,
+		SPD_TIMER,
+		SPD_SPEED,
+		SPD_BOTH
+	}
+	enum LevelStats
+	{
+		LVLSTATS_OFF,
+		LVLSTATS_INFO,
+		LVLSTATS_KILLS_SECRETS,
+		LVLSTATS_ALL
+	}
+	enum ShowMillisecondsType
+	{
+		SMT_ONLY_IF_NO_MINS = -1,
+		SMT_NEVER = 0,
+		SMT_ALWAYS
+	}
+	
+	DeltaPlayer ply;
+	Vector3 pos, angles;
+	protected bool _infiniteAmmo;
+	protected double _hBorder, _vBorder, _oldTp, _oldHealth;
 	protected Vector2 _universalScale, _inverseUniversalScale;
-	protected HUDFont _consoleFont, _drHudFont, _tpFont;
+	protected HUDFont _consoleFont, _noShadowFont, _drHudFont, _tpFont;
 	protected TextureID _hpText, _tpBarBack, _tpBarBackMax, _tpBar,
 		_tpTimerStencil, _tpHighlight, _leftPanelBack, _leftPanelBorders,
 		_vignette, _vignette2, _infiniteText, _defaultCrosshair,
 		_offhandCrosshair, _reticleBarOverlay, _reticleBar, _ammoBottom,
 		_ammoBottomBorders, _statsBackground, _statsBorders,
 		_statsKillIcon, _statsItemIcon, _statsSecretIcon, _statsDeathIcon,
-		_statsTimeIcon, _statsSpeedIcon;
-	
-	protected double _oldTp, _oldHealth;
+		_statsTimeIcon, _statsSpeedIcon, _invPanel, _invPanelBorders;
+	protected InventoryBarState _bar;
 	protected DynamicValueInterpolator _tpInterp, _healthInterp;
 	
 	private Array<class<Ammo> > _ammos;
@@ -37,35 +65,42 @@ class DeltaHud : BaseStatusBar
 	override void Init()
 	{
 		Super.Init();
+		completeBorder = false;
 		
-		_drHudFont = HUDFont.Create("DRHUDFONT");
-		_consoleFont = HUDFont.Create(smallFont);
-		_tpFont = HUDFont.Create(smallFont, spacing: -2);
+		_drHudFont 			= HUDFont.Create("DRHUDFONT");
+		_consoleFont 		= HUDFont.Create(smallFont);
+		_noShadowFont 		= HUDFont.Create("smallFontNoShadow");
+		_tpFont 			= HUDFont.Create(smallFont);
 		
-		_hpText				= TexMan.CheckForTexture("DRHPTEXT");
-		_tpBarBack			= TexMan.CheckForTexture("sprites/hud/new tp bar back.png");
-		_tpBar				= TexMan.CheckForTexture("sprites/hud/new tp bar.png");
-		_tpTimerStencil		= TexMan.CheckForTexture("sprites/hud/tp timer stencil.png");
-		_tpHighlight		= TexMan.CheckForTexture("DRTPHLGT");
-		_leftPanelBack		= TexMan.CheckForTexture("sprites/hud/new left panel back.png");
-		_leftPanelBorders	= TexMan.CheckForTexture("sprites/hud/new left panel borders.png");
-		_vignette			= TexMan.CheckForTexture("sprites/hud/vignette.png");
-		_vignette2			= TexMan.CheckForTexture("sprites/hud/vignette2.png");
-		_infiniteText		= TexMan.CheckForTexture("DRINFTXT");
-		_defaultCrosshair	= TexMan.CheckForTexture("DRMTYRET");
-		_offhandCrosshair	= TexMan.CheckForTexture("DROFHRET");
-		_reticleBarOverlay	= TexMan.CheckForTexture("DRRTBOVR");
-		_reticleBar			= TexMan.CheckForTexture("DRRETBAR");
-		_ammoBottom			= TexMan.CheckForTexture("sprites/hud/new ammo panel bottom.png");
-		_ammoBottomBorders	= TexMan.CheckForTexture("sprites/hud/new ammo panel bottom borders.png");
-		_statsBackground	= TexMan.CheckForTexture("sprites/hud/stats panel bottom.png");
-		_statsBorders		= TexMan.CheckForTexture("sprites/hud/stats panel bottom borders.png");
-		_statsKillIcon		= TexMan.CheckForTexture("sprites/hud/stats/stats kills.png");
-		_statsItemIcon		= TexMan.CheckForTexture("sprites/hud/stats/stats items.png");
-		_statsSecretIcon	= TexMan.CheckForTexture("sprites/hud/stats/stats secrets.png");
-		_statsDeathIcon		= TexMan.CheckForTexture("sprites/hud/stats/stats deaths.png");
-		_statsTimeIcon		= TexMan.CheckForTexture("sprites/hud/stats/stats time.png");
-		_statsSpeedIcon		= TexMan.CheckForTexture("sprites/hud/stats/stats speed.png");
+		_vignette			= TexMan.CheckForTexture("graphics/hud/vignette.png");
+		_vignette2			= TexMan.CheckForTexture("graphics/hud/vignette2.png");
+		
+		_hpText				= TexMan.CheckForTexture("graphics/hud/text/hpText.png");
+		_infiniteText		= TexMan.CheckForTexture("graphics/hud/text/infiniteText.png");
+		_tpBarBack			= TexMan.CheckForTexture("graphics/hud/newTpBarBack.png");
+		_tpBar				= TexMan.CheckForTexture("graphics/hud/newTpBar.png");
+		_tpTimerStencil		= TexMan.CheckForTexture("graphics/hud/tpTimerStencil.png");
+		_leftPanelBack		= TexMan.CheckForTexture("graphics/hud/newLeftPanel.png");
+		_leftPanelBorders	= TexMan.CheckForTexture("graphics/hud/newLeftPanelBorders.png");
+		
+		_defaultCrosshair	= TexMan.CheckForTexture("graphics/hud/reticle/emptyHandedReticle.png");
+		_offhandCrosshair	= TexMan.CheckForTexture("graphics/hud/reticle/offhandReticle.png");
+		_reticleBarOverlay	= TexMan.CheckForTexture("graphics/hud/reticle/reticleBarBorder.png");
+		_reticleBar			= TexMan.CheckForTexture("graphics/hud/reticle/reticleBar.png");
+		
+		_statsBackground	= TexMan.CheckForTexture("graphics/hud/stats/statsBottom.png");
+		_statsBorders		= TexMan.CheckForTexture("graphics/hud/stats/statsBottomBorders.png");
+		_statsKillIcon		= TexMan.CheckForTexture("graphics/hud/stats/statsKills.png");
+		_statsItemIcon		= TexMan.CheckForTexture("graphics/hud/stats/statsItems.png");
+		_statsSecretIcon	= TexMan.CheckForTexture("graphics/hud/stats/statsSecrets.png");
+		_statsDeathIcon		= TexMan.CheckForTexture("graphics/hud/stats/statsDeaths.png");
+		_statsTimeIcon		= TexMan.CheckForTexture("graphics/hud/stats/statsTime.png");
+		_statsSpeedIcon		= TexMan.CheckForTexture("graphics/hud/stats/statsSpeed.png");
+		
+		_ammoBottom			= TexMan.CheckForTexture("graphics/hud/newAmmoBottom.png");
+		_ammoBottomBorders	= TexMan.CheckForTexture("graphics/hud/newAmmoBottomBorders.png");
+		_invPanel 			= TexMan.CheckForTexture("graphics/hud/itemPanel.png");
+		_invPanelBorders 	= TexMan.CheckForTexture("graphics/hud/itemPanelBorders.png");
 		
 		SetUpIndicatorTextures();
 		SetUpDamagePopups();
@@ -73,54 +108,80 @@ class DeltaHud : BaseStatusBar
 		SetUpMessages();
 		SetUpMultiplayer();
 		
-		controlIcons.Insert(DELTA_CONTROLICON_MOUSE1, TexMan.CheckForTexture("DRMSELCL"));
-		controlIcons.Insert(DELTA_CONTROLICON_MOUSE2, TexMan.CheckForTexture("DRMSERCL"));
-		controlIcons.Insert(DELTA_CONTROLICON_MOUSE3, TexMan.CheckForTexture("DRMSEMCL"));
-		controlIcons.Insert(DELTA_CONTROLICON_MOUSE4, TexMan.CheckForTexture("DRMSEBT4"));
-		controlIcons.Insert(DELTA_CONTROLICON_MOUSE5, TexMan.CheckForTexture("DRMSEBT5"));
-		controlIcons.Insert(DELTA_CONTROLICON_MOUSE6, TexMan.CheckForTexture("DRMSEBT6"));
-		controlIcons.Insert(DELTA_CONTROLICON_MOUSE7, TexMan.CheckForTexture("DRMSEBT7"));
-		controlIcons.Insert(DELTA_CONTROLICON_MOUSE8, TexMan.CheckForTexture("DRMSEBT8"));
+		controlIcons.Insert(DELTA_CONTROLICON_MOUSE1, TexMan.CheckForTexture("graphics/hud/buttons/mouse/leftClick.png"));
+		controlIcons.Insert(DELTA_CONTROLICON_MOUSE2, TexMan.CheckForTexture("graphics/hud/buttons/mouse/rightClick.png"));
+		controlIcons.Insert(DELTA_CONTROLICON_MOUSE3, TexMan.CheckForTexture("graphics/hud/buttons/mouse/middleClick.png"));
+		controlIcons.Insert(DELTA_CONTROLICON_MOUSE4, TexMan.CheckForTexture("graphics/hud/buttons/mouse/mouse4.png"));
+		controlIcons.Insert(DELTA_CONTROLICON_MOUSE5, TexMan.CheckForTexture("graphics/hud/buttons/mouse/mouse5.png"));
+		controlIcons.Insert(DELTA_CONTROLICON_MOUSE6, TexMan.CheckForTexture("graphics/hud/buttons/mouse/mouse6.png"));
+		controlIcons.Insert(DELTA_CONTROLICON_MOUSE7, TexMan.CheckForTexture("graphics/hud/buttons/mouse/mouse7.png"));
+		controlIcons.Insert(DELTA_CONTROLICON_MOUSE8, TexMan.CheckForTexture("graphics/hud/buttons/mouse/mouse8.png"));
 		
-		ammoIcons.Insert('Clip', 		TexMan.CheckForTexture("DRAMBULL"));
-		ammoIcons.Insert('Shell', 		TexMan.CheckForTexture("DRAMSHEL"));
-		ammoIcons.Insert('RocketAmmo', 	TexMan.CheckForTexture("DRAMROCK"));
-		ammoIcons.Insert('Cell', 		TexMan.CheckForTexture("DRAMPLAS"));
-		ammoIcons.Insert('ID24Fuel', 	TexMan.CheckForTexture("DRAMFUEL"));
+		ammoIcons.Insert('Clip', 		TexMan.CheckForTexture("graphics/hud/ammo/bulletAmmo.png"));
+		ammoIcons.Insert('Shell', 		TexMan.CheckForTexture("graphics/hud/ammo/shellAmmo.png"));
+		ammoIcons.Insert('RocketAmmo', 	TexMan.CheckForTexture("graphics/hud/ammo/rocketAmmo.png"));
+		ammoIcons.Insert('Cell', 		TexMan.CheckForTexture("graphics/hud/ammo/cellAmmo.png"));
+		ammoIcons.Insert('ID24Fuel', 	TexMan.CheckForTexture("graphics/hud/ammo/fuelAmmo.png"));
 		
 		_tpInterp = DynamicValueInterpolator.Create(0, 0.2, 1, 30);
 		_healthInterp = DynamicValueInterpolator.Create(0, 0.2, 1, 30);
+		_bar = InventoryBarState.Create();
 	}
 	
 	override void Tick()
 	{
 		Super.Tick();
 		
-		if (!CPlayer || !CPlayer.mo)
+		if (!CPlayer.mo)
+			return;
+		if (!ply)
+		{
+			ply = DeltaPlayer(CPlayer.mo);
+			if (!ply)
+				return;
+		}
+		
+		if (paused || menuActive == Menu.On || consoleState == c_down || consoleState == c_falling)
 			return;
 		
-		bool infiniteAmmo = sv_infiniteAmmo
-			|| (CPlayer.mo.FindInventory('PowerInfiniteAmmo', true) != null);
-		DeltaPlayer ply = DeltaPlayer(CPlayer.mo);
+		if (_deathSequence)
+		{
+			FreezeDamagePopups();
+			TickDeathSequence();
+			return;
+		}
+		
+		_infiniteAmmo = sv_infiniteAmmo
+			|| (ply.FindInventory('PowerInfiniteAmmo', true) != null);
 		
 		_oldTp = _tpInterp.GetValue();
 		
-		int tpInterpTarget;
+		double tpInterpTarget = 0.;
 		
 		if (ply)
-			tpInterpTarget = infiniteAmmo ? ply.maxTensionPoints : ply.tensionPoints;
-		else
-			tpInterpTarget = 0;
+			tpInterpTarget = _infiniteAmmo ? ply.maxTensionPoints : ply.tensionPoints;
 		
-		_tpInterp.Update(tpInterpTarget);
+		_tpInterp.Update(int(tpInterpTarget));
 		
 		_oldHealth = _healthInterp.GetValue();
-		_healthInterp.Update(floor(GetHealthPerc() * 100));
+		_healthInterp.Update(int(GetHealthPerc() * 100));
 		
 		TickIndicators();
 		TickDamagePopups();
 		TickBossBars();
 		TickMessages();
+		
+		_keys.Clear();
+		
+		for (int i = 0; i < Key.GetKeyTypeCount(); i++)
+		{
+			let keyClass = Key.GetKeyType(i);
+			
+			if (!ply.CountInv(keyClass))
+				continue;
+			
+			_keys.Push(keyClass);
+		}
 		
 		let weaps = CPlayer.weapons;
 		if (!weaps)
@@ -145,10 +206,10 @@ class DeltaHud : BaseStatusBar
 			
 			for (int j = 0; j < weapCount; j++)
 			{
-				if (!CPlayer.mo.CountInv(weaps.GetWeapon(i, j)))
+				if (!ply.CountInv(weaps.GetWeapon(i, j)))
 					continue;
 				
-				Weapon inv = Weapon(CPlayer.mo.FindInventory(weaps.GetWeapon(i, j)));
+				Weapon inv = Weapon(ply.FindInventory(weaps.GetWeapon(i, j)));
 				
 				if (!inv)
 					continue;
@@ -158,43 +219,28 @@ class DeltaHud : BaseStatusBar
 					_ammos.Push(inv.AmmoType2);
 			}
 		}
-		
-		_keys.Clear();
-		
-		for (int i = 0; i < Key.GetKeyTypeCount(); i++)
-		{
-			let keyClass = Key.GetKeyType(i);
-			
-			if (!CPlayer.mo.CountInv(keyClass))
-				continue;
-			
-			_keys.Push(keyClass);
-		}
 	}
 	
 	protected float GetHealthPerc(DeltaPlayer ply = null)
 	{
-		if (!ply)
-			ply = DeltaPlayer(CPlayer.mo);
-		if (!ply)
+		if (!self.ply)
 			return 0;
+		if (!ply)
+			ply = self.ply;
 		
-		let maxHp = ply.GetMaxHealth(),
-			hp = ply.health;
-		
+		let maxHp = ply.GetMaxHealth();
 		if (maxHp == 0)
 			return 0;
-		if (hp <= maxHp)
-			return hp * 1. / maxHp;
 		
-		return 1 + min(1, (hp - maxHp) / 100.);
+		return clamp(ply.health * 1. / maxHp, 0, 2);
 	}
 	
 	override void Draw(int state, double ticFrac)
 	{
 		Super.Draw(state, ticFrac);
+		DrawDeathSequence(ticFrac);
 		
-		if (state == HUD_None || !cl_delta_showHud)
+		if (!ply || state == HUD_None || !cl_delta_showHud)
 			return;
 		
 		_universalScale = GetHudScale() * 0.5;
@@ -204,22 +250,28 @@ class DeltaHud : BaseStatusBar
 		_hBorder = 35 * _universalScale.x;
 		_vBorder = 25 * _universalScale.y;
 		
-		if (GetHealthPerc() <= 0.4 && cl_delta_lowHealthVignette && !automapActive)
+		if (_deathSequence && _deathSequence.gameOverState > DeltaGameOver.FREEZE_FRAME)
+			return;
+		
+		if (GetHealthPerc() <= 0.4
+			&& cl_delta_lowHealthVignette && !automapActive)
 		{
 			double
-				alpha = 1 - (GetHealthPerc() / 0.4),
-				sine = (CPlayer.health>0) ? (sin((level.time+ticFrac) * 5) * 0.125) : 0.25;
+				maxSine = 0.125,
+				alpha = (1 - (GetHealthPerc() / 0.4)) * (1 - maxSine),
+				sine = maxSine;
+			if (CPlayer.health > 0)
+				sine *= sin(3 * (level.time + ticFrac));
 			
-			sine += 0.75;
 			Screen.DrawTexture(_vignette, false, 0, 0, DTA_Fullscreen, true,
-				DTA_FullScreenScale, FSMode_ScaleToScreen, DTA_Alpha, alpha * sine,
-				DTA_Color, CPlayer.mo.GetPainFlash());
+				DTA_FullScreenScale, FSMode_ScaleToScreen,
+				DTA_Alpha, min(1, alpha + sine), DTA_Color, ply.GetPainFlash());
 		}
 		
 		let airTime = max(0, CPlayer.air_finished - level.mapTime + 1),
 			airPerc = double(airTime) / level.airSupply;
 		
-		if (CPlayer.mo.waterLevel >= 2 && airPerc <= 0.4 && !automapActive)
+		if (ply.waterLevel >= 2 && airPerc <= 0.4 && !automapActive)
 		{
 			double alpha = 1 - (airPerc / 0.4);
 			Screen.DrawTexture(_vignette2, false, 0, 0, DTA_Fullscreen, true,
@@ -227,36 +279,37 @@ class DeltaHud : BaseStatusBar
 				DTA_Color, Color(255, 0, 0, 0));
 		}
 		
-		BeginHUD(1, false);
-		
+		BeginHUD();
 		DrawMultiplayerUnderlay(ticFrac);
 		DrawBossBars();
 		DrawIndicators(ticFrac);
 		DrawMultiplayerOverlay();
 		
-		if (CPlayer.Health > 0)
+		if (CPlayer.Health <= 0 && !_deathSequence)
+			return;
+		
+		DrawMessages(ticFrac);
+		
+		if (!ply.CountInv("DeltaNoHud"))
 		{
-			DrawMessages(ticFrac);
-			
-			bool infAmmo = sv_infiniteAmmo || (CPlayer.mo.FindInventory('PowerInfiniteAmmo', true) != null);
-			
-			if (!CPlayer.mo.CountInv("DeltaNoHud"))
-			{
-				DrawLeftPanel(infAmmo, ticFrac);
-				DrawRightPanel(infAmmo);
-			}
-			
-			DrawReticle(infAmmo, ticFrac);
-			DrawOxygen();
+			DrawLeftPanel(ticFrac);
+			DrawRightPanel();
 		}
-		else
-			DrawDeathStuff();
+		
+		DrawReticle(ticFrac);
+		DrawOxygen();
+	}
+	
+	override void ShowPop(int popNum)
+	{
+		Super.ShowPop(popNum);
+		Console.Printf("ShowPop called, popNum is " .. popNum);
 	}
 	
 	void ResetHUD()
 	{
 		_tpInterp.Reset(0);
-		_healthInterp.Reset(GetHealthPerc() * 100);
+		_healthInterp.Reset(int(GetHealthPerc() * 100));
 		ClearIndicators();
 		ClearDamagePopups();
 	}
@@ -293,7 +346,6 @@ class DeltaHud : BaseStatusBar
 	
 	protected void DrawHpBar(double ticFrac)
 	{
-		let ply = DeltaPlayer(CPlayer.mo);
 		double
 			barWidth = 120 * _universalScale.x,
 			barHeight = 12 * _universalScale.y,
@@ -345,13 +397,11 @@ class DeltaHud : BaseStatusBar
 			DI_SCREEN_LEFT_BOTTOM | DI_TEXT_ALIGN_RIGHT, scale: _universalScale*2);
 	}
 	
-	protected void DrawTpBar(bool infiniteAmmo, double ticFrac)
+	protected void DrawTpBar(double ticFrac)
 	{
-		let ply = DeltaPlayer(CPlayer.mo),
-			tpPos = (_hBorder, -_vBorder - 149*_universalScale.y);
-		
-		double sc = 1.,
-			tpPerc = infiniteAmmo? 1. : ply.tensionPoints / ply.maxTensionPoints;
+		let tpPos = (_hBorder, -_vBorder - 149*_universalScale.y),
+			sc = 1.,
+			tpPerc = _infiniteAmmo? 1. : ply.tensionPoints / ply.maxTensionPoints;
 		
 		DrawTexture(_tpBarBack, tpPos,
 			DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_TOP, scale: sc * _universalScale);
@@ -372,7 +422,7 @@ class DeltaHud : BaseStatusBar
 			tpLerp = DeltaUtil.Lerp(_oldTp, _tpInterp.GetValue(), ticFrac),
 			tpBarHeight = 167 * sc * _universalScale.x;
 		
-		let lerpPerc = infiniteAmmo? 1. : (tpLerp / ply.maxTensionPoints);
+		let lerpPerc = _infiniteAmmo? 1. : (tpLerp / ply.maxTensionPoints);
 		
 		Fill(0xffff0000, barPos.x, barPos.y, lerpPerc * tpBarHeight,
 			15*sc*_universalScale.y, DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM);
@@ -399,7 +449,7 @@ class DeltaHud : BaseStatusBar
 		// using stencil mask
 		double tpTimer = 1.;
 		
-		if (!infiniteAmmo)
+		if (!_infiniteAmmo)
 			tpTimer = clamp(ply.tensionDrainTimer /
 				(ply.DRAIN_TIMER_START
 					* G_SkillPropertyFloat(SKILLP_AmmoFactor) * sv_ammoFactor),
@@ -412,13 +462,19 @@ class DeltaHud : BaseStatusBar
 		Screen.EnableStencil(false);
 		Screen.ClearStencil();
 		
-		let tpFont = (tpPerc >= 1)? _consoleFont : _tpFont,
-			tpText = (tpPerc >= 1)? "\c[DeltaYellow]MAX" : String.Format("%d%%", int(tpPerc * 100)),
-			tpTextWidth = tpFont.mFont.StringWidth(tpText);
-		tpTextWidth *= sc;
+		if (_infiniteAmmo)
+		{
+			DrawTexture(_infiniteText, tpPos + (51*_universalScale.x, 2.5*_universalScale.y),
+				DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_TOP, scale: _universalScale,
+				col: 0x80000000);
+			DrawTexture(_infiniteText, tpPos + (50*_universalScale.x, 1.5*_universalScale.y),
+				DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_TOP, scale: _universalScale);
+			return;
+		}
 		
-		if (tpPerc < 1)
-			tpTextWidth -= tpText.CodePointCount() * 2;
+		let tpFont = (tpPerc >= 1)? _consoleFont : _tpFont,
+			tpText = (tpPerc >= 1)? "\c[DeltaYellow]MAX" : String.Format("%d%%", int(tpPerc * 100));
+		double tpTextWidth = tpFont.mFont.StringWidth(tpText) * sc;
 		
 		DrawString(tpFont, tpText,
 			(tpPos.x + (80 - tpTextWidth)*_universalScale.x, tpPos.y - 4*_universalScale.y),
@@ -449,7 +505,7 @@ class DeltaHud : BaseStatusBar
 		let h = 10 * _universalScale.y;
 		for (int i = 0; i < STATS_NUM; i++)
 		{
-			if (!stats[i])
+			if (!stats[i] && !automapActive)
 				continue;
 			
 			h += 17 * _universalScale.y;
@@ -461,9 +517,9 @@ class DeltaHud : BaseStatusBar
 			showStats = true;
 		}
 		
-		if (levelStats >= LVLSTATS_INFO)
+		if (levelStats >= LVLSTATS_INFO || automapActive)
 		{
-			let author = level.authorName,
+			let author = StringTable.Localize(level.authorName),
 				fontH = _consoleFont.mFont.GetHeight(),
 				infoY = -_vBorder - fontH*_universalScale.y;
 			
@@ -506,13 +562,15 @@ class DeltaHud : BaseStatusBar
 		
 		for (int i = stats.Size() - 1; i >= 0; i--)
 		{
-			if (!stats[i])
+			if (!stats[i] && !automapActive)
 				continue;
 			
 			TextureID iconTex;
 			string text = "",
 				perfectTrans = "\c[DeltaYellow]",
 				zeroTrans = "\c[DeltaGrey]";
+			bool noKillsSecretsItems = !level.Total_Monsters && !level.Total_Secrets
+				&& !level.Total_Items;
 			int scoreState = 0; // -1 = none in map, 0 = incomplete, 1 = perfect
 			
 			switch (i)
@@ -520,19 +578,19 @@ class DeltaHud : BaseStatusBar
 				case 0: // kills
 					iconTex = _statsKillIcon;
 					text = CPlayer.KillCount .. "/" .. level.Total_Monsters;
-					scoreState = (!level.Total_Monsters)? -1 :
+					scoreState = (noKillsSecretsItems)? -1 :
 						level.Killed_Monsters >= level.Total_Monsters;
 					break;
 				case 1: // secrets
 					iconTex = _statsSecretIcon;
 					text = CPlayer.SecretCount .. "/" .. level.Total_Secrets;
-					scoreState = (!level.Total_Secrets)? -1 :
+					scoreState = (noKillsSecretsItems)? -1 :
 						level.Found_Secrets >= level.Total_Secrets;
 					break;
 				case 2: // items
 					iconTex = _statsItemIcon;
 					text = CPlayer.ItemCount .. "/" .. level.Total_Items;
-					scoreState = (!level.Total_Items)? -1 :
+					scoreState = (noKillsSecretsItems)? -1 :
 						level.Found_Items >= level.Total_Items;
 					break;
 				case 3: // deaths
@@ -559,7 +617,7 @@ class DeltaHud : BaseStatusBar
 			if (scoreState == -1)
 				text = "--/--";
 			
-			let textW = curFont.mFont.StringWidth(text, false) - text.CodePointCount()*2;
+			let textW = curFont.mFont.StringWidth(text, false);
 			
 			if (scoreState == -1)
 				text = zeroTrans .. text;
@@ -570,15 +628,14 @@ class DeltaHud : BaseStatusBar
 			DrawTexture(iconTex, (_hBorder + 204*_universalScale.x, curY),
 				DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT | DI_ITEM_VCENTER,
 				scale: _universalScale, col: ply.GetCharacterColor());
-			DrawString(curFont, text, (_hBorder + (282 - textW)*_universalScale.x,
+			DrawString(curFont, text, (_hBorder + (286 - textW)*_universalScale.x,
 				curY - halfFontH*_universalScale.y),
 				DI_SCREEN_LEFT_BOTTOM | DI_TEXT_ALIGN_LEFT, scale: _universalScale);
 		}
 	}
 	
-	protected void DrawLeftPanel(bool infiniteAmmo, double ticFrac)
+	protected void DrawLeftPanel(double ticFrac)
 	{
-		DeltaPlayer ply = DeltaPlayer(CPlayer.mo);
 		if (!ply)
 			return;
 		
@@ -600,11 +657,11 @@ class DeltaHud : BaseStatusBar
 		DrawKeys(_hBorder + 69*_universalScale.x,
 			-_vBorder - 99*_universalScale.y, 119*_universalScale.x,
 			43*_universalScale.y);
-		DrawTpBar(infiniteAmmo, ticFrac);
+		DrawTpBar(ticFrac);
 		
 		let offhandTpCost = ply.GetOffhandTpCost(),
 			offhandColor =
-				(ply.CanUseOffhand() && ply.GetTension(ply.GetOffhandTpCost()) == TP_FAIL)?
+				(ply.CanUseOffhand() && ply.GetTension(ply.GetOffhandTpCost()) == DeltaPlayer.TP_FAIL)?
 					0x80606060 : (ply.GetIsUsingOffhand()? 0xffffa060 : 0xffffffff);
 		
 		DisplayBinding("+offhand", (_hBorder + 8*_universalScale.x,
@@ -616,24 +673,64 @@ class DeltaHud : BaseStatusBar
 			scale: _universalScale);
 		let str = String.Format("%d%% TP", offhandTpCost * 100 / ply.maxTensionPoints),
 			textW = _tpFont.mFont.StringWidth(str, false);
-		DrawString(_tpFont, str, (_hBorder + (33 - textW/2.)*_universalScale.x, -_vBorder - 102*_universalScale.y),
+		DrawString(_tpFont, str,
+			(_hBorder + (31 - textW/2.)*_universalScale.x, -_vBorder - 102*_universalScale.y),
 			DI_SCREEN_LEFT_BOTTOM, scale: _universalScale);
 		
 		DrawDamagePopups((_hBorder + (10+TexMan.GetSize(currentFace)/2.)*_universalScale.x,
 			-_vBorder - 25*_universalScale.y), ticFrac);
 		
-		if (deathmatch || (!cl_delta_showLevelStats && !cl_delta_showDeathCounter))
+		if (deathmatch)
 			return;
 		
 		DrawLevelStats(ply);
 	}
 	
-	protected void DrawRightPanel(bool infiniteAmmo)
+	protected void DrawRightPanel()
 	{
-		let ply = DeltaPlayer(CPlayer.mo);
 		if (!ply)
 			return;
 		
+		DrawAmmo();
+		DrawInventory();
+	}
+	
+	protected void DrawInventory()
+	{
+		let [invW, invH] = TexMan.GetSize(_invPanel);
+		let [ammoW, ammoH] = TexMan.GetSize(_ammoBottom);
+		double
+			widgetW = invW * _universalScale.x,
+			widgetH = invH * _universalScale.y;
+		
+		let panelX = -_hBorder - (ammoW + 2)*_universalScale.x;
+		DrawTexture(_invPanel, (panelX, -_vBorder), 
+			DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, scale: _universalScale);
+		DrawTexture(_invPanelBorders, (panelX, -_vBorder), 
+			DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM | DI_ITEM_OFFSETS,
+			col: ply.GetCharacterColor(), scale: _universalScale);
+		
+		let invFirst = ValidateInvFirst(1);
+		if (!invFirst)
+			return;
+		
+		DrawString(_drHudFont, "" .. invFirst.Amount,
+			(panelX - widgetW + 5*_universalScale.x, -_vBorder - widgetH + 20*_universalScale.y),
+			DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_LEFT_TOP, scale: _universalScale * 3);
+		
+		TextureID icon = invFirst.Icon;
+		if (icon.IsNull() && invFirst.SpawnState && invFirst.SpawnState.sprite != 0)
+			icon = invFirst.SpawnState.GetSpriteTexture(0);
+		if (!icon.IsValid())
+			return;
+		
+		DrawTexture(icon,
+			(panelX - widgetW + 46*_universalScale.x, -_vBorder - widgetH + 24*_universalScale.y),
+			DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_CENTER, box: _universalScale*32, scale: _universalScale);
+	}
+	
+	protected void DrawAmmo()
+	{
 		if (!_ammos.Size())
 			return;
 		
@@ -666,7 +763,7 @@ class DeltaHud : BaseStatusBar
 		for (int i = 0; i < _ammos.Size(); i++)
 		{
 			let am = _ammos[_ammos.Size() - 1 - i];
-			let amCount = CPlayer.mo.CountInv(am);
+			let amCount = ply.CountInv(am);
 			let ammoIcon = ammoIcons.GetIfExists(am.GetClassName());
 			double curAlpha = 0.2;
 			let weap = CPlayer.ReadyWeapon;
@@ -680,7 +777,7 @@ class DeltaHud : BaseStatusBar
 				alpha: curAlpha,
 				box: _universalScale*16, scale: _universalScale);
 			
-			if (infiniteAmmo)
+			if (_infiniteAmmo)
 				DrawTexture(_infiniteText, (-_hBorder - 8*_universalScale.x,
 					-_vBorder - (4+ammoH)*_universalScale.y - hPerAmmo*i),
 					DI_ITEM_RIGHT_BOTTOM | DI_SCREEN_RIGHT_BOTTOM,
@@ -697,13 +794,13 @@ class DeltaHud : BaseStatusBar
 	
 	protected void DrawKeys(double x, double y, double maxW, double maxH)
 	{
-		if (!CPlayer.mo)
+		if (!ply)
 			return;
 		
 		let spacing = 1.,
 			keyBox = 16.,
 			totalWidth = spacing + keyBox;
-		int rowLimit = maxW / (totalWidth*_universalScale.x);
+		int rowLimit = int(maxW / (totalWidth * _universalScale.x));
 		
 		for (int j = 0; j < _keys.Size(); j++)
 		{
@@ -728,14 +825,12 @@ class DeltaHud : BaseStatusBar
 		}
 	}
 	
-	protected void DrawReticle(bool infiniteAmmo, double ticFrac)
+	protected void DrawReticle(double ticFrac)
 	{
-		if (CPlayer.cheats & CF_CHASECAM || automapActive
-			|| !(CPlayer.mo is "DeltaPlayer") || !cl_delta_showCrosshair)
+		if (automapActive || !ply || !cl_delta_showCrosshair)
 			return;
 		
-		DeltaPlayer ply = DeltaPlayer(CPlayer.mo);
-		DrawQuickInfo(infiniteAmmo, ticFrac);
+		DrawQuickInfo(ticFrac);
 		
 		if (ply.GetIsUsingOffhand())
 			return;
@@ -747,15 +842,15 @@ class DeltaHud : BaseStatusBar
 		if (weap && !weap.GetAtEase())
 			crosshair = weap.GetCrosshair();
 		
-		Color xhairColor = xhairState == DELTA_XHR_NEUTRAL ?
-			cl_delta_crosshairColor : (xhairState == DELTA_XHR_FRIENDLY ?
+		Color xhairColor = xhairState == DeltaPlayer.DELTA_XHR_NEUTRAL ?
+			cl_delta_crosshairColor : (xhairState == DeltaPlayer.DELTA_XHR_FRIENDLY ?
 			cl_delta_crosshairFriendlyColor : cl_delta_crosshairEnemyColor);
 		xhairColor |= 0xff000000;
 		DrawTexture(crosshair, (0, 0), DI_SCREEN_CENTER | DI_ITEM_CENTER,
 			scale: _universalScale * 0.5, col: xhairColor);
 		
 		if (!ply.CanUseOffhand()
-			|| ply.GetTension(ply.GetOffhandTpCost()) == TP_FAIL
+			|| ply.GetTension(ply.GetOffhandTpCost()) == DeltaPlayer.TP_FAIL
 			|| !cl_delta_showOffhandIndicator)
 		{
 			return;
@@ -765,14 +860,13 @@ class DeltaHud : BaseStatusBar
 			scale: _universalScale * 0.5, col: 0xff000000 | cl_delta_offhandIndicatorColor);
 	}
 	
-	protected void DrawQuickInfo(bool infiniteAmmo, double ticFrac)
+	protected void DrawQuickInfo(double ticFrac)
 	{
 		if (!cl_delta_showQuickInfo)
 			return;
-		if (CPlayer.mo.CountInv("DeltaNoHud"))
+		if (ply.CountInv("DeltaNoHud"))
 			return;
 		
-		DeltaPlayer ply = DeltaPlayer(CPlayer.mo);
 		let reticleBarOffset = (-75 * _universalScale.x, 0);
 		
 		Screen.EnableStencil(true);
@@ -783,7 +877,7 @@ class DeltaHud : BaseStatusBar
 			DI_SCREEN_CENTER | DI_ITEM_VCENTER | DI_ITEM_RIGHT,
 			scale: _universalScale * 0.5);
 		
-		if (!infiniteAmmo)
+		if (!_infiniteAmmo)
 		{
 			reticleBarOffset.x *= -1;
 			DrawTextureRotated(_reticleBar, reticleBarOffset,
@@ -805,24 +899,25 @@ class DeltaHud : BaseStatusBar
 		
 		Fill(0xc0550000, curX, curY, realWidth, -realHeight, DI_SCREEN_CENTER);
 		
-		double healthInterpValue = DeltaUtil.Lerp(_oldHealth,
-			_healthInterp.GetValue(), ticFrac) / 100.;
+		let hpPerc = GetHealthPerc(),
+			healthInterpValue = DeltaUtil.Lerp(_oldHealth,
+				_healthInterp.GetValue(), ticFrac) / 100.;
 		
 		Fill(Color(255, 255, 0, 0), curX, curY, realWidth,
 			-realHeight * healthInterpValue, DI_SCREEN_CENTER);
 		Fill(ply.GetCharacterColor(), curX, curY, realWidth,
-			-realHeight * clamp(GetHealthPerc(), 0, 1),
+			-realHeight * min(hpPerc, 1),
 			DI_SCREEN_CENTER);
 		
-		if (GetHealthPerc() > 1)
+		if (hpPerc > 1)
 		{
 			Fill(Color(255, 255, 0, 0), curX, curY, realWidth,
 				-realHeight * max(0, healthInterpValue-1), DI_SCREEN_CENTER);
 			Fill(ply.GetOverhealColor(), curX, curY, realWidth,
-				-realHeight * max(0, GetHealthPerc()-1), DI_SCREEN_CENTER);
+				-realHeight * max(0, hpPerc-1), DI_SCREEN_CENTER);
 		}
 		
-		if (!infiniteAmmo)
+		if (!_infiniteAmmo)
 		{
 			double tp = ply.tensionPoints, maxTp = ply.maxTensionPoints,
 				tpLerp = DeltaUtil.Lerp(_oldTp, _tpInterp.GetValue(), ticFrac);
@@ -847,7 +942,7 @@ class DeltaHud : BaseStatusBar
 			DI_SCREEN_CENTER | DI_ITEM_VCENTER | DI_ITEM_RIGHT,
 			scale: _universalScale * 0.5);
 		
-		if (!infiniteAmmo)
+		if (!_infiniteAmmo)
 		{
 			reticleBarOffset.x *= -1;
 			DrawTextureRotated(_reticleBarOverlay, reticleBarOffset,
@@ -858,7 +953,7 @@ class DeltaHud : BaseStatusBar
 	
 	protected void DrawOxygen()
 	{
-		if (!CPlayer)
+		if (CPlayer.health <= 0 && CPlayer.lastDamageType != "Drowning")
 			return;
 		
 		let airTime = max(0, CPlayer.air_finished - level.mapTime + 1),
@@ -871,10 +966,10 @@ class DeltaHud : BaseStatusBar
 		let normCol = Color(192, 0, 128, 255),
 			lowCol = Color(192, 192, 24, 24),
 			lowFadeTics = 10,
-			lowFade = min(lowFadeTics, level.airSupply*0.4 - airTime) / lowFadeTics;
-		int barR = DeltaUtil.Lerp(normCol.r, lowCol.r, lowFade),
-			barG = DeltaUtil.Lerp(normCol.g, lowCol.g, lowFade),
-			barB = DeltaUtil.Lerp(normCol.b, lowCol.b, lowFade);
+			lowFade = min(lowFadeTics, level.airSupply*0.4 - airTime) / lowFadeTics,
+			barR = int(DeltaUtil.Lerp(normCol.r, lowCol.r, lowFade)),
+			barG = int(DeltaUtil.Lerp(normCol.g, lowCol.g, lowFade)),
+			barB = int(DeltaUtil.Lerp(normCol.b, lowCol.b, lowFade));
 		Color barCol = Color(192, barR, barG, barB);
 		
 		Fill(Color(128, barCol.r/2, barCol.g/2, barCol.b/2), -airBarWidth / 2.,
@@ -883,67 +978,6 @@ class DeltaHud : BaseStatusBar
 		Fill(barCol, -airBarWidth / 2.,
 			50*_universalScale.y, airBarWidth * airPerc,
 			5*_universalScale.y, DI_SCREEN_CENTER);
-	}
-	
-	protected void DrawDeathStuff()
-	{
-		DeltaPlayer ply = DeltaPlayer(CPlayer.mo);
-		if (!ply)
-			return;
-		
-		int reminderTimer = ply.GetDeathTimer() - TICRATE * 20;
-		double textSpeed = 1/2.;
-		
-		if (multiplayer && !deathmatch) // we can respawn whenever in deathmatch
-			return;
-		if (reminderTimer < 0)
-			return;
-		if (!cl_delta_showDeathText)
-			return;
-		
-		String respawnReminder = StringTable.Localize("$TXT_DELTA_RESPAWNMSG1"),
-			reminderThisFrame = respawnReminder;
-		reminderThisFrame.Truncate(reminderTimer * textSpeed);
-		
-		int xOffset = -_consoleFont.mFont.StringWidth(respawnReminder) / 2 * _universalScale.x;
-		int yOffset = -50 * _universalScale.y;
-		DrawString(_consoleFont, reminderThisFrame, (xOffset, yOffset),
-			DI_SCREEN_CENTER, scale: _universalScale);
-		
-		reminderTimer -= respawnReminder.Length() / textSpeed + (TICRATE/2);
-		if (reminderTimer < 0)
-			return;
-		
-		respawnReminder = StringTable.Localize("$TXT_DELTA_RESPAWNMSG2");
-		reminderThisFrame = respawnReminder;
-		reminderThisFrame.Truncate(reminderTimer * textSpeed);
-		xOffset = -_consoleFont.mFont.StringWidth(respawnReminder) / 2 * _universalScale.x;
-		yOffset += _consoleFont.mFont.GetHeight() * _universalScale.y * 2;
-		
-		DrawString(_consoleFont, reminderThisFrame, (xOffset, yOffset),
-			DI_SCREEN_CENTER, scale: _universalScale);
-		
-		reminderTimer -= respawnReminder.Length() / textSpeed + (TICRATE);
-		if (reminderTimer < 0)
-			return;
-		
-		int useBind, useless;
-		[useBind, useless] = Bindings.GetKeysForCommand("+use");
-		String keyNames = KeyBindings.NameKeys(useBind, 0);
-		keyNames.ToUpper();
-		
-		string targetFormat = (deathmatch || (dmflags2 & LEVEL2_ALLOWRESPAWN)
-			|| sv_singleplayerrespawn
-			|| G_SkillPropertyInt(SKILLP_PlayerRespawn))
-			? "$TXT_DELTA_RESPAWNREMINDDM" : "$TXT_DELTA_RESPAWNREMIND";
-		respawnReminder = String.Format(StringTable.Localize(targetFormat), keyNames);
-		reminderThisFrame = respawnReminder;
-		reminderThisFrame.Truncate(reminderTimer * textSpeed);
-		xOffset = -_consoleFont.mFont.StringWidth(respawnReminder) / 2 * _universalScale.x;
-		yOffset += _consoleFont.mFont.GetHeight() * _universalScale.y * 3;
-		
-		DrawString(_consoleFont, reminderThisFrame, (xOffset, yOffset),
-			DI_SCREEN_CENTER, scale: _universalScale);
 	}
 }
 

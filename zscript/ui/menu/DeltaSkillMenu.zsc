@@ -9,13 +9,6 @@ class DeltaSkillMenu : DeltaListMenu
 	{
 		Super.Init(parent, desc);
 		UpdateDescription();
-		
-		if (DeltaMapsetCompat.Get() ~== "NotEvenRemotelyFair")
-		{
-			desc.mSelectedItem = 7;
-			for (int i = 1; i < 6; i++)
-				desc.mItems[i].Enable(false);
-		}
 	}
 	
 	override bool MenuEvent(int mKey, bool fromController)
@@ -43,19 +36,18 @@ class DeltaSkillMenu : DeltaListMenu
 		if (!lines.Count())
 			return;
 		
-		int fontH = smallFont.GetHeight();
-		let strPos = (CLIP_W,
-			Screen.GetHeight() - CLIP_H - (fontH*FONT_SCALE*lines.Count()));
-		Screen.Dim(0xff000000, 0.5, strPos.x - 10, strPos.y - 10,
+		let fontH = smallFont.GetHeight() * FONT_SCALE,
+			strPos = (CLIP_W, Screen.GetHeight() - CLIP_H - (fontH*lines.Count()));
+		Screen.Dim(0xff000000, 0.5, int(strPos.x) - 10, int(strPos.y) - 10,
 			Screen.GetWidth() - CLIP_W*2,
-			(fontH*FONT_SCALE*lines.Count()) + 20);
+			(fontH*lines.Count()) + 20);
 		
 		for (int i = 0; i < lines.Count(); i++)
 		{
 			Screen.DrawText(smallFont, Font.CR_UNTRANSLATED, strPos.x,
 				strPos.y, lines.StringAt(i), DTA_ScaleX, FONT_SCALE,
 				DTA_ScaleY, FONT_SCALE);
-			strPos.y += fontH * FONT_SCALE;
+			strPos.y += fontH;
 		}
 	}
 	
@@ -83,14 +75,11 @@ class DeltaSkillMenu : DeltaListMenu
 			case 5: // very hard
 				localize = "$DELTA_SKILLDESC_VERYHARD";
 				break;
-			case 6: // nightmare
-				localize = "$DELTA_SKILLDESC_NIGHTMARE";
-				break;
 			default:
 				break;
 		}
 		
 		let descString = StringTable.Localize(localize);
-		lines = smallFont.BreakLines(descString, floor((Screen.GetWidth() - CLIP_W * 2.) / FONT_SCALE));
+		lines = smallFont.BreakLines(descString, int((Screen.GetWidth() - CLIP_W * 2.) / FONT_SCALE));
 	}
 }

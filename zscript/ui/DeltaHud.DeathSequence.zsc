@@ -1,7 +1,627 @@
 extend class DeltaHud
 {
+	protected DeltaGameOver _deathSequence;
+	
 	virtual void StartDeathSequence(bool firstTime)
 	{
+		if (!CPlayer.mo || !(CPlayer.mo is "DeltaPlayer"))
+			return;
 		
+		let deltaPly = DeltaPlayer(CPlayer.mo);
+		_deathSequence = DeltaGameOver.Create(_noShadowFont.mFont, firstTime);
+	}
+	
+	virtual void CancelDeathSequence()
+	{
+		if (!_deathSequence)
+			return;
+		
+		_deathSequence.Destroy();
+	}
+	
+	virtual void TickDeathSequence()
+	{
+		if (!_deathSequence)
+			return;
+		
+		_deathSequence.OnTick();
+	}
+	
+	virtual void DrawDeathSequence(double ticFrac)
+	{
+		if (!_deathSequence)
+			return;
+		
+		_deathSequence.Draw(ticFrac);
+	}
+	
+	virtual void TakeInput(InputEvent evt)
+	{
+		if (!_deathSequence)
+			return;
+		
+		_deathSequence.OnEvent(evt);
+	}
+}
+
+class DeltaSoulShard
+{
+	Vector2 pos, vel;
+	double grav;
+	
+	void Tick()
+	{
+		vel.y += grav;
+		pos += vel / TICRATE;
+	}
+	
+	Vector2 GetInterpolatedPos(double ticFrac) const
+	{
+		return pos + (vel.x, vel.y + grav*ticFrac)*ticFrac/TICRATE;
+	}
+}
+
+class DeltaGameOver : ScreenJob
+{
+	enum EGameOverState
+	{
+		UNINITIALIZED = -1,			// -1
+		FREEZE_FRAME,				// 0
+		SOUL_BREAK,					// 1
+		MESSAGES,					// 2
+		MAKING_CHOICE,				// 3
+		CHOICE_FILTER,				// 4
+		CONTINUING,					// 5
+		RETURN_TO_GAME,				// 6
+		WORLD_COVERED_IN_DARKNESS,	// 7
+		DARKNESS_FALLS,				// 8
+		DARKNESS_ABORT				// 9
+	}
+	
+	enum EGameOverChoice
+	{
+		GOC_NO_CHOICE = -1,
+		GOC_CONTINUE,
+		GOC_GIVE_UP
+	}
+	
+	const WHITE_GOAL_TICKS = TICRATE * 3;
+	const DARKNESS_GOAL_TICKS = floor(68.767 * TICRATE);
+	const GAME_OVER_FADEIN_TIME = TICRATE;
+	
+	int goalTicks,
+		gameOverState,
+		soulState,
+		curChoice,
+		lastSoulX,
+		targetSoulX,
+		whiteStartTick,
+		skip;
+	DeltaMessageHandler messageHandler;
+	
+	protected DeltaPlayer ply;
+	protected bool firstTime;
+	protected TextureID gameOver, soul, brokenSoul, blurrySoul, soulShard;
+	protected DeltaSoulShard[6] soulShards;
+	protected DynamicValueInterpolator soulX;
+	protected Font fnt;
+	
+	private int sideInput;
+	
+	static DeltaGameOver Create(Font fnt, bool firstTime = false, int flags = 0)
+	{
+		return new("DeltaGameOver").Init(fnt, firstTime, flags);
+	}
+	
+	DeltaGameOver Init(Font fnt, bool firstTime, int flags)
+	{
+		self.fnt = fnt;
+		self.firstTime = firstTime;
+		ply = DeltaPlayer(players[consolePlayer].mo);
+		gameOverState = UNINITIALIZED;
+		curChoice = GOC_NO_CHOICE;
+		
+		gameOver = TexMan.CheckForTexture("graphics/hud/gameOverText.png");
+		soul = TexMan.CheckForTexture("DRSLA0");
+		brokenSoul = TexMan.CheckForTexture("DRSLB0");
+		blurrySoul = TexMan.CheckForTexture("blurrySoul");
+		soulShard = TexMan.CheckForTexture("SSRDA0");
+		messageHandler = DeltaMessageHandler.Create();
+		soulX = DynamicValueInterpolator.Create(50, 0.55, 1, 10);
+		
+		ticks = -1;
+		goalTicks = 0;
+		whiteStartTick = -1;
+		noWipe = true;
+		Super.Init(flags);
+		
+		return self;
+	}
+	
+	override void OnTick()
+	{
+		Super.OnTick();
+		ticks++;
+		
+		if (whiteStartTick >= 0 && ticks == whiteStartTick + WHITE_GOAL_TICKS + TICRATE)
+			EventHandler.SendNetworkEvent("DeltaTimeToRespawn");
+		
+		int tempTicks = ticks,
+			tempGoal;
+		
+		switch (gameOverState)
+		{
+			case SOUL_BREAK:
+				tempGoal = floor(TICRATE * 0.75);
+				
+				if (tempTicks < tempGoal)
+					break;
+				else if (tempTicks == tempGoal)
+				{
+					soulState = 1;
+					S_StartSound("delta/soul_break", 0);
+				}
+				
+				tempTicks -= tempGoal;
+				
+				if (tempTicks != TICRATE)
+					break;
+				
+				soulState = 2;
+				S_StartSound("delta/soul_shatter", 0);
+				
+				for (int i = 0; i < soulShards.Size(); i++)
+				{
+					let gravScale = 2,
+						shard = new("DeltaSoulShard"),
+						startVelY = cfrandom(-5, -3) * gravScale;
+					
+					shard.pos = (cfrandom(3, 9) * crandompick(-1, 1),
+						cfrandom(3, 9) * crandompick(-1, 1));
+					shard.vel = (shard.pos.x, shard.pos.y) * gravScale * TICRATE;
+					shard.grav = cfrandom(9, 9.8) * gravScale;
+					
+					soulShards[i] = shard;
+				}
+				break;
+			case MESSAGES:
+				if (!messageHandler || ticks%2)
+					break;
+				
+				if (firstTime)
+				{
+					messageHandler.OnTick();
+					
+					if (messageHandler.GetMessageState() == MSG_STATE_HOLD_SCRIPT)
+					{
+						ticks = 0;
+						goalTicks = 1;
+					}
+					break;
+				}
+				break;
+			case MAKING_CHOICE:
+				lastSoulX = soulX.GetValue();
+				soulX.Update(targetSoulX);
+				
+				if (sideInput == 0)
+					break;
+				
+				SetChoice(sideInput < 0? GOC_CONTINUE : GOC_GIVE_UP);
+				break;
+			case CONTINUING:
+			case RETURN_TO_GAME:
+			case WORLD_COVERED_IN_DARKNESS:
+				if (!messageHandler || ticks%2)
+					break;
+				
+				messageHandler.OnTick();
+					
+				if (messageHandler.GetMessageState() == MSG_STATE_HOLD_SCRIPT)
+				{
+					ticks = 0;
+					goalTicks = 1;
+				}
+				break;
+			case DARKNESS_FALLS:
+				S_ChangeMusic("music/mus_shroudedInDarkness.ogg", looping: false, force: true);
+				break;
+			case DARKNESS_ABORT:
+				CoveredInDarkness();
+				break;
+			default:
+				break;
+		}
+		
+		for (int i = 0; i < soulShards.Size(); i++)
+		{
+			if (!soulShards[i])
+				continue;
+			
+			soulShards[i].Tick();
+		}
+		
+		if (ticks != goalTicks)
+			return;
+		
+		ticks = 0;
+		gameOverState++;
+		
+		switch (gameOverState)
+		{
+			case FREEZE_FRAME:
+				goalTicks = DeltaPlayer.DEATH_HANG_FRAMES;
+				break;
+			case SOUL_BREAK:
+				goalTicks = int(TICRATE * (firstTime? 4.5 : 3.5));
+				break;
+			case MESSAGES:
+				if (firstTime)
+				{
+					SetMusicVolume(1.);
+					S_ChangeMusic("music/mus_deltaDrone.ogg");
+					
+					messageHandler.AddMessage(
+						DeltaMessageBox.Create("$DELTAWARRIORS_GAME_OVER_FIRST_1",
+							typeSound: "")
+					);
+					messageHandler.AddMessage(
+						DeltaMessageBox.Create("$DELTAWARRIORS_GAME_OVER_FIRST_2",
+							typeSound: "")
+					);
+					
+					goalTicks = -1;
+					break;
+				}
+				
+				goalTicks = GAME_OVER_FADEIN_TIME;
+				break;
+			case MAKING_CHOICE:
+				if (!firstTime)
+				{
+					SetMusicVolume(1.);
+					S_ChangeMusic("music/mus_deltaGameOver.ogg");
+				}
+				
+				curChoice = GOC_NO_CHOICE;
+				targetSoulX = 50;
+				soulX.Reset(50);
+				goalTicks = -1;
+				break;
+			case CHOICE_FILTER:
+				goalTicks = 1;
+				gameOverState =
+					((curChoice == GOC_CONTINUE)? CONTINUING : WORLD_COVERED_IN_DARKNESS) - 1;
+				break;
+			case CONTINUING:
+				goalTicks = -1;
+				S_ChangeMusic("", force: true);
+				messageHandler.AddMessage(
+					DeltaMessageBox.Create(firstTime? "$DELTAWARRIORS_GAME_OVER_CONTINUING" : "%%",
+						typeSound: "")
+				);
+				
+				if (firstTime)
+					messageHandler.NextMessage();
+				break;
+			case RETURN_TO_GAME:
+				messageHandler.NextMessage();
+				whiteStartTick = ticks;
+				goalTicks = -1;
+				S_StartSound("delta/menu_persist", 0);
+				S_ChangeMusic("");
+				break;
+			case WORLD_COVERED_IN_DARKNESS:
+				goalTicks = -1;
+				S_ChangeMusic("", force: true);
+				
+				messageHandler.AddMessage(
+					DeltaMessageBox.Create("$DELTAWARRIORS_GAME_OVER_GIVING_UP",
+						typeSound: "")
+				);
+				
+				if (firstTime)
+					messageHandler.NextMessage();
+				break;
+			case DARKNESS_FALLS:
+				goalTicks = DARKNESS_GOAL_TICKS;
+				break;
+			default:
+				goalTicks = -1;
+				jobState = finished;
+				break;
+		}
+	}
+	
+	void CoveredInDarkness()
+	{
+		// i thought about making this crash intentionally similarly to how
+		// "you broke me" does it, but ultimately decided against it
+		
+		ThrowAbortException(
+			StringTable.Localize("$DELTAWARRIORS_DARKNESS_ABORT")
+		);
+	}
+	
+	override void Draw(double smoothRatio)
+	{
+		if (!ply || gameOverState == FREEZE_FRAME)
+			return;
+		
+		let scrW = Screen.GetWidth(),
+			scrH = Screen.GetHeight();
+		
+		Screen.Dim(0xff000000, 255, 0, 0, scrW, scrH);
+		
+		if (!firstTime && gameOverState >= MESSAGES
+			&& (gameOverState != MESSAGES || ticks > 0)
+			&& (!messageHandler.message || gameOverState == CONTINUING))
+		{
+			double sc = 4.,
+				alpha = (gameOverState == MESSAGES)? ((ticks + smoothRatio) / GAME_OVER_FADEIN_TIME) : 1;
+			alpha = clamp(alpha, 0, 1);
+			
+			Screen.DrawTexture(gameOver, false, scrW/2, scrH*0.15,
+				DTA_Alpha, alpha, DTA_ScaleX, sc, DTA_ScaleY, sc);
+		}
+		
+		DrawCurrentState(smoothRatio);
+	}
+	
+	override bool OnEvent(InputEvent evt)
+	{
+		if (evt.type != InputEvent.Type_KeyDown || !messageHandler)
+			return false;
+		if (soulState < 2)
+			return false;
+		
+		int curInput = -1; // 0 = left, 1 = right, 2 = enter
+		switch (evt.KeyScan)
+		{
+			case InputEvent.Key_Pad_DPad_Left:
+			case InputEvent.Key_Pad_LThumb_Left:
+			case InputEvent.Key_JoyAxis1Minus:
+			case InputEvent.Key_JoyPOV1_Left:
+			case InputEvent.Key_LeftArrow:
+				curInput = 0;
+				break;
+			
+			case InputEvent.Key_Pad_DPad_Right:
+			case InputEvent.Key_Pad_LThumb_Right:
+			case InputEvent.Key_JoyAxis1Plus:
+			case InputEvent.Key_JoyPOV1_Right:
+			case InputEvent.Key_RightArrow:
+				curInput = 1;
+				break;
+			
+			case InputEvent.Key_Joy1:
+			case InputEvent.Key_Joy3:
+			case InputEvent.Key_Pad_A:
+			case InputEvent.Key_Enter:
+				curInput = 2;
+				break;
+		}
+		
+		if (gameOverState > MAKING_CHOICE)
+			return false;
+		else if (gameOverState < MAKING_CHOICE && !firstTime)
+		{
+			skip++;
+			
+			if (skip < 4)
+				return true;
+			if (!data_delta_diedFirstTime)
+				CVar.FindCVar("data_delta_diedFirstTime").SetBool(true);
+			
+			EventHandler.SendNetworkEvent("DeltaTimeToRespawn");
+			return true;
+		}
+		
+		if (curInput == 0)
+			sideInput = -1;
+		else if (curInput == 1)
+			sideInput = 1;
+		else if (curInput == 2)
+			MakeChoice();
+		
+		return true;
+	}
+	
+	virtual void SetChoice(int choice)
+	{
+		if (curChoice == choice)
+			return;
+		
+		S_StartSound("delta/menu_change", 0);
+		curChoice = choice;
+		targetSoulX = (curChoice == GOC_CONTINUE)? 40 : 60;
+	}
+	
+	virtual void MakeChoice()
+	{
+		if (curChoice == GOC_NO_CHOICE)
+			return;
+		
+		if (!data_delta_diedFirstTime)
+			CVar.FindCVar("data_delta_diedFirstTime").SetBool(true);
+		
+		S_StartSound("delta/menu_confirm", 0);
+		ticks = 0;
+		goalTicks = 1;
+	}
+	
+	virtual void DrawCurrentState(double smoothRatio)
+	{
+		let scrW = Screen.GetWidth(),
+			scrH = Screen.GetHeight(),
+			sc = 3.;
+		
+		if (gameOverState >= SOUL_BREAK)
+			DrawSoul(sc, smoothRatio);
+		if (gameOverState >= MESSAGES && gameOverState < DARKNESS_FALLS)
+			DrawMessage(sc, smoothRatio);
+	}
+	
+	virtual void DrawSoul(double sc, double smoothRatio)
+	{
+		Color soulColor = 0xff0000;
+		if (cl_delta_changeSoulColor)
+			soulColor = CVar.GetCvar("user_delta_soulColor",
+				players[consolePlayer]).GetInt();
+		
+		soulColor |= 0xff000000;
+		
+		let scrW = Screen.GetWidth(),
+			scrH = Screen.GetHeight(),
+			soulPos = (scrW/2, scrH/2 + 40);
+		
+		if (soulState < 2)
+		{
+			let tex = soulState? brokenSoul : soul;
+			Screen.DrawTexture(tex, false, soulPos.x, soulPos.y,
+				DTA_ScaleX, sc, DTA_ScaleY, sc*1.1, DTA_Color, soulColor);
+			return;
+		}
+		
+		for (int i = 0; i < soulShards.Size(); i++)
+		{
+			if (!soulShards[i])
+				continue;
+			
+			let pos = soulShards[i].GetInterpolatedPos(smoothRatio) + soulPos;
+			Screen.DrawTexture(soulShard, true, pos.x, pos.y,
+				DTA_ScaleX, sc, DTA_ScaleY, sc*1.1, DTA_Color, soulColor);
+		}
+	}
+	
+	virtual void DrawMessage(double sc, double smoothRatio)
+	{
+		let scrW = Screen.GetWidth(),
+			scrH = Screen.GetHeight();
+		
+		if (gameOverState == MAKING_CHOICE)
+		{
+			Color soulColor = 0xff0000;
+			if (cl_delta_changeSoulColor)
+				soulColor = CVar.GetCvar("user_delta_soulColor",
+					players[consolePlayer]).GetInt();
+			
+			soulColor |= 0xff000000;
+			
+			let strAlpha = min(1, (ticks+smoothRatio) / (TICRATE*0.25)),
+				_soulX = DeltaUtil.Lerp(lastSoulX, soulX.GetValue(), smoothRatio) / 100. * scrW;
+			Screen.DrawTexture(blurrySoul, false,
+				_soulX, scrH * 0.65 + fnt.GetHeight()*sc*1.6,
+				DTA_ScaleX, sc, DTA_ScaleY, sc*1.2,
+				DTA_Color, soulColor, DTA_Alpha, strAlpha * 0.6);
+			
+			let str = StringTable.Localize("$DELTAWARRIORS_GAME_OVER_CONTINUE"),
+				strWidth = fnt.StringWidth(str) * sc;
+			Screen.DrawText(fnt, Font.CR_UNTRANSLATED,
+				scrW*0.4 - strWidth/2, scrH*0.65 + fnt.GetHeight()*sc,
+				(curChoice==GOC_CONTINUE? "\c[DeltaLowHealth]" : "") .. str,
+				DTA_ScaleX, sc, DTA_ScaleY, sc, DTA_Alpha, strAlpha);
+			
+			str = StringTable.Localize("$DELTAWARRIORS_GAME_OVER_GIVE_UP");
+			strWidth = fnt.StringWidth(str) * sc;
+			Screen.DrawText(fnt, Font.CR_UNTRANSLATED,
+				scrW*0.6 - strWidth/2, scrH*0.65 + fnt.GetHeight()*sc,
+				(curChoice==GOC_GIVE_UP? "\c[DeltaLowHealth]" : "") .. str,
+				DTA_ScaleX, sc, DTA_ScaleY, sc, DTA_Alpha, strAlpha);
+		}
+		
+		DrawMessageText(sc, smoothRatio);
+		
+		if (whiteStartTick > -1)
+		{
+			let whiteAlpha = (1. * ticks - whiteStartTick) / WHITE_GOAL_TICKS;
+			Screen.Dim(0xffffffff, whiteAlpha, 0, 0, scrW, scrH);
+		}
+	}
+	
+	void DrawMessageText(double sc, double smoothRatio)
+	{
+		if (!messageHandler || !messageHandler.message)
+			return;
+		
+		let	scrW = Screen.GetWidth(),
+			scrH = Screen.GetHeight(),
+			disp = messageHandler.message.GetDisplayedMessage(),
+			msg = messageHandler.message.GetMessage(),
+			displayedLines = fnt.BreakLines(disp, int(scrW*0.6 / sc)),
+			lines = fnt.BreakLines(msg, int(scrW*0.6 / sc)),
+			maxWidth = lines.StringWidth(0) * sc;
+		
+		for (int i = 1; i < lines.Count(); i++)
+		{
+			if (maxWidth < lines.StringWidth(i) * sc)
+				maxWidth = lines.StringWidth(i) * sc;
+		}
+		
+		for (int i = 0; i < displayedLines.Count(); i++)
+		{
+			DrawMysteryText(displayedLines.StringAt(i),
+				(scrW-maxWidth) / 2, scrH*0.3 + (fnt.GetHeight()*sc) * i,
+				smoothRatio, sc: sc);
+		}
+	}
+	
+	void DrawMysteryText(string text, double x, double y, double smoothRatio,
+		double alpha = 1., double sc = 1.)
+	{
+		let cardinalAlpha = 0.3 + sin((ticks+smoothRatio) * 4.09) * 0.1,
+			ordinalAlpha = 0.08 + sin((ticks+smoothRatio) * 4.09) * 0.04;
+		
+		for (int i = 0; i <= 8; i++)
+		{
+			let xOffset = 0.,
+				yOffset = 0.,
+				curAlpha = alpha;
+			
+			switch (i)
+			{
+				case 1:
+					curAlpha *= cardinalAlpha;
+					xOffset = sc;
+					break;
+				case 2:
+					curAlpha *= cardinalAlpha;
+					xOffset = -sc;
+					break;
+				case 3:
+					curAlpha *= cardinalAlpha;
+					yOffset = sc;
+					break;
+				case 4:
+					curAlpha *= cardinalAlpha;
+					yOffset = -sc;
+					break;
+				case 5:
+					curAlpha *= ordinalAlpha;
+					xOffset = sc;
+					yOffset = sc;
+					break;
+				case 6:
+					curAlpha *= ordinalAlpha;
+					xOffset = -sc;
+					yOffset = -sc;
+					break;
+				case 7:
+					curAlpha *= ordinalAlpha;
+					xOffset = -sc;
+					yOffset = sc;
+					break;
+				case 8:
+					curAlpha *= ordinalAlpha;
+					xOffset = sc;
+					yOffset = -sc;
+					break;
+				default:
+					break;
+			}
+			
+			Screen.DrawText(fnt, Font.CR_UNTRANSLATED, x + xOffset, y + yOffset,
+				text, DTA_ScaleX, sc, DTA_ScaleY, sc, DTA_Alpha, curAlpha);
+		}
 	}
 }

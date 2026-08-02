@@ -30,6 +30,7 @@ class DeltaPopup : Actor abstract
 		+BRIGHT;
 		+INVISIBLEINMIRRORS;
 		+FORCEXYBILLBOARD;
+		+MASTERNOSEE;
 	}
 	
 	States
@@ -82,9 +83,7 @@ class DeltaPopup : Actor abstract
 			return;
 		}
 		else if (tempTime == bounceTime)
-		{
 			vel.z = 0;
-		}
 		
 		tempTime -= bounceTime;
 		
@@ -108,21 +107,21 @@ class DeltaPopup : Actor abstract
 	
 	double GetFadeAlpha()
 	{
-		Actor cam = players[consolePlayer].camera;
-		
-		if (!cam)
+		let ev = DeltaGlobals.GetLevelEvents();
+		if (!ev)
 			return 1.;
 		
-		let diff = level.Vec3Diff(pos, cam.pos.PlusZ(players[consolePlayer].viewHeight)),
+		let diff = level.Vec3Diff(pos, ev.viewPos),
 			dist = diff.Length();
 		
 		if (dist > FADE_MAX_DISTANCE)
 			return 1.;
 		
-		return (dist - FADE_MIN_DISTANCE) / (FADE_MAX_DISTANCE - FADE_MIN_DISTANCE);
+		let factor = (dist-FADE_MIN_DISTANCE) / (FADE_MAX_DISTANCE-FADE_MIN_DISTANCE);
+		return factor * 0.9 + 0.1;
 	}
 	
-	static DeltaPopup SpawnPopup(Class<DeltaPopup> cls, Actor thing,
+	static DeltaPopup SpawnPopup(class<DeltaPopup> cls, Actor thing,
 		Actor source = null, float zOffset = 0)
 	{
 		if (source == thing)

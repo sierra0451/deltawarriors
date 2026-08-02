@@ -1,5 +1,7 @@
 class KrisRevolverChargeShot : FastProjectile
 {
+	private bool _enbyBlast;
+	private int _trailTics;
 	private Array<Actor> _hitActors;
 	
 	Default
@@ -33,6 +35,62 @@ class KrisRevolverChargeShot : FastProjectile
 			Stop;
 	}
 	
+	override void PostBeginPlay()
+	{
+		Super.PostBeginPlay();
+		
+		GiveInventory("DeltaNoGiveDamageTP", 1);
+		let ev = DeltaGlobals.GetLevelEvents(),
+			enbyBlastChance = 0.02,
+			fwd = DeltaUtil.GetActorForward(self);
+		if (SystemTime.Format("%m", ev.GetCurrentTime()) ~== "06")
+			enbyBlastChance = 0.2;
+		
+		if (cfrandom(0, 1) <= enbyBlastChance)
+		{
+			_enbyBlast = true;
+			int maxIterations = 16;
+			
+			for (int i; i < maxIterations; i++)
+			{
+				let act = Spawn("KrisRevolverChargeShotTrail", pos + fwd*4.);
+				if (!act)
+					break;
+				
+				let csTrail = KrisRevolverChargeShotTrail(act),
+					perc = 360. * (i+0.5) / maxIterations,
+					spd = 2.,
+					localVel = spd * (sin(perc), cos(perc)),
+					sc = 0.5;
+				
+				csTrail.Init(i%4);
+				csTrail.vel = localVel.x*DeltaUtil.GetActorRight(self)
+					+ localVel.y*(0, 0, 1/1.2)
+					+ DeltaUtil.GetActorForward(self)*0.6;
+				csTrail.A_SetScale(sc, sc);
+			}
+			return;
+		}
+		
+		int maxIterations = 12;
+		for (int i; i < maxIterations; i++)
+		{
+			let act = Spawn("KrisRevolverChargeShotTrail", pos + fwd*4.);
+			if (!act)
+				break;
+			
+			let csTrail = KrisRevolverChargeShotTrail(act),
+				perc = 360. * (i+0.5) / maxIterations,
+				spd = 1.,
+				localVel = spd * (sin(perc), cos(perc)),
+				sc = 0.25;
+			
+			csTrail.vel = localVel.x*DeltaUtil.GetActorRight(self)
+				+ localVel.y*(0, 0, 1/1.2) + fwd * 0.6;
+			csTrail.A_SetScale(sc, sc);
+		}
+	}
+	
 	override int SpecialMissileHit(Actor victim)
 	{
 		if (victim == target)
@@ -45,10 +103,47 @@ class KrisRevolverChargeShot : FastProjectile
 		_hitActors.Push(victim);
 		return MHIT_DEFAULT;
 	}
+	
+	override void Effect()
+	{
+		class<Actor> trail = MissileName;
+		if (!trail)
+			return;
+		
+		double hitZ = pos.z - 8;
+		if (hitZ < floorZ)
+			hitZ = floorZ;
+		
+		// Do not clip this offset to the floor.
+		hitZ += MissileHeight;
+		
+		Actor act = Spawn(trail, (pos.xy, hitZ), ALLOW_REPLACE);
+		if (!act)
+			return;
+		
+		if (bGetOwner && target != null)
+			act.target = target;
+		else
+			act.target = self;
+		
+		act.angle = angle;
+		act.pitch = pitch;
+		
+		let chargeTrail = KrisRevolverChargeShotTrail(act);
+		if (!chargeTrail || !_enbyBlast)
+			return;
+		if (++_trailTics > 3)
+			_trailTics = 0;
+		
+		chargeTrail.Init(_trailTics);
+	}
 }
 
 class KrisRevolverChargeShotTrail : Actor
 {
+	private int _color; // 0-3, 0 = yellow, 1 = white, 2 = purple, 3 = black
+						// mostly used for nonbinary blast <3
+	
 	Default
 	{
 		Scale 0.5;
@@ -62,8 +157,43 @@ class KrisRevolverChargeShotTrail : Actor
 	States
 	{
 		Spawn:
+		Yellow:
 			RVCT A 1;
-			RVCT AAABBBBCCCCDDDD 1 A_FadeOut(1. / 12);
+			RVCT AAABBBBCCCCDDDD 1 A_FadeOut(1. / 15);
 			Stop;
+		White:
+			RVCT E 1;
+			RVCT EEEFFFFGGGGHHHH 1 A_FadeOut(1. / 15);
+			Stop;
+		Purple:
+			RVCT I 1;
+			RVCT IIIJJJJKKKKLLLL 1 A_FadeOut(1. / 15);
+			Stop;
+		Black:
+			RVCT M 1;
+			RVCT MMMNNNNOOOOPPPP 1 A_FadeOut(1. / 15);
+			Stop;
+	}
+	
+	virtual void Init(int col)
+	{
+		_color = int(clamp(col, 0, 3));
+		if (!_color)
+			return;
+		
+		switch (_color)
+		{
+			case 1:
+				SetState(ResolveState("White"));
+				break;
+			
+			case 2:
+				SetState(ResolveState("Purple"));
+				break;
+			
+			case 3:
+				SetState(ResolveState("Black"));
+				break;
+		}
 	}
 }

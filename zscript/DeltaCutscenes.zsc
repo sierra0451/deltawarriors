@@ -1,0 +1,147 @@
+class DeltaWarriorsIntro : ScreenJob
+{
+	TextureID bySierraTex, heartTex;
+	int introState;
+	/*
+		-1 = uninitialized
+		 0 = "Made by" card fade in
+		 1 = "Made by" card hold
+		 2 = "Made by" card hold, fade in "made with love"
+		 3 = "Made by" card hold, hold "made with love"
+		 4 = Fade out
+		 5 = black screen
+	*/
+	
+	int curTics, targetTics;
+	
+	static DeltaWarriorsIntro Create(int flags)
+	{
+		return new("DeltaWarriorsIntro").Init(flags);
+	}
+	
+	DeltaWarriorsIntro Init(int flags = 0)
+	{
+		bySierraTex = TexMan.CheckForTexture("graphics/sierraSign.png");
+		heartTex = TexMan.CheckForTexture("graphics/love.png");
+		introState = curTics = targetTics = -1;
+		noWipe = true;
+		Super.Init(flags);
+		return self;
+	}
+	
+	override void OnTick()
+	{
+		Super.OnTick();
+		
+		if (curTics >= 0)
+			curTics++;
+		
+		if (curTics == targetTics)
+		{
+			introState++;
+			curTics = 0;
+			
+			switch (introState)
+			{
+				case 0: 	// "Made by Sierra" card fade in
+					targetTics = TICRATE;
+					break;
+				case 1: 	// "Made by Sierra" card hold
+					targetTics = TICRATE;
+					break;
+				case 2: 	// "Made by Sierra" card hold, fade in "made with <3"
+					targetTics = TICRATE;
+					break;
+				case 3: 	// "Made by Sierra" card hold, hold "made with <3"
+					targetTics = TICRATE * 3;
+					break;
+				case 4: 	// Fade out everything
+					targetTics = TICRATE;
+					break;
+				case 5: 	// Black screen
+					targetTics = TICRATE / 2;
+					break;
+				default:
+					jobState = finished;
+					break;
+			}
+		}
+	}
+	
+	override bool OnEvent(InputEvent evt)
+	{
+		if (introState == 5)
+			return true;
+		
+		if (evt.type == InputEvent.Type_KeyDown && !System.SpecialKeyEvent(evt))
+		{
+			introState = 5;
+			curTics = 0;
+			targetTics = 5;
+		}
+		return true;
+	}
+	
+	override void Draw(double smoothRatio)
+	{
+		Super.Draw(smoothRatio);
+		Screen.Dim(0xff000000, 1, 0, 0, Screen.GetWidth(), Screen.GetHeight());
+		
+		if (introState == 5)
+			return;
+		
+		double targetAlpha = 1.,
+			sc = max(1, min(Screen.GetWidth()/1920, Screen.GetHeight()/1080));
+		
+		if (introState < 1 || introState > 3)
+		{
+			targetAlpha = double(curTics) / targetTics;
+			
+			if (introState == 4)
+				targetAlpha = 1 - targetAlpha;
+		}
+		
+		string str = StringTable.Localize("$DELTAWARRIORS_FAN_PROJECT");
+		double signW, signH, heartW, heartH,
+			stringW = smallFont.StringWidth(str) * sc * 2;
+		[signW, signH] = TexMan.GetSize(bySierraTex);
+		signW *= sc*0.5;
+		signH *= sc*0.5;
+		[heartW, heartH] = TexMan.GetSize(heartTex);
+		heartW *= sc*2;
+		heartH *= sc*2;
+		
+		Screen.DrawText(smallFont, Font.CR_UNTRANSLATED,
+			(Screen.GetWidth() - stringW)/2, (Screen.GetHeight() - signH - heartH)/2,
+			str, DTA_Alpha, targetAlpha, DTA_ScaleX, sc*2, DTA_ScaleY, sc*2);
+		Screen.DrawTexture(bySierraTex, false, Screen.GetWidth()/2,
+			(Screen.GetHeight())/2, DTA_Alpha, targetAlpha,
+			DTA_ScaleX, sc*0.5, DTA_ScaleY, sc*0.5);
+		
+		if (introState < 2)
+			return;
+		
+		str = StringTable.Localize("$DELTAWARRIORS_MADE_WITH");
+		stringW = smallFont.StringWidth(str) * sc * 2;
+		
+		if (introState == 2)
+			targetAlpha = double(curTics) / targetTics;
+		
+		Screen.DrawText(smallFont, Font.CR_UNTRANSLATED,
+			(Screen.GetWidth() - (stringW + heartW))/2, (Screen.GetHeight() + signH)/2,
+			str, DTA_Alpha, targetAlpha, DTA_ScaleX, sc*2, DTA_ScaleY, sc*2);
+		Screen.DrawTexture(heartTex, false, (Screen.GetWidth() + stringW - heartW/2)/2,
+			(Screen.GetHeight() + signH)/2, DTA_Alpha, targetAlpha,
+			DTA_ScaleX, sc*2, DTA_ScaleY, sc*2);
+	}
+}
+
+class DeltaCutsceneManager ui
+{
+	static void IntroCutscene(ScreenJobRunner runner)
+	{
+		let csn = DeltaWarriorsIntro.Create(ScreenJob.transition_crossfade);
+		runner.Append(csn);
+		runner.Init(false, true);
+	}
+}

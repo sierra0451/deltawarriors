@@ -16,8 +16,28 @@ ListMenu "MainMenu"
 	TextItem "$MENU_LOAD", "l", "LoadGameMenu"
 	TextItem "$MENU_SAVE", "s", "SaveGameMenu"
 	TextItem "$MENU_OPTIONS", "c", "DeltaOptions"
-	TextItem "$MENU_ABOUT", "p", "ReadThisMenu"
 	TextItem "$MENU_QUIT", "e", "QuitMenu"
+	
+	IfGame(Heretic)
+	{
+		StaticTextCentered 150, 200, "$DELTAWARRIORS_HERETIC_NOT_SUPPORTED", "DeltaRed"
+	}
+	IfGame(Hexen)
+	{
+		StaticTextCentered 150, 200, "$DELTAWARRIORS_HEXEN_NOT_SUPPORTED", "DeltaRed"
+	}
+	IfGame(Strife)
+	{
+		StaticTextCentered 150, 200, "$DELTAWARRIORS_STRIFE_NOT_SUPPORTED", "DeltaRed"
+	}
+	IfGame(Chex)
+	{
+		StaticTextCentered 150, 200, "$DELTAWARRIORS_CHEX_NOT_SUPPORTED", "DeltaRed"
+	}
+	IfNotGame(Doom)
+	{
+		StaticTextCentered 150, 214, "$DELTAWARRIORS_LOAD_DOOM", "DeltaYellow"
+	}
 }
 
 ListMenu "PlayerClassMenu"
@@ -101,13 +121,14 @@ AddOptionMenu "OptionsMenu"
 	Title "$MENU_UZDOOM_OPTIONS"
 }
 
+/*
 AddOptionMenu "SoundOptions"
 {
 	Title "$MENU_AUDIO_HEADER"
 	
 	StaticText ""
-	Option "$MENU_CHAR_VOICES", "cl_delta_voice", "YesNo"
 }
+*/
 
 OptionMenu "DeltaOptions"
 {
@@ -125,7 +146,6 @@ OptionMenu "DeltaOptions"
 	
 	StaticText ""
 	Slider "$MENU_FOV", "fov", 75, 160, 1, 0
-	Option "$MENU_DISCORD_RPC", "i_discordrpc", "YesNo"
 	
 	StaticText ""
 	SubMenu "$MENU_OPT_SEARCH", "os_menu"
@@ -181,7 +201,7 @@ OptionMenu "DeltaDisplayOptions"
 	StaticText "$MENU_CAMERA_HEADER", "DeltaMenuHeader"
 	
 	Slider "$MENU_FOV", "fov", 75, 160, 1, 0
-	Option "$MENU_DEATHCAM", "r_deathcamera", "DeathCamOptions"
+	//Option "$MENU_DEATHCAM", "r_deathcamera", "DeathCamOptions" // wanna rewrite third person camera entirely
 	StaticText ""
     Slider "$MENU_MOVE_BOB", "movebob", 0, 1, 0.1, 2
     Slider "$MENU_STILL_BOB", "stillbob", 0, 1, 0.1, 2

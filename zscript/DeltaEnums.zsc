@@ -1,131 +1,38 @@
-enum DeltaCrouchState
+enum DeltaSkills
 {
-	CS_STANDING,
-	CS_CROUCHING,
-	CS_SLAMMING,
-	CS_SLIDING
+	SKILL_CASUAL,
+	SKILL_EASY,
+	SKILL_NORMAL,
+	SKILL_HARD,
+	SKILL_EXPERT
 }
 
 enum DeltaSoundChannels
 {
-	CHAN_HEALTH_SOUNDS = 6, // things like damage and healing sounds
-	CHAN_HEARTBEAT = 7,
-	CHAN_MOVEMENT = 8		// things like grinding sound when kris is sliding
-}
-
-enum DeltaVoicePriority
-{
-	VOX_LEAST_IMPORTANT = -1,
-	VOX_BREATHING = 0,
-	VOX_MOVEMENT = 10,
-	VOX_PAIN = 20,
-	VOX_DIALOGUE = 30,
-	VOX_DEATH = 40,
-	VOX_MOST_IMPORTANT
+	CHAN_HEALTH_SOUNDS = 6, 	// things like damage and healing sounds
+	CHAN_HEARTBEAT,				
+	CHAN_FALL_WIND,				// we have this on its own channel just in case <3
+	CHAN_MOVEMENT				// things like grinding sound when Kris is sliding
 }
 
 enum DeltaMessageType
 {
-	MSG_TYPE_NORMAL,		// uses normal border
-	MSG_TYPE_DARKWORLD		// uses dark world border
+	MSG_TYPE_NORMAL,			// uses normal border
+	MSG_TYPE_DARKWORLD			// uses dark world border
 }
 
 enum DeltaMessageState
 {
-	MSG_STATE_INITDELAY = 0,	// initial delay before a message shows
-	MSG_STATE_TYPING = 1,		// actively typing
-	MSG_STATE_HOLD_INPUT = 2,	// message is finished, awaiting player input
-	MSG_STATE_HOLD_SCRIPT = 3	// message is finished, awaiting dismissal from script
+	MSG_STATE_INITDELAY = 0,	// (0) initial delay before a message shows
+	MSG_STATE_TYPING,			// (1) actively typing
+	MSG_STATE_SKIPPING,			// (2) skipping to the end
+	MSG_STATE_HOLD_INPUT,		// (3) message is finished, awaiting player input
+	MSG_STATE_HOLD_SCRIPT,		// (4) message is finished, awaiting dismissal from script
+	MSG_STATE_FINISHED			// (5) message is finished, we're moving to next one
 }
 
 enum DeltaMessageInputResponse
 {
-	MSG_IGNORE,				// ignore input
-	MSG_SKIP				// skip to end of message
-}
-
-enum DeltaTpResult
-{
-	TP_FAIL,
-	TP_USE,
-	TP_INFINITE
-}
-
-enum DeltaPsp
-{
-	PSP_LEGS = -100,
-	PSP_OFFHAND = -50
-}
-
-enum HeartbeatSetting
-{
-	HB_OFF,
-	HB_ON,
-	HB_KRIS_ONLY
-}
-
-enum DeathCounterType
-{
-	DC_OFF,
-	DC_LEVEL,
-	DC_ENTIRE_RUN
-}
-
-enum SpeedrunStats
-{
-	SPD_OFF,
-	SPD_TIMER,
-	SPD_SPEED,
-	SPD_BOTH
-}
-
-enum LevelStats
-{
-	LVLSTATS_OFF,
-	LVLSTATS_INFO,
-	LVLSTATS_KILLS_SECRETS,
-	LVLSTATS_ALL
-}
-
-enum ShowMillisecondsType
-{
-	SMT_ONLY_IF_NO_MINS = -1,
-	SMT_NEVER = 0,
-	SMT_ALWAYS
-}
-
-enum DeltaRecoilType
-{
-	RECOIL_LAND,
-	RECOIL_WEAPON,
-	RECOIL_DAMAGE
-}
-
-enum DeltaCrosshairState
-{
-	DELTA_XHR_NEUTRAL,
-	DELTA_XHR_FRIENDLY,
-	DELTA_XHR_ENEMY
-}
-
-enum DeltaGrenadeType
-{
-	GRENADE_NORMAL,
-	GRENADE_STICKY,
-	GRENADE_CONTACT
-}
-
-enum DeltaWeaponAnimType
-{
-	DELTA_WEAPONANIM_MELEE,
-	DELTA_WEAPONANIM_GUN,
-	DELTA_WEAPONANIM_MAGIC
-}
-
-enum DeltaFootstepType
-{
-	FOOTSTEP_NONE,
-	FOOTSTEP_BOOTS,
-	FOOTSTEP_FLUFF,
-	FOOTSTEP_HOOVES
+	MSG_IGNORE,					// ignore input
+	MSG_SKIP					// skip to end of message
 }

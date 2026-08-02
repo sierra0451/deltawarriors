@@ -1,5 +1,5 @@
 // Player settings
-user color 						user_delta_soulColor			= "ff 00 00";
+user color 						user_delta_soulColor			= "ff0000";
 nosave bool 					cl_delta_changeSoulColor		= true;
 
 // HUD options
@@ -13,16 +13,17 @@ nosave bool 					cl_delta_lowHealthVignette		= true;
 nosave int 						cl_delta_heartbeatSound			= 1;			// enum: 0 = off, 1 = on, 2 = Kris only
 nosave bool						cl_delta_showDeathText			= true;			// "IT APPEARS YOU HAVE REACHED  AN END" text
 nosave bool						cl_delta_showCrosshair			= true;
-nosave color					cl_delta_crosshairColor			= "ff ff ff";
+nosave color					cl_delta_crosshairColor			= "ffffff";
 nosave bool						cl_delta_crosshairTargetChange	= true;
-nosave color					cl_delta_crosshairEnemyColor	= "ff 00 00";
-nosave color					cl_delta_crosshairFriendlyColor = "00 ff 00";
+nosave color					cl_delta_crosshairEnemyColor	= "ff0000";
+nosave color					cl_delta_crosshairFriendlyColor = "00ff00";
 nosave bool 					cl_delta_showOffhandIndicator   = true;
-nosave color					cl_delta_offhandIndicatorColor	= "ff a0 40";
+nosave color					cl_delta_offhandIndicatorColor	= "ffa040";
 nosave bool						cl_delta_showQuickInfo   		= true;
 nosave int						cl_delta_showDeathCounter		= 0;			// enum: 0 = off, 1 = per-level, 2 = entire run
 nosave int						cl_delta_showSpeedrunStats		= 0;			// enum: 0 = off, 1 = timer, 2 = speedometer, 3 = both
 nosave int						cl_delta_showLevelStats			= 0;			// enum: 0 = off, 1 = level info only, 2 = kills/secrets, 3 = kills/secrets/items
+nosave bool						cl_delta_deathScreen			= true;
 
 // Weapon options
 nosave int						cl_delta_weaponHandedness		= 0;			// enum: 0 = right, 1 = left
@@ -31,6 +32,11 @@ nosave int						cl_delta_weaponHandedness		= 0;			// enum: 0 = right, 1 = left
 nosave float 					cl_delta_leanIntensity 			= 1.0;
 nosave float 					cl_delta_weaponRecoil 			= 1.0;
 nosave float 					cl_delta_damageRecoil 			= 1.0;
+
+// Modifiers
+server noarchive latch bool 	sv_delta_blind					= false;		// no HUD, no on-screen weapon
+server noarchive latch bool 	sv_delta_levelOneHp				= false;		// max HP is set to that character's max at the start of chapter 1 (i.e. kris gets 90 HP instead of 200)
+server noarchive latch bool 	sv_delta_pacifist				= false;		// no damaging enemies! a player damaging an enemy will result in an automatic game over
 
 // Background data
 nosave cheat bool				data_delta_diedFirstTime		= false;

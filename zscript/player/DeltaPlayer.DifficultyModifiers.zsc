@@ -1,0 +1,20 @@
+extend class DeltaPlayer
+{
+	protected int levelOneHp;
+	
+	property LevelOneHP : levelOneHp;
+	
+	virtual void ApplyDifficultyModifiers()
+	{
+		if (sv_delta_levelOneHp)
+			maxHealth = health = levelOneHp;
+	}
+}
+
+class DeltaPacifistFail : Actor
+{
+	override string GetObituary(Actor victim, Actor inflictor, Name mod, bool playerAttack)
+	{
+		return victim == inflictor? "$OBIT_DELTA_PACIFISTFAIL" : "";
+	}
+}

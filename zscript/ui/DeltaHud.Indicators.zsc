@@ -13,8 +13,7 @@ struct GrazeIndicatorInfo
 
 extend class DeltaHud
 {
-	private TextureID _damageIndicator, _grazeIndicator, _grazeStencil,
-		_grazeMarker;
+	private TextureID _damageIndicator, _grazeStencil, _grazeMarker;
 	
 	private DamageIndicatorInfo[10] _damageIndicators;
 	private GrazeIndicatorInfo[10] _grazeIndicators;
@@ -25,10 +24,9 @@ extend class DeltaHud
 	
 	protected void SetUpIndicatorTextures()
 	{
-		_damageIndicator 	= TexMan.CheckForTexture("DRDMGIND");
-		_grazeIndicator 	= TexMan.CheckForTexture("DRGRZIND");
-		_grazeStencil		= TexMan.CheckForTexture("sprites/hud/grazeStencil.png");
-		_grazeMarker		= TexMan.CheckForTexture("sprites/hud/grazeMarker.png");
+		_damageIndicator 	= TexMan.CheckForTexture("graphics/hud/damageIndicator.png");
+		_grazeStencil		= TexMan.CheckForTexture("graphics/hud/grazeStencil.png");
+		_grazeMarker		= TexMan.CheckForTexture("graphics/hud/grazeMarker.png");
 	}
 	
 	protected void TickIndicators()
@@ -71,8 +69,8 @@ extend class DeltaHud
 			
 			Vector3 targetPos = _damageIndicators[i].sourcePos;
 			let player = CPlayer.mo;
-			Vector3 diff = level.Vec3Diff(_pos, targetPos);
-			float ang = player.DeltaAngle(_angles.z, VectorAngle(diff.x, diff.y));
+			Vector3 diff = level.Vec3Diff(pos, targetPos);
+			float ang = player.DeltaAngle(angles.z, VectorAngle(diff.x, diff.y));
 			float alpha = min(1, (_damageIndicators[i].timer - ticFrac) / DAMAGE_INDICATOR_FADE_TIME);
 			
 			DrawTextureRotated (
@@ -89,11 +87,22 @@ extend class DeltaHud
 	
 	protected void DrawGrazeIndicators(double ticFrac)
 	{
-		if (!cl_delta_showGrazeIndicators)
-			return;
-		
 		let ply = DeltaPlayer(CPlayer.mo);
 		if (!ply)
+			return;
+		
+		let showInd = cl_delta_showGrazeIndicators;
+		
+		if (ply.grazeTics)
+		{
+			let val = showInd? 120 : 200,
+				alpha = 1. * val * ply.grazeTics / DeltaPlayer.MAX_GRAZE_TICS;
+			
+			DrawTexture(_grazeStencil, (0, 0), DI_SCREEN_CENTER | DI_ITEM_OFFSETS,
+				scale: _universalScale * 2, col: Color(int(alpha), val, val, val));
+		}
+		
+		if (!showInd)
 			return;
 		
 		Screen.EnableStencil(true);
@@ -104,32 +113,23 @@ extend class DeltaHud
 		
 		Screen.SetStencil(1, SOP_Keep, SF_AllOn);
 		
-		if (ply.ticLastGrazed >= 0)
-		{
-			int timePassed = level.time - ply.ticLastGrazed;
-			int alpha = 48 * (1 - (timePassed / 5.));
-			
-			DrawTexture(_grazeStencil, (0, 0), DI_SCREEN_CENTER | DI_ITEM_OFFSETS,
-				scale: _universalScale * 2, col: Color(alpha, 160, 160, 160));
-		}
-		
-		float indicatorSize = 2;
-		float distance = 80;
-		Vector2 indicatorScale = _inverseUniversalScale / indicatorSize;
+		let indicatorSize = 2.,
+			distance = 80.,
+			indicatorScale = _inverseUniversalScale / indicatorSize;
 		
 		for (int i = 0; i < _grazeIndicators.Size(); i++)
 		{
 			if (_grazeIndicators[i].timer <= 0 || !_grazeIndicators[i].grazing)
 				continue;
 			
-			Vector3 targetPos = _grazeIndicators[i].sourcePos;
-			let player = CPlayer.mo;
-			Vector3 diff = level.Vec3Diff(_pos, targetPos);
-			float ang = player.DeltaAngle(_angles.z, VectorAngle(diff.x, diff.y));
-			float alpha = min(1, (_grazeIndicators[i].timer - ticFrac) / GRAZE_INDICATOR_TIME);
+			let targetPos = _grazeIndicators[i].sourcePos,
+				player = CPlayer.mo,
+				diff = level.Vec3Diff(pos, targetPos),
+				ang = player.DeltaAngle(angles.z, VectorAngle(diff.x, diff.y)),
+				alpha = min(1., (_grazeIndicators[i].timer - ticFrac) / GRAZE_INDICATOR_TIME);
 			
 			DrawTextureRotated(
-				_grazeMarker,//_grazeIndicator,
+				_grazeMarker,
 				(distance * sin(-ang) * _universalScale.x, -distance * cos(ang) * _universalScale.y),
 				DI_SCREEN_CENTER | DI_ITEM_OFFSETS,
 				ang,

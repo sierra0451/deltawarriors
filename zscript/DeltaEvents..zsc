@@ -1,477 +1,70 @@
-struct GrazeEvent play version("2.4")
+class DeltaGlobals : StaticEventHandler
 {
-	PlayerPawn thing;
-	Actor grazeSource;
-}
-
-struct DeltaDamageEvent
-{
-	Actor victim, source, inflictor;
-	int amount;
-	double height; // used for if victim is killed, and thus immediately reduces height
-}
-
-class DeltaEvents : EventHandler
-{
-	DeltaDamageEvent[300] damageEvents;
-	Actor[100] reviving;
-	
-	protected Le_GlScreen	gl_proj;
-	protected Le_Viewport	viewport;
+	protected string _curMapset; // using a string to make this more easily moddable
+	// Strings we'll be using out of the box:
+	// - default,
+	// - LegacyOfRust,
+	// - AncientAliens,
+	// - BTSX1,
+	// - BTSX2,
+	// - BTSX3,
+	// - Sunlust
 	
 	override void OnRegister()
 	{
-		gl_proj = new("Le_GlScreen");
-	}
-	
-	override void WorldLoaded(WorldEvent e)
-	{
-		EnableNetworking(true);
-	}
-	
-	override void WorldTick()
-	{
-		ReviveTick();
-		DamageEventTick();
-		NametagTick();
-	}
-	
-	protected void DamageEventTick()
-	{
-		if (!damageEvents.Size())
-			return;
+		if (_curMapset != "")
+			return; // skip this if we already have the mapset we've loaded
 		
-		for (int i = 0; i < damageEvents.Size(); i++)
+		/*
+			methodology borrowed from SevHUD, code found here:
+			https://github.com/SeventhSentinel/sevhud/blob/master/zscript/SevHUD/SevHUD_mapset.zc
+		*/
+		_curMapset = "default";
+		
+		string checksum;
+		
+		if (LevelInfo.MapExists("MAP01"))
 		{
-			if (!damageEvents[i].victim)
-				continue;
-			if (damageEvents[i].amount <= 0)
-				continue;
+			checksum = LevelInfo.MapChecksum("MAP01");
 			
-			if (damageEvents[i].victim is "DeltaPlayer")
-			{
-				if (damageEvents[i].victim.health <= 0)
-				{
-					let ded = DeltaDeadPopup.SpawnPopup("DeltaDeadPopup",
-						damageEvents[i].victim, damageEvents[i].source, 5);
-				}
-				else
-					DeltaDamagePopup.SpawnNumbers(damageEvents[i].victim,
-						damageEvents[i].source, damageEvents[i].amount);
-				
-				EventHandler.SendInterfaceEvent(
-					playerNum: damageEvents[i].victim.PlayerNumber(),
-					name: "DeltaPlayerDamage",
-					arg1 : damageEvents[i].source ?
-						damageEvents[i].source.GetNetworkID() : 0,
-					arg2 : damageEvents[i].inflictor ?
-						damageEvents[i].inflictor.GetNetworkID() : 0,
-					arg3: damageEvents[i].amount
-				);
-			}
-			else
-				DeltaDamagePopup.SpawnNumbers(damageEvents[i].victim,
-					damageEvents[i].source, damageEvents[i].amount);
-			
-			damageEvents[i].victim = null;
-			damageEvents[i].source = null;
-			damageEvents[i].amount = 0;
-		}
-	}
-	
-	protected void ReviveTick()
-	{
-		if (!reviving.Size())
-			return;
-		
-		for (int i = reviving.Size() - 1; i >= 0; i--)
-		{
-			Actor revivee = reviving[i];
-			
-			if (!revivee)
-				continue;
-			if (revivee.InStateSequence(revivee.curState, revivee.FindState("Raise")))
-				continue;
-			if (revivee.Health <= 0)
-				continue;
-			
-			DeltaPopup.SpawnPopup("DeltaHealMaxPopup", revivee);
-			revivee.A_StartSound("delta/heal", CHAN_AUTO);
-			reviving[i] = null;
-		}
-	}
-	
-	protected void NametagTick()
-	{
-		int c = consolePlayer;
-		
-		if (!playerInGame[c] || !players[c].camera)
-			return;
-		
-		EventHandler.SendInterfaceEvent(c, "DeltaClearPlayersSeen");
-		
-		for (int j = 0; j < players.Size(); j++)
-		{
-			if (!playerInGame[j] || c == j || !players[j].mo)
-				continue;
-			if (!players[c].camera.CheckSight(players[j].mo, SF_IGNOREVISIBILITY))
-				continue;
-			
-			EventHandler.SendInterfaceEvent(c, "DeltaSeenPlayer", j);
-		}
-	}
-	
-	override bool WorldHitscanPreFired(WorldEvent e)
-	{
-		if (e.AttackLineFlags & LAF_ISMELEEATTACK)
-			return false;
-		
-		let fwd = DeltaUtil.GetActorForward(e.thing),
-			right = DeltaUtil.GetActorRight(e.thing, true);
-		
-		let ang = e.attackAngle,
-			pitch = e.attackPitch,
-			dir = (cos(pitch) * cos(ang), cos(pitch) * sin(ang), sin(-pitch));
-		
-		let offsetUp = e.thing.height/2. + e.attackZ - 2;
-		if (e.thing.player)
-			offsetUp += PlayerPawn(e.thing).AttackZOffset;
-		
-		let pos = e.thing.pos.PlusZ(offsetUp),
-			offsetRight = e.attackOffsetSide + 2,
-			offsetFwd = (e.attackOffsetForward + max(0, (e.thing.vel dot fwd) * 2));
-		
-		// hitscan tracers should show up on left side if we're lefthanded
-		if (e.thing == players[consolePlayer].mo && cl_delta_weaponHandedness)
-			offsetRight -= 4;
-		
-		pos = level.Vec3Offset(pos, right * offsetRight);
-		pos = level.Vec3Offset(pos, fwd * offsetFwd);
-		
-		let dist = 2048.;
-		FLineTraceData data;
-		
-		if (e.thing.LineTrace(ang, dist, pitch, offsetZ: offsetUp,
-			offsetForward: offsetFwd, offsetSide: offsetRight, data: data))
-		{
-			dist = min(dist, data.Distance);
+			if (checksum == "bf34c34c5dfc8bb47228cc304f9a6748")
+				_curMapset = "LegacyOfRust";
+			else if (checksum == "ff9c6545037c5e5e27ce0dacd24cdd37")
+				_curMapset = "BTSX1";
+			else if (checksum == "067cf96073db3cc4a8d887ee240f88da")
+				_curMapset = "BTSX2";
+			else if (checksum == "4efe4658dc515d0eac6b5b11e4c98ae5")
+				_curMapset = "AncientAliens";
+			else if (checksum == "56f7ec7f82136186fd133d644d36c28d")
+				_curMapset = "Sunlust";
+			else if (checksum == "6d1c95a2b07af77823c42500d96277c3")
+				_curMapset = "NotEvenRemotelyFair";
 		}
 		
-		FSpawnParticleParams p;
-		int count = 0;
-		p.color1 = "ff c0 40";
-		p.size = 4;
-		p.flags = SPF_FULLBRIGHT;
-		p.startAlpha = 1;
-		p.fadeStep = -1;
-		
-		let mult = 2.5;
-		
-		for (double i = e.thing.radius; i < dist; )
-		{
-			p.pos = level.Vec3Offset(pos, dir * i);
-			
-			if (!level.IsPointInLevel(p.pos))
-				break;
-			
-			p.lifetime = 3 + (count/50);
-			level.SpawnParticle(p);
-			count++;
-			
-			let cPly = players[consolePlayer],
-				diff = level.Vec3Diff(p.pos, cPly.camera.pos.PlusZ(cPly.mo.viewHeight));
-			i += max(0.025, diff.Length() * 0.05);
-		}
-		return false;
+		Console.Printf("\n\c[DeltaRalsei]Mapset is " .. _curMapset
+			.. "\nfirst map checksum: " .. checksum .. "\n\n");
 	}
 	
-	override void WorldHitscanFired(WorldEvent e)
+	clearscope string GetMapset()
 	{
-		let check = new('DeltaHitscanGrazeChecker');
-		if (!check)
-			return;
-		
-		check.CheckHitscanGraze(e.thing, e.attackPos, e.damagePosition);
-		
-		for (int i = 0; i < check._grazed.Size(); i++)
-		{
-			GrazeEvent graze;
-			graze.thing = check._grazed[i];
-			graze.grazeSource = e.thing;
-			PlayerGrazed(graze);
-			
-			let grazeAmount = max(5, e.inflictor.GetMissileDamage(0, 1));
-			check._grazed[i].AddTension(grazeAmount * check._grazed[i].GetGrazeMultiplier(), true);
-			check._grazed[i].A_StartSound("delta/graze", 5, 0);
-		}
+		return _curMapset;
 	}
 	
-	override void WorldThingRevived(WorldEvent e)
+	clearscope static DeltaGlobals GetGlobals()
 	{
-		if (!e.thing)
-			return;
+		let globals = StaticEventHandler.Find("DeltaGlobals");
+		if (!globals)
+			return null;
 		
-		for (int i = 0; i < reviving.Size(); i++)
-		{
-			if (reviving[i])
-				continue;
-			
-			reviving[i] = e.thing;
-			return;
-		}
-		
-		reviving[0] = e.thing;
+		return DeltaGlobals(globals);
 	}
 	
-	override void WorldThingDamaged(WorldEvent e)
+	clearscope static DeltaLevelEvents GetLevelEvents()
 	{
-		if (!e.thing || e.damage <= 0)
-			return;
+		let ev = EventHandler.Find("DeltaLevelEvents");
+		if (!ev)
+			return null;
 		
-		for (int i = 0; i < damageEvents.Size(); i++)
-		{
-			if (damageEvents[i].victim == e.thing && damageEvents[i].source == e.damageSource)
-			{
-				damageEvents[i].amount += e.damage;
-				break;
-			}
-			
-			if (!damageEvents[i].victim)
-			{
-				damageEvents[i].victim = e.thing;
-				damageEvents[i].source = e.damageSource;
-				damageEvents[i].inflictor = e.inflictor;
-				damageEvents[i].amount = e.damage;
-				break;
-			}
-		}
-		
-		if (e.damageSource is "DeltaPlayer" && e.damageSource != e.thing
-            && !e.damageSource.IsFriend(e.thing) && !(e.thing is "DeltaGrenade" || e.thing is "DeltaGrenadeHitbox"))
-		{
-			DeltaPlayer ply = DeltaPlayer(e.damageSource);
-			
-			if (!ply.GetDamageTics())
-				ply.AddTension(e.damage / 8);
-		}
-	}
-	
-	override void PlayerDied(PlayerEvent e)
-	{
-		return;
-		
-		if (deathmatch)
-			return;
-		
-		for (int i = 0; i < MAXPLAYERS; i++)
-		{
-			if (!playerInGame[i] || !players[i].mo)
-				continue;
-			if (players[i].mo.health > 0)
-				return;
-		}
-		
-		level.SetFrozen(true);
-		S_ChangeMusic("", force: true);
-		S_StartSound("delta/hurt", CHAN_AUTO);
-		
-		for (int i = 0; i < MAXPLAYERS; i++)
-		{
-			if (!playerInGame[i] || !players[i].mo)
-				continue;
-			
-			EventHandler.SendInterfaceEvent(i, "DeltaAllPlayersDead",
-				Cvar.GetCvar("prgr_delta_diedFirstTime").GetBool());
-		}
-	}
-	
-	override void PlayerEntered(PlayerEvent e)
-	{
-		EventHandler.SendInterfaceEvent(e.playerNumber, "DeltaResetHUD");
-	}
-	
-	override void PlayerRespawned(PlayerEvent e)
-	{
-		EventHandler.SendInterfaceEvent(e.playerNumber, "DeltaResetHUD");
-	}
-	
-	override void InterfaceProcess(ConsoleEvent e)
-	{
-		if (e.IsManual)
-			return;
-		
-		let hud = DeltaHud(statusBar);
-		if (!hud)
-			return;
-		
-		if (e.name ~== "DeltaResetHUD")
-			hud.ResetHUD();
-		else if (e.name ~== "DeltaPlayerDamage")
-		{
-			Actor source = Actor(GetNetworkEntity(e.args[0])),
-				inflictor = Actor(GetNetworkEntity(e.args[1]));
-			let amount = e.args[2];
-			
-			hud.CreateDamageIndicator(source, inflictor);
-			hud.CreateDamagePopup(source, amount);
-		}
-		else if (e.name ~== "DeltaPlayerGraze")
-		{
-			let source = Actor(GetNetworkEntity(e.args[0]));
-			hud.CreateGrazeIndicator(source);
-		}
-		else if (e.name ~== "DeltaAllPlayersDead")
-		{
-			bool firstTime = e.args[0];
-			hud.StartDeathSequence(firstTime);
-		}
-		else if (e.name ~== "DismissMapMessage")
-		{
-			hud.DismissMessage();
-		}
-		else if (e.name.Left(10) == "MessageIs_")
-		{
-			let msg = e.name.Mid(10);
-			hud.AddMessage(msg);
-		}
-		else if (e.name ~== "DeltaSeenPlayer")
-			hud.playersSeen.Push(e.args[0]);
-		else if (e.name ~== "DeltaClearPlayersSeen")
-			hud.playersSeen.Clear();
-	}
-	
-	override void RenderUnderlay(RenderEvent e)
-	{
-		if (!(statusBar is "DeltaHud"))
-			return;
-		
-		let hud = DeltaHud(statusBar);
-		hud._pos = e.viewPos;
-		hud._angles = (e.viewPitch, e.viewRoll, e.viewAngle);
-	}
-	
-	virtual void PlayerGrazed(GrazeEvent e)
-	{
-		if (e.thing != e.grazeSource)
-		{
-			EventHandler.SendInterfaceEvent(e.thing.PlayerNumber(),
-				"DeltaPlayerGraze",
-				e.grazeSource ? e.grazeSource.GetNetworkID() : 0);
-		}
-	}
-}
-
-class DeltaForceClass : EventHandler
-{
-	class<DeltaPlayer> targetPlayer;
-	
-	override void OnRegister()
-	{
-		targetPlayer = GetPlayerClass();
-		if (!targetPlayer)
-			return;
-		
-		//Console.Printf("target player class is " .. targetPlayer.GetClassName());
-	}
-	
-	override void PlayerEntered(PlayerEvent e)
-	{
-		let ply = players[e.playerNumber];
-		
-		if (!ply || ply.cls == targetPlayer)
-			return;
-		
-		//Console.Printf("player entering as wrong class!");
-		let newPawn = PlayerPawn(Actor.Spawn(targetPlayer, ply.mo.pos)),
-			oldPawn = ply.mo;
-		newPawn.player = ply;
-		ply.cls = targetPlayer;
-		ply.mo = newPawn;
-		ply.camera = ply.mo;
-		oldPawn.Destroy();
-	}
-	
-	virtual class<DeltaPlayer> GetPlayerClass()
-	{
-		return null;
-	}
-}
-
-class DeltaForceKris : DeltaForceClass
-{
-	override class<DeltaPlayer> GetPlayerClass()
-	{
-		return "KrisPlayer";
-	}
-}
-
-class DeltaTitleEvents : EventHandler
-{
-	protected Array<TextureID> _titleBackgrounds;
-	private int _curTick, _curFrame, _frameDuration, _fadeDuration;
-	
-	virtual void SetUpTitles()
-	{
-		let mapset = DeltaMapsetCompat.Get(),
-			titlePrefix = "DELTATT",
-			music = "music/mus_deltaMenu.ogg";
-		
-		if (mapset ~== "Sunlust")
-		{
-			titlePrefix = "SNLSTTT";
-			music = "D_DM2TTL";
-		}
-		
-		for (int i = 1; i <= 5; i++)
-		{
-			_titleBackgrounds.Push(TexMan.CheckForTexture(titlePrefix .. i));
-		}
-		S_ChangeMusic(music, force: true);
-	}
-	
-	override void WorldLoaded(WorldEvent e)
-	{
-		_frameDuration = 15; // ticks per frame including fade duration
-		_fadeDuration = _frameDuration; // ticks to fade between frames
-		_curFrame = 0;
-		SetUpTitles();
-	}
-	
-	override void WorldTick()
-	{
-		if (!_titleBackgrounds.Size())
-			return;
-		
-		_curTick++;
-		
-		if (_curTick != _frameDuration)
-			return;
-		
-		_curTick = 0;
-		_curFrame++;
-		
-		if (_curFrame == _titleBackgrounds.Size())
-			_curFrame = 0;
-	}
-	
-	override void RenderOverlay(RenderEvent e)
-	{
-		if (!_titleBackgrounds.Size())
-			return;
-		
-		Screen.DrawTexture(_titleBackgrounds[_curFrame], false, 0, 0,
-			DTA_Fullscreen, true, DTA_FullScreenScale, FSMode_ScaleToFill);
-		
-		if (!_fadeDuration) // make sure we're not dividing by zero
-			return;
-		
-		int nextFrame = _curFrame == _titleBackgrounds.Size()-1 ? 0
-			: _curFrame+1;
-		double targetAlpha = max(0,
-			(_fadeDuration - _frameDuration + _curTick + 1.) / _fadeDuration);
-		
-		Screen.DrawTexture(_titleBackgrounds[nextFrame], false, 0, 0,
-			DTA_Fullscreen, true, DTA_FullScreenScale, FSMode_ScaleToFill,
-			DTA_Alpha, targetAlpha);
+		return DeltaLevelEvents(ev);
 	}
 }

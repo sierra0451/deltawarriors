@@ -1,60 +1,68 @@
-/*
-DefaultTerrain DeltaGenericTerrain
+terrain Generic
+{
+	StepSounds "delta/step_generic"
+}
 
-Floor optional BFALL1 DeltaLiquidTerrain
-Floor optional BFALL2 DeltaLiquidTerrain
-Floor optional BFALL3 DeltaLiquidTerrain
-Floor optional BFALL4 DeltaLiquidTerrain
-Floor optional WFALL1 DeltaLiquidTerrain
-Floor optional WFALL2 DeltaLiquidTerrain
-Floor optional WFALL3 DeltaLiquidTerrain
-Floor optional WFALL4 DeltaLiquidTerrain
-Floor optional WFALLA DeltaLiquidTerrain
-Floor optional WFALLB DeltaLiquidTerrain
-Floor optional WFALLC DeltaLiquidTerrain
-Floor optional WFALLD DeltaLiquidTerrain
-Floor optional WFALLE DeltaLiquidTerrain
-Floor optional WFALLF DeltaLiquidTerrain
-Floor optional SFALL1 DeltaLiquidTerrain
-Floor optional SFALL2 DeltaLiquidTerrain
-Floor optional SFALL3 DeltaLiquidTerrain
-Floor optional SFALL4 DeltaLiquidTerrain
-Floor optional DBRAIN1 DeltaLiquidTerrain
-Floor optional DBRAIN2 DeltaLiquidTerrain
-Floor optional DBRAIN3 DeltaLiquidTerrain
-Floor optional DBRAIN4 DeltaLiquidTerrain
-Floor optional FWATER01 DeltaLiquidTerrain
-Floor optional FWATER02 DeltaLiquidTerrain
-Floor optional FWATER03 DeltaLiquidTerrain
-Floor optional FWATER04 DeltaLiquidTerrain
-Floor optional FWATER1 DeltaLiquidTerrain
-Floor optional FWATER2 DeltaLiquidTerrain
-Floor optional FWATER3 DeltaLiquidTerrain
-Floor optional FWATER4 DeltaLiquidTerrain
-Floor optional LAVA1 DeltaLiquidTerrain
-Floor optional LAVA2 DeltaLiquidTerrain
-Floor optional LAVA3 DeltaLiquidTerrain
-Floor optional LAVA4 DeltaLiquidTerrain
-Floor optional NUKAGE1 DeltaLiquidTerrain
-Floor optional NUKAGE2 DeltaLiquidTerrain
-Floor optional NUKAGE3 DeltaLiquidTerrain
-Floor optional NUKAGE4 DeltaLiquidTerrain
-Floor optional SLIME01 DeltaLiquidTerrain
-Floor optional SLIME02 DeltaLiquidTerrain
-Floor optional SLIME03 DeltaLiquidTerrain
-Floor optional SLIME04 DeltaLiquidTerrain
-Floor optional SLIME05 DeltaLiquidTerrain
-Floor optional SLIME06 DeltaLiquidTerrain
-Floor optional SLIME07 DeltaLiquidTerrain
-Floor optional SLIME08 DeltaLiquidTerrain
-Floor optional SBLOOD1 DeltaLiquidTerrain
-Floor optional SBLOOD2 DeltaLiquidTerrain
-Floor optional SBLOOD3 DeltaLiquidTerrain
-Floor optional SWATER1 DeltaLiquidTerrain
-Floor optional SWATER2 DeltaLiquidTerrain
-Floor optional SWATER3 DeltaLiquidTerrain
-Floor optional SWATER4 DeltaLiquidTerrain
-Floor optional BLOOD1 DeltaLiquidTerrain
-Floor optional BLOOD2 DeltaLiquidTerrain
-Floor optional BLOOD3 DeltaLiquidTerrain
-*/
+terrain Liquid modify
+{
+	StepSounds "delta/step_liquid"
+}
+
+DefaultTerrain Generic
+
+Floor optional BFALL1 Liquid
+Floor optional BFALL2 Liquid
+Floor optional BFALL3 Liquid
+Floor optional BFALL4 Liquid
+Floor optional WFALL1 Liquid
+Floor optional WFALL2 Liquid
+Floor optional WFALL3 Liquid
+Floor optional WFALL4 Liquid
+Floor optional WFALLA Liquid
+Floor optional WFALLB Liquid
+Floor optional WFALLC Liquid
+Floor optional WFALLD Liquid
+Floor optional WFALLE Liquid
+Floor optional WFALLF Liquid
+Floor optional SFALL1 Liquid
+Floor optional SFALL2 Liquid
+Floor optional SFALL3 Liquid
+Floor optional SFALL4 Liquid
+Floor optional DBRAIN1 Liquid
+Floor optional DBRAIN2 Liquid
+Floor optional DBRAIN3 Liquid
+Floor optional DBRAIN4 Liquid
+Floor optional FWATER01 Liquid
+Floor optional FWATER02 Liquid
+Floor optional FWATER03 Liquid
+Floor optional FWATER04 Liquid
+Floor optional FWATER1 Liquid
+Floor optional FWATER2 Liquid
+Floor optional FWATER3 Liquid
+Floor optional FWATER4 Liquid
+Floor optional LAVA1 Liquid
+Floor optional LAVA2 Liquid
+Floor optional LAVA3 Liquid
+Floor optional LAVA4 Liquid
+Floor optional NUKAGE1 Liquid
+Floor optional NUKAGE2 Liquid
+Floor optional NUKAGE3 Liquid
+Floor optional NUKAGE4 Liquid
+Floor optional SLIME01 Liquid
+Floor optional SLIME02 Liquid
+Floor optional SLIME03 Liquid
+Floor optional SLIME04 Liquid
+Floor optional SLIME05 Liquid
+Floor optional SLIME06 Liquid
+Floor optional SLIME07 Liquid
+Floor optional SLIME08 Liquid
+Floor optional SBLOOD1 Liquid
+Floor optional SBLOOD2 Liquid
+Floor optional SBLOOD3 Liquid
+Floor optional SWATER1 Liquid
+Floor optional SWATER2 Liquid
+Floor optional SWATER3 Liquid
+Floor optional SWATER4 Liquid
+Floor optional BLOOD1 Liquid
+Floor optional BLOOD2 Liquid
+Floor optional BLOOD3 Liquid

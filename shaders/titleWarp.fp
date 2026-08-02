@@ -1,5 +1,4 @@
 // retooled from "func_warp1.fp" in uzdoom.pk3
-
 vec2 GetFountainOffset(vec2 texCoord, float time, float timeSpanX, float timeSpanY, float magnitudeX, float magnitudeY)
 {
 	const float pi = 3.1415;

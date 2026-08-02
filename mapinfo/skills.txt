@@ -1,0 +1,61 @@
+ClearSkills
+
+// i don't like calling it baby mode lol
+skill DeltaVeryEasy
+{
+    AmmoFactor = 2
+    HealthFactor = 2
+    DamageFactor = 0.5
+    MonsterHealth = 0.9
+    Aggressiveness = 0.5
+    SpawnFilter = Baby
+	
+    SlowMonsters
+    EasyBossBrain
+    
+    ACSReturn = 0
+    TextColor = "DeltaVeryEasy"
+    Name = "$DELTA_SKILL_VERYEASY"
+}
+
+skill DeltaEasy
+{
+    DamageFactor = 0.75
+    SpawnFilter = Easy
+	
+    EasyBossBrain
+    
+    ACSReturn = 1
+    TextColor = "DeltaEasy"
+    Name = "$DELTA_SKILL_EASY"
+}
+
+skill DeltaNormal
+{
+    SpawnFilter = Normal
+    
+	DefaultSkill
+    ACSReturn = 2
+    Name = "$DELTA_SKILL_NORMAL"
+}
+
+skill DeltaHard
+{
+    SpawnFilter = Hard
+    
+    ACSReturn = 3
+    TextColor = "DeltaHard"
+    Name = "$DELTA_SKILL_HARD"
+}
+
+skill DeltaVeryHard
+{
+    SpawnFilter = Nightmare
+    DamageFactor = 1.1
+    //FastMonsters
+    
+    ACSReturn = 4
+    TextColor = "DeltaVeryHard"
+    Name = "$DELTA_SKILL_VERYHARD"
+	MustConfirm = "$DELTA_SKILLWARN_VERYHARD"
+}

@@ -1,0 +1,217 @@
+class KrisGrenadeLauncher : DeltaWeapon
+{
+	Default
+	{
+		Tag "$TAG_DELTA_GRENADELAUNCHER";
+		Inventory.PickupMessage "$PICKUP_DELTA_GRENADELAUNCHER";
+		
+		Weapon.SlotNumber 5;
+		Weapon.SelectionOrder 1000;
+		Weapon.AmmoUse 1;
+		Weapon.AmmoUse2 2;
+		Weapon.AmmoGive 4;
+		Weapon.AmmoType "RocketAmmo";
+		Weapon.AmmoType2 "RocketAmmo";
+		DeltaWeapon.Crosshair "graphics/hud/reticle/rocketReticle.png";
+		DeltaWeapon.TensionUse2 80;
+		
+		+SQUAREPIXELS
+	}
+	
+	States
+	{
+		Ready:
+			KGLN A 1 A_DeltaWeaponReady; // use KGLN for actual sprites
+			Loop;
+		Deselect:
+			KGLN A 4 A_StartSound("delta/revolver/holster2", CHAN_WEAPON,
+				CHANF_OVERLAP);
+			TNT1 A 0 A_SwapWeapon;
+			Stop;
+			//KGLN A 1 A_Lower(9); // gives us 11 tics
+			Loop;
+		Select:
+			KGLN A 2 A_StartRaiseWeapon;
+			KGLN A 4;
+			Goto Ready;
+		Fire:
+			KGLN B 1 A_KrisGrenadeLauncherFire;
+			KGLN CDEF 2;
+			KGLN HIJKL 2 A_DeltaWeaponReady(WRF_NOFIRE | WRF_NOBOB);
+			KGLN M 3 A_DeltaWeaponReady(WRF_NOFIRE | WRF_NOBOB);
+			KGLN N 3 A_ReFire;
+			Goto Ready;
+		AltFire:
+			MISG B 8
+			{
+				A_KrisGrenadeLauncherAltFire();
+				A_GunFlash("AltFlash");
+			}
+			MISG B 12 A_DeltaWeaponReady(WRF_NOFIRE | WRF_NOBOB);
+			MISG B 0 A_ReFire;
+			Goto Ready;
+		Flash:
+			MISF A 1 Bright;
+			MISF B 3 Bright;
+			MISF CD 4 Bright;
+			Goto LightDone;
+		AltFlash:
+			MISF A 1 Bright;
+			MISF B 3 Bright;
+			MISF CD 4 Bright;
+			Goto LightDone;
+		Spawn:
+			LAUN A -1;
+			Stop;
+	}
+	
+	protected action state A_KrisGrenadeLauncherFire()
+	{
+		A_FireProjectile("KrisGrenade");
+		// temporarily using doom rocket launcher sound
+		A_StartSound("weapons/rocklf", CHAN_WEAPON, CHANF_OVERLAP);
+		A_OwnerPlayAttack(false);
+		
+		A_AddRecoil(12, 2, p: -5);
+		return ResolveState(null);
+	}
+	
+	protected action state A_KrisGrenadeLauncherAltFire()
+	{
+		A_FireProjectile("KrisStunGrenade");
+		// temporarily using doom rocket launcher sound
+		A_StartSound("weapons/rocklf", CHAN_WEAPON, CHANF_OVERLAP);
+		A_OwnerPlayAttack(false);
+		
+		A_AddRecoil(12, 2, p: -5);
+		return ResolveState(null);
+	}
+}
+
+class KrisGrenade : DeltaGrenade
+{
+	Default
+	{
+		Speed 35;
+		Obituary "$OBIT_DELTA_GRENADE";
+		
+		DeltaGrenade.GrenadeType GRENADE_CONTACT;
+		DeltaGrenade.FuseTime 0.;
+		DeltaGrenade.ArmedSound "delta/smg/grenade_hit_map";
+		DeltaGrenade.ExplosionSound "delta/smg/grenade_explosion";
+		DeltaGrenade.HitboxClass "KrisSmgGrenadeHitbox";
+	}
+	
+	override void Explode()
+	{
+		Super.Explode();
+		
+		double range = 110;
+		RadiusAttack(target, 250 + dmgTaken, range, 'KrisGrenade',
+			RADF_THRUSTZ, range*0.2);
+		// note the lack of RADF_HURTSOURCE, we wanna handle that manually here
+		
+		let diff = level.Vec3Diff(pos, target.pos),
+			dist = max(abs(diff.x), abs(diff.y), abs(diff.z));
+		if (dist > range || !CheckSight(target, SF_IGNOREVISIBILITY))
+			return;
+		
+		let damageMult = clamp(1.2 - dist/range, 0, 1),
+			dmg = int(ceil(60 * damageMult));
+		
+		target.DamageMobj(self, target, dmg, 'KrisGrenade', DMG_THRUSTLESS);
+		
+		let knockbackDmg = dmg * 0.5;
+		let deltaTarget = DeltaPlayer(target);
+		
+		if (deltaTarget && !deltaTarget.IsGrounded())
+			knockbackDmg *= 2;
+		
+		if (knockbackDmg > 20)
+			knockbackDmg = 20;
+		
+		target.Vel += diff.Unit() * knockbackDmg;
+	}
+	
+	override string GetObituary(Actor victim, Actor inflictor, Name mod, bool playerAttack)
+	{
+		if (victim == target)
+			return StringTable.Localize("$OBIT_DELTA_KSMGALTSELF");
+		
+		return Super.GetObituary(victim, inflictor, mod, playerAttack);
+	}
+	
+	States
+	{
+		Spawn:
+			MISL A 1 Bright;
+			Loop;
+		Explode:
+			MISL A 1 Bright; // freeze here for hitstop
+			MISL B 2 Bright A_GrenadeExplode;
+			MISL CD 3 Bright;
+			Stop;
+	}
+}
+
+class KrisStunGrenade : DeltaGrenade
+{
+	Default
+	{
+		Speed 35;
+		
+		DeltaGrenade.GrenadeType GRENADE_NORMAL;
+		DeltaGrenade.FuseTime 0.5;
+		DeltaGrenade.ArmedSound "delta/smg/grenade_hit_map";
+		DeltaGrenade.ExplosionSound "delta/smg/grenade_explosion";
+		DeltaGrenade.HitboxClass "KrisSmgGrenadeHitbox";
+	}
+	
+	States
+	{
+		Spawn:
+			MISL A 1 Bright;
+			Loop;
+		Explode:
+			MISL A 1 Bright; // freeze here for hitstop
+			MISL B 2 Bright A_GrenadeExplode;
+			MISL CD 3 Bright;
+			Stop;
+	}
+	
+	override void Explode()
+	{
+		Super.Explode();
+		
+		double range = 140.;
+		let iter = BlockThingsIterator.Create(self, range);
+		
+		while (iter.Next())
+		{
+			let act = iter.thing;
+			if (!act.bShootable)
+				continue;
+			
+			let diff = level.Vec3Diff(pos, act.pos),
+				dist = max(abs(diff.x), abs(diff.y), abs(diff.z));
+			
+			if (dist > range || !CheckSight(act, SF_IGNOREVISIBILITY))
+				continue;
+			
+			if (act == target)
+			{
+				let damageMult = clamp(1.2 - dist/range, 0, 1);
+				act.DamageMobj(self, target, int(ceil(75 * damageMult)),
+					'Electric', DMG_THRUSTLESS | DMG_EXPLOSION);
+				continue;
+			}
+			
+			let damageMult = clamp(1.2 - dist/range, 0, 1),
+				dmgDealt = act.DamageMobj(self, target,
+					int(ceil(100 * damageMult)), 'Electric', DMG_EXPLOSION);
+			
+			if (act.health > 0)
+				DeltaStatusEffect.GiveStatus("DeltaStun", act, dmgDealt);
+		}
+	}
+}

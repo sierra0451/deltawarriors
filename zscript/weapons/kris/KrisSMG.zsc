@@ -7,17 +7,16 @@ class KrisSmg : DeltaWeapon
 		Inventory.PickupMessage "$PICKUP_DELTA_KSMG";
 		
 		Weapon.SlotNumber 4;
-		Weapon.SelectionOrder 800;
+		Weapon.SelectionOrder 600;
 		Weapon.AmmoUse 1;
 		Weapon.AmmoUse2 1;
 		Weapon.AmmoGive 30;
 		Weapon.AmmoType "Clip";
 		Weapon.AmmoType2 "RocketAmmo";
-		DeltaWeapon.Crosshair "DRSMGRET";
+		DeltaWeapon.Crosshair "graphics/hud/reticle/smgReticle.png";
 		DeltaWeapon.TensionUse2 75;
 		
 		+SQUAREPIXELS
-		+WEAPON.NOALERT
 	}
 	
 	States
@@ -36,19 +35,19 @@ class KrisSmg : DeltaWeapon
 			TNT1 A 0 A_StartRaiseWeapon;
 			DKSM G 2 A_StartSound("delta/smg/deploy1", CHAN_WEAPON,
 				CHANF_OVERLAP);
-			DKSM HIJ 2;
+			DKSM HIJ 2 A_DeltaWeaponReady(WRF_NOFIRE | WRF_NOBOB);
 			DKSM K 1 A_DeltaWeaponReady(WRF_NOBOB);
 			DKSM K 1 A_StartSound("delta/smg/deploy2", CHAN_WEAPON,
 				CHANF_OVERLAP, pitch: 1.2);
 			DKSM LMN 2 A_DeltaWeaponReady(WRF_NOBOB);
 			Goto Ready;
 		AtEase:
-			DKME ABCDE 2 A_DeltaWeaponReady(WRF_NOBOB | WRF_NOSWITCH, true);
+			DKME ABCDE 2 A_DeltaWeaponReady(WRF_NOBOB, true);
 		AtEaseLoop:
 			DKME F 1 A_DeltaWeaponReady(atEase: true);
 			Loop;
 		AtEaseEnd:
-			DKME EDCBA 2 A_DeltaWeaponReady(WRF_NOBOB | WRF_NOSWITCH);
+			DKME EDCBA 2 A_DeltaWeaponReady(WRF_NOBOB);
 			Goto Ready;
 		DeselectAtEase:
 			DKME GHI 2;
@@ -61,13 +60,17 @@ class KrisSmg : DeltaWeapon
 			DKSM C 2 A_RemoveDynamicLight("smgMuzzle");
 			DKSM D 1
 			{
-				if (!invoker.CheckAmmo(PrimaryFire, true))
+				if (!invoker.DeltaCheckAmmo(PrimaryFire, true))
 					return ResolveState("DoneFiring");
 				
 				return ResolveState(null);
 			}
 		Hold: // fallthrough is intentional
-			DKSM B 1 A_KrisSmgFire;
+			DKSM B 1
+			{
+				A_KrisSmgFire();
+				A_AlertMonsters();
+			}
 			DKSM B 1 A_ZoomFactor(1, ZOOM_NOSCALETURNING);
 			DKSM C 2 A_RemoveDynamicLight("smgMuzzle");
 			DKSM D 1;
@@ -78,8 +81,8 @@ class KrisSmg : DeltaWeapon
 			KSMA A 1 A_KrisSmgAltFire;
 			KSMA B 2;
 			KSMA C 2 A_ZoomFactor;
-			KSMA DE 2;
-			KSMA FGHI 2 A_DeltaWeaponReady(WRF_NOFIRE | WRF_NOBOB);
+			KSMA D 2;
+			KSMA EFGHI 2 A_DeltaWeaponReady(WRF_NOFIRE | WRF_NOBOB);
 			KSMA J 3 A_DeltaWeaponReady(WRF_NOSECONDARY | WRF_NOBOB);
 			KSMA K 3 A_DeltaWeaponReady(WRF_NOBOB);
 			Goto Ready;
@@ -106,25 +109,18 @@ class KrisSmg : DeltaWeapon
 		
 		A_StartSound("delta/smg/fire", CHAN_WEAPON, CHANF_OVERLAP,
 			pitch: cfrandom(0.93, 1.07));
-		A_AlertMonsters();
 		A_OwnerPlayAttack();
 	}
 	
-	protected action state A_KrisSmgAltFire()
+	protected action void A_KrisSmgAltFire()
 	{
-		if (!invoker.DepleteAmmo(true))
-			return ResolveState("Ready");
-		
-		A_FireProjectile("KrisSmgGrenade", useAmmo: false);
+		A_FireProjectile("KrisSmgGrenade");
 		A_ZoomFactor(0.99, ZOOM_INSTANT | ZOOM_NOSCALETURNING);
 		A_AddRecoil(15, 3, p: -5);
 		
 		A_StartSound("delta/smg/alt_fire", CHAN_WEAPON, CHANF_OVERLAP,
 			pitch: cfrandom(0.93, 1.07));
-		A_AlertMonsters();
-		
 		A_OwnerPlayAttack(false);
-		return ResolveState(null);
 	}
 }
 
@@ -141,7 +137,9 @@ class KrisSmgGrenade : DeltaGrenade
 {
 	Default
 	{
+		Speed 35;
 		Obituary "$OBIT_DELTA_KSMGALT";
+		
 		DeltaGrenade.GrenadeType GRENADE_STICKY;
 		DeltaGrenade.FuseTime 0.75;
 		DeltaGrenade.ArmedSound "delta/smg/grenade_hit_map";
@@ -150,13 +148,18 @@ class KrisSmgGrenade : DeltaGrenade
 		DeltaGrenade.HitboxClass "KrisSmgGrenadeHitbox";
 	}
 	
+	override void BeginPlay()
+	{
+		Super.BeginPlay();
+		GiveInventory("DeltaNoGiveDamageTP", 1);
+	}
+	
 	override void Explode()
 	{
 		Super.Explode();
 		
-		int dmgTaken = clamp(-hitbox.health, 0, 100);
-		double range = 110;
-		RadiusAttack(target, 250 + dmgTaken, range, 'KrisSmgGrenade',
+		double range = 70;
+		RadiusAttack(target, 220 + dmgTaken, range, 'KrisSmgGrenade',
 			RADF_THRUSTZ, range*0.2);
 		
 		let diff = level.Vec3Diff(pos, target.pos),
@@ -165,7 +168,7 @@ class KrisSmgGrenade : DeltaGrenade
 			return;
 		
 		let damageMult = clamp(1.2 - dist/range, 0, 1),
-			dmg = ceil(25 * damageMult);
+			dmg = int(ceil(25 * damageMult));
 		
 		target.DamageMobj(self, target, dmg, 'KrisSmgGrenade', DMG_THRUSTLESS);
 		
@@ -194,11 +197,11 @@ class KrisSmgGrenade : DeltaGrenade
 		Spawn:
 			BAL1 AB 4;
 			Loop;
-		XDeath:
-			Goto Spawn;
 		Explode:
-			BAL1 C 3 A_GrenadeExplode;
-			BAL1 DE 3;
+			BAL1 A 1; // freeze here for hitstop
+			BAL1 C 2 A_GrenadeExplode;
+			BAL1 D 3;
+			BAL1 E 4;
 			Stop;
 	}
 }

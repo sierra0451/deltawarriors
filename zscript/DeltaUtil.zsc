@@ -4,7 +4,7 @@ class DeltaUtil
 	clearscope static double Lerp(double a, double b, double t, bool _clamp = true)
 	{
 		if (_clamp)
-			t = Clamp(t, 0, 1);
+			t = clamp(t, 0, 1);
 		
 		return a + ((b - a) * t);
 	}
@@ -17,6 +17,12 @@ class DeltaUtil
 			return 1;
 		
 		return 0;
+	}
+	
+	clearscope static double Map(double value, double minIn, double maxIn,
+		double minOut, double maxOut, bool _clamp = true)
+	{
+		return Lerp(minOut, maxOut, (value - minIn) / (maxIn - minIn), _clamp);
 	}
 	
 	clearscope static Vector2 Vector2Lerp(Vector2 a, Vector2 b, double t, bool _clamp = true)
@@ -56,65 +62,185 @@ class DeltaUtil
 		return (zOffset*sin(a.angle), zOffset*-cos(a.angle), countRoll ? sin(a.roll) : 0);
 	}
 	
-	clearscope static Vector3 GetActorUp(Actor a, bool countRoll = false)
+	clearscope static Vector3 GetActorUp(Actor a)
 	{
 		if (!a)
 			return (0, 0, 0);
 		
-		return GetActorForward(a) cross GetActorRight(a, countRoll);
+		return -(GetActorForward(a) cross GetActorRight(a));
 	}
 	
-	clearscope static string GetTimeString(double tics, int showMsecs = SMT_ONLY_IF_NO_MINS)
+	clearscope static Color HSVtoRGB(Color hsv)
 	{
-		int timeHours = tics / TICRATE / 3600;
-		tics -= timeHours * TICRATE * 3600;
-		int timeMinutes = tics / TICRATE / 60;
-		tics -= timeMinutes * TICRATE * 60;
-		int timeSeconds = floor(tics / TICRATE);
+		let h = hsv.r/255.,
+			s = hsv.g/255.,
+			v = hsv.b/255.,
+			c = v * s,
+			x = c * (1 - abs((h*6.) % 2 - 1)),
+			m = v - c;
 		
-		if (timeMinutes == 60)
+		let r2 = 0.,
+			g2 = 0.,
+			b2 = 0.;
+		
+		if (h >= 5/6.)
 		{
-			timeMinutes = 0;
-			timeHours++;
+			r2 = c;
+			b2 = x;
+		}
+		else if (h >= 4/6.)
+		{
+			r2 = x;
+			b2 = c;
+		}
+		else if (h >= 3/6.)
+		{
+			g2 = x;
+			b2 = c;
+		}
+		else if (h >= 2/6.)
+		{
+			g2 = c;
+			b2 = x;
+		}
+		else if (h >= 1/6.)
+		{
+			r2 = x;
+			g2 = c;
+		}
+		else
+		{
+			r2 = c;
+			g2 = x;
 		}
 		
-		if (timeSeconds == 60)
-		{
-			timeSeconds = 0;
-			timeMinutes++;
-		}
+		int r = int((r2 + m) * 255),
+			g = int((g2 + m) * 255),
+			b = int((b2 + m) * 255);
 		
-		if (showMsecs == SMT_NEVER || (showMsecs == SMT_ONLY_IF_NO_MINS && timeMinutes))
+		Color col = Color(hsv.a, r, g, b);
+		return col;
+	}
+	
+	/*
+	clearscope static Color RGBtoHSV(Color rgb)
+	{
+		
+	}
+	*/
+	
+	clearscope static string GetTimeString(double tics, int showMsecs = DeltaHud.SMT_ONLY_IF_NO_MINS)
+	{
+		let totalSeconds = tics / GameTicRate,
+			iTotalSeconds = int(totalSeconds),
+			timeHours = iTotalSeconds / 3600,
+			timeMinutes = (iTotalSeconds / 60) % 60,
+			timeSeconds = totalSeconds % 60;
+		
+		if (timeHours)
+			return String.Format("%u:%02u:%02u", timeHours, timeMinutes, timeSeconds);
+		
+		if (showMsecs == DeltaHud.SMT_NEVER || (showMsecs == DeltaHud.SMT_ONLY_IF_NO_MINS && timeMinutes))
 			return String.Format("%u:%02u", timeHours? timeHours : timeMinutes,
 				timeHours? timeMinutes : timeSeconds);
 		
-		if (showMsecs == SMT_ONLY_IF_NO_MINS && !timeMinutes)
-			return String.Format("%2.2f", tics / TICRATE);
+		if (showMsecs == DeltaHud.SMT_ONLY_IF_NO_MINS && !timeMinutes)
+			return String.Format("%2.2f", timeSeconds);
 		
-		if (timeHours)
-			return String.Format("%u:%02u:%02u", timeHours, timeMinutes,
-				floor(tics / TICRATE));
-		
-		let remainder = tics / TICRATE;
-		if (remainder >= 10)
-			return String.Format("%u:%.2f", timeMinutes, tics / TICRATE);
-		
-		return String.Format("%u:0%.2f", timeMinutes, tics / TICRATE);
+		if (timeSeconds >= 10)
+			return String.Format("%u:%4.2f", timeMinutes, timeSeconds);
+		return String.Format("%u:0%.2f", timeMinutes, timeSeconds);
 	}
 	
+	// maintained for backwards compatibility, use TriggerPainChance
 	play static void ForceActorPain(Actor a, Name mod)
 	{
-		if (a.Health <= 0 || a.bNoPain)
+		a.TriggerPainChance(mod, true);
+	}
+	
+	play static void StartHitstop(Actor originator, Array<Actor> affected, int tics = 7, bool flash = true)
+	{
+		if (!originator)
 			return;
 		
-		state pain = a.FindStateByString("Pain." .. mod);
+		originator.freezeTics = tics;
 		
-		if (!pain)
-			pain = a.ResolveState("Pain");
-		if (!pain)
+		if (flash)
+		{
+			originator.A_StartSound("delta/kris/shield_parry");
+			if (originator.player)
+				originator.A_SetBlend("white", 0.3, tics, "white", 0.15);
+		}
+		
+		int count = affected.Size();
+		if (!count)
 			return;
 		
-		a.SetState(pain);
+		if (netgame)
+		{
+			for (int i = 0; i < count; i++)
+			{
+				affected[i].freezeTics = tics;
+				if (affected[i].player && flash)
+					affected[i].A_SetBlend("white", 0.3, tics, "white", 0.15);
+			}
+			
+			return;
+		}
+		
+		let iter = ThinkerIterator.Create();
+		Actor act;
+		
+		while (act = Actor(iter.Next()))
+		{
+			act.freezeTics = tics;
+			
+			if (act.player && flash)
+				act.A_SetBlend("white", 0.3, tics, "white", 0.15);
+		}
+	}
+	
+	play static void RollForParryExplosion(Actor parried,
+		double explodeChance = 0.2, int hpThresholdExclusive = -20)
+	{
+		// don't affect RNG if this will nullify the call anyway
+		if (parried.health >= hpThresholdExclusive)
+			return;
+		if (frandom[explodeChance](0, 1) > explodeChance)
+			return;
+		
+		let exp = DeltaBadExplosion(Actor.Spawn("DeltaBadExplosion",
+			level.Vec3Offset(parried.pos,
+				(0, 0, GetDefaultByType(parried.GetClass()).height / 2.))));
+		exp.master = parried;
+		exp.scale = parried.scale;
+	}
+	
+	// returns as [predicted angle, predicted pitch]
+	play static double, double PredictTarget(Actor context, class<Actor> missile, double maxTurn = 0., double maxPitch = 0.)
+	{
+		if (!context)
+			return 0, 0;
+		if (!missile || !context.target)
+			return context.angle, context.pitch;
+		
+		let targVel = context.target.vel,
+			targDir = targVel == (0, 0, 0)? (0, 0, 0) : targVel.Unit(),
+			dist = context.Distance3D(context.target),
+			missSpd = Actor.GetDefaultSpeed(missile),
+			targOffset = targDir * dist * ((missSpd == 0)? 0 : targVel.Length() / missSpd),
+			coords = level.SphericalCoords(context.pos, context.target.pos + targOffset,
+				(context.angle, context.pitch));
+		
+		let targetAngle = -coords.x,
+			targetPitch = -coords.y;
+		
+		if (maxTurn != 0)
+			targetAngle = clamp(targetAngle, -maxTurn, maxTurn);
+		if (maxPitch != 0)
+			targetPitch = clamp(targetPitch, -maxPitch, maxPitch);
+		
+		return context.angle + targetAngle, context.pitch + targetPitch;
 	}
 }
 
@@ -125,6 +251,7 @@ class DeltaSpriteCacher : Actor abstract
 		Cache:
 			KCGN A 1;
 			KCSW A 1;
+			KICN A 1;
 			Stop;
 	}
 }
@@ -147,7 +274,7 @@ class DeltaDebugPositionMarker : Actor
 	States
 	{
 		Spawn:
-			DTNB A -1 Bright;
+			DTNC A -1 Bright;
 			Stop;
 	}
 	
@@ -157,14 +284,6 @@ class DeltaDebugPositionMarker : Actor
 		
 		if (lifeTime <= 0 || IsFrozen())
 			return;
-		
-		let cam = players[consolePlayer].camera;
-		
-		if (cam)
-		{
-			let sc = min(0.25, Distance3D(cam) / 200.);
-			A_SetScale(sc);
-		}
 		
 		lifeTime--;
 		A_FadeOut(startAlpha / lifeTime);
@@ -179,34 +298,58 @@ class DeltaDebugPositionMarker : Actor
 		marker.lifetime = lifetime;
 		return marker;
 	}
+	
+	clearscope static void SpawnMarkerClearscope(Vector3 pos, int lifetime = -1, Color col = 0xffffffff, double alpha = 1.)
+	{
+		let buffer = new("NetworkBuffer");
+		buffer.AddVector3(pos);
+		buffer.AddInt(lifetime);
+		buffer.AddInt(col);
+		buffer.AddDouble(alpha);
+		EventHandler.SendNetworkBuffer("CreateDebugMarker", buffer);
+	}
 }
 
 class DeltaHitscanGrazeChecker : LineTracer
 {
 	double fireLength;
 	bool firstFire;
-	Array<DeltaPlayer> _grazed;
+	Array<DeltaPlayer> grazed;
 	
 	protected Actor _source;
 	protected DeltaPlayer _actualHit;
+	
+	static DeltaHitscanGrazeChecker Create()
+	{
+		return new("DeltaHitscanGrazeChecker").Init();
+	}
+	
+	virtual DeltaHitscanGrazeChecker Init()
+	{
+		fireLength = 0;
+		firstFire = false;
+		grazed.Clear();
+		_source = null;
+		_actualHit = null;
+		return self;
+	}
 	
 	virtual void CheckHitscanGraze(Actor source, Vector3 attackPos,
 		Vector3 hitPos)
 	{
 		_source = source;
 		let diff = level.Vec3Diff(attackPos, hitPos),
-			dir = diff.Unit();
-		fireLength = diff.Length();
+			dir = diff.Unit(),
+			epsilon = 16.;
+		fireLength = diff.Length() + epsilon;
 		firstFire = true;
-		_grazed.Clear();
+		grazed.Clear();
 		
 		if (Trace(attackPos, source.curSector, dir, fireLength, TRACE_NoSky,
-			ignore: source))
+			Line.ML_BLOCKHITSCAN | Line.ML_BLOCKEVERYTHING, ignore: source))
 		{
-			if (results.HitActor)
+			if (results.HitType == TRACE_HitActor)
 				_actualHit = DeltaPlayer(results.HitActor);
-			
-			fireLength = results.distance;
 		}
 		
 		firstFire = false;
@@ -220,21 +363,21 @@ class DeltaHitscanGrazeChecker : LineTracer
 		{
 			Vector3 actualPos = level.Vec3Offset(attackPos, DeltaUtil.GetActorRight(source) * ofsSide);
 			Trace(actualPos, source.curSector, dir, fireLength, TRACE_NoSky,
-				ignore: source);
+				Line.ML_BLOCKHITSCAN | Line.ML_BLOCKEVERYTHING, ignore: source);
 		}
 	}
 	
 	override ETraceStatus TraceCallback()
 	{
 		if (firstFire)
-			return TRACE_STOP;
-		if (!results.HitActor)
-			return TRACE_STOP;
+			return TRACE_Stop;
+		if (results.HitType != TRACE_HitActor)
+			return TRACE_Stop;
 		
 		let ply = DeltaPlayer(results.HitActor);
-		if (ply && ply != _actualHit && !_source.IsFriend(ply) && _grazed.Find(ply) == _grazed.Size())
+		if (ply && ply != _actualHit && !_source.IsFriend(ply) && grazed.Find(ply) == grazed.Size())
 		{
-			_grazed.Push(ply);
+			grazed.Push(ply);
 			return TRACE_Continue;
 		}
 		
