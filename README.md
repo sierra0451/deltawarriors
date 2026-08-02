@@ -2,9 +2,14 @@
 <img src="graphics/delta_logo.png" alt="DeltaWarriors logo" />
 </div>
 
-DeltaWarriors, a Doom gameplay mod that adds the main characters of Deltarune as playable characters.
+DeltaWarriors, ~~a Doom gameplay mod that adds the main characters of Deltarune as playable characters.~~
 
-Currently, Kris is the only one playable, but Susie, Ralsei, and Noelle are planned for later! Kris has most of their stuff done, they just need their arsenal finished, their ultimate ability, and an art pass, and then they should be good as finished :3
+~~Currently, Kris is the only one playable, but Susie, Ralsei, and Noelle are planned for later! Kris has most of their stuff done, they just need their arsenal finished, their ultimate ability, and an art pass, and then they should be good as finished :3~~
+
+Plans have changed. This'll be the version I'm releasing for the Doom mod version, but after this, we'll be working towards turning this into a pretty different thing. Something you all may find... very, very interesting. If you'd like further information and updates, please connect with us at the following links:
+- Discord: https://discord.gg/FV5H38tZFx
+- Twitter: https://twitter.com/dltawarriorsMod
+- Bluesky: https://bsky.app/profile/deltawarriors.bsky.social
 
 ## Installation instructions
 ### Programs needed:
@@ -21,7 +26,9 @@ Currently, Kris is the only one playable, but Susie, Ralsei, and Noelle are plan
 
 ## Basic How-to-Play (an in-mod tutorial is coming at some point, trust </3)
 ### Tension Points
-The single biggest new mechanic introduced by DeltaWarriors (a mechanic borrowed from Deltarune) is Tension Points, or TP. You can gain them by picking up Tension items around the map—Tension Bits, Gems, and Maxes replace Doom's armor bonuses, green armor pickups, and blue armor pickups respectively. Or, just like in Deltarune, you can also gain TP by grazing enemy projectiles (letting them get close to you while still not getting hit by them) or by dealing damage to enemies. Once you gain enough, you can use that TP for various abilities; an example is Kris's shield parry, which costs 40% TP.
+The single biggest new mechanic introduced by DeltaWarriors (a mechanic borrowed from Deltarune) is Tension Points, or TP. You can gain them by picking up Tension items around the map—Tension Bits, Gems, and Maxes replace Doom's armor bonuses, green armor pickups, and blue armor pickups respectively. Or, just like in Deltarune, you can also gain TP by grazing enemy projectiles (letting them get close to you while still not getting hit by them) or by dealing damage to enemies. Once you gain enough, you can use that TP for various abilities!
+
+Be careful though, if you go enough time without gaining or losing TP, it will drain!
 
 ### Weapons
 - **Slot 1: Sword**
@@ -36,6 +43,7 @@ The single biggest new mechanic introduced by DeltaWarriors (a mechanic borrowed
     - Costing 40% of their TP, Kris can swing their shield out in front of them and parry a single incoming projectile, knocking it back into the direction they're looking in. If the parried projectile hits another demon, it may do some additional damage.
 - **Sliding:**
     - Hold crouch while running to move Kris into a slide. This will preserve some of their momentum (if moving slowly enough, they get a slight speed boost). While sliding, they can slip by smaller enemies and projectiles, and generally be unaffected by outside physical forces like knockback, although friction will slow them down over time.
+- Any other weapons they may be able to access are vanilla weapons that never received replacements.
 
 And, of course, credits go to:
 - CheetoThunderstorm for making Kris's third person sprites, and doing an incredible job at that. This whole thing wouldn't be possible without their help <3
@@ -49,8 +57,3 @@ And, of course, credits go to:
 - That fucking little white Pomeranian, Toby Fox, for creating [Deltarune](https://deltarune.com/), the first video game that's ever made me cry <3
 
 None of this would have been possible without y'all. <3
-
-## Links
-- Discord: https://discord.gg/FV5H38tZFx
-- Twitter: https://twitter.com/dltawarriorsMod
-- Bluesky: https://bsky.app/profile/deltawarriors.bsky.social
