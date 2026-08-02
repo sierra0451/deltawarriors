@@ -524,7 +524,7 @@ class DeltaLevelEvents : EventHandler
 		hud.pos = e.viewPos;
 		hud.angles = (e.viewPitch, e.viewRoll, e.viewAngle);
 		
-		if (!e.fracTic || e.camera != players[consolePlayer].camera)
+		if (e.fracTic > 0.01 || e.camera != players[consolePlayer].camera)
 			return;
 		
 		EventHandler.SendNetworkEvent("DeltaUpdateViewPos", int(e.viewPos.x), int(e.viewPos.y), int(e.viewPos.z));
