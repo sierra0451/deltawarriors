@@ -986,7 +986,7 @@ class DeltaPlayer : PlayerPawn abstract
 		if (!bFly && !still && player.onGround)
 		{
 			bobSpeed = bobTimer / (ViewBobSpeed * TICRATE / 35.) * 360.;
-			bob = player.bob * sin(bobSpeed) * (waterlevel > 1 ? 0.25f : 0.5f);
+			bob = player.bob * sin(bobSpeed) * (waterLevel > 1 ? 0.25f : 0.5f);
 		}
 		
 		// move viewHeight
