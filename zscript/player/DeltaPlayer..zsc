@@ -601,21 +601,40 @@ class DeltaPlayer : PlayerPawn abstract
 		sm *= Speed / 256;
 		
 		desiredMove = (cmd.sideMove / 10240., cmd.forwardMove / 12800.);
+		let right = DeltaUtil.GetActorRight(self),
+			forward = DeltaUtil.GetActorForward(self, false),
+			worldDesired = (right.xy * desiredMove.x) + (forward.xy * desiredMove.y);
 		
-		if (!player.onGround && !bNoGravity && !waterlevel)
+		if (!player.onGround && !bNoGravity && !waterLevel)
 		{
 			ApplyAirControl(moveFactor, bobFactor);
+			let airFriction = level.airFriction;
 			
-			let airFriction = level.airFriction,
-				oldXY = vel.xy;
-			
-			if (!fm && !sm && airFriction != 0)
+			if (airFriction)
 			{
-				vel.x = airFriction? (vel.x/airFriction) : 0.;
-				vel.y = airFriction? (vel.y/airFriction) : 0.;
+				let preservedXY = vel.xy / (airFriction + 0.05),
+						// adding 0.05 to make sure speed gain isn't too crazy
+					oldXY = vel.xy,
+					oldDir = oldXY.Unit();
+				Vector2 desiredDir;
 				
-				if (player.mo == self && airFriction)
-					player.vel /= airFriction;
+				if (fm || sm)
+				{
+					desiredDir = worldDesired;
+					if (desiredMove.Length() > 1.)
+						desiredDir /= desiredMove.Length();
+				}
+				else
+					desiredDir = oldDir;
+				
+				let t = (fm || sm)? desiredDir dot oldDir : 1.;
+				vel.xy = DeltaUtil.Vector2Lerp(oldXY, preservedXY, t);
+				
+				if (player.mo == self)
+				{
+					let preservedPlayVel = player.vel / (airFriction + 0.05);
+					player.vel = DeltaUtil.Vector2Lerp(player.vel, preservedPlayVel, t);
+				}
 			}
 		}
 		
