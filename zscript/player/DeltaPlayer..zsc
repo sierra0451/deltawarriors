@@ -1396,6 +1396,8 @@ class DeltaPlayer : PlayerPawn abstract
 		if (!(itemCls is "Health" && !(itemCls is "HealthPickup") && itemCls != "Health")
 			|| !item.amount || item.bQuiet)
 			return;
+		if (itemCls is "HealthPickup")
+			return;
 		
 		DeltaGlobals.GetLevelEvents().SpawnHealEffects(self, item.amount, item.maxAmount);
 	}
