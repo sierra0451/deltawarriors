@@ -1394,8 +1394,26 @@ class DeltaPlayer : PlayerPawn abstract
 		Super.HasReceived(item, itemCls);
 		if (!(itemCls is "Health" && itemCls != "Health") || !item.amount || item.bQuiet)
 			return;
+		if (itemCls is "HealthPickup")
+			return;
 		
 		DeltaGlobals.GetLevelEvents().SpawnHealEffects(self, item.amount, item.maxAmount);
+	}
+	
+	override bool UseInventory(Inventory item)
+	{
+		if (!Super.UseInventory(item))
+			return false;
+		
+		let hlth = HealthPickup(item);
+		if (!hlth)
+			return true;
+		
+		let deltaHlth = DeltaHealthPickup(item),
+			max = deltaHlth? deltaHlth.maxHealth : 0;
+		
+		DeltaGlobals.GetLevelEvents().SpawnHealEffects(self, hlth.health, max);
+		return true;
 	}
 	
 	// taking from uzdoom.pk3 and retooling, removing grunts entirely
