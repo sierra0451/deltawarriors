@@ -49,13 +49,23 @@ extend class DeltaPlayer
 	action void A_EndOffhand()
 	{
 		invoker.isUsingOffhand = false;
-		A_OverlayOffset(PSP_WEAPON, 0, WEAPONBOTTOM);
 		
 		let weap = player.ReadyWeapon,
 			psp = player.GetPSprite(PSP_WEAPON);
 		
 		if (weap)
-			psp.SetState(weap.GetUpState());
+		{
+			if (player.PendingWeapon == WP_NOCHANGE)
+				psp.SetState(weap.GetUpState());
+			else
+				player.ReadyWeapon = null;
+		}
+		if (!psp)
+			return;
+		
+		psp.x = 0;
+		psp.y = WEAPONBOTTOM;
+		psp.bAddBob = psp.bAddWeapon = true;
 	}
 	
 	clearscope virtual bool CanUseOffhand()
