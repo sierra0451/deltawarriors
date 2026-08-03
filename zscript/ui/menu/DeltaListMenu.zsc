@@ -52,4 +52,20 @@ class DeltaListMenu : ListMenu
 		debugString = "type: " .. type .. ", pos: " .. (mX, mY);
 		return true;
 	}
+	
+	override void Drawer()
+	{
+		Super.Drawer();
+		
+		if (mDesc.mMenuName != "MainMenu")
+			return;
+		
+		let str = StringTable.Localize("$DELTAWARRIORS_VERSION"),
+			sc = 2.,
+			x = Screen.GetWidth() - smallFont.StringWidth(str)*sc - 10,
+			y = Screen.GetHeight() - smallFont.GetHeight()*sc - 10;
+		
+		Screen.DrawText(smallFont, Font.CR_UNTRANSLATED, x, y, str,
+			DTA_ScaleX, sc, DTA_ScaleY, sc);
+	}
 }
