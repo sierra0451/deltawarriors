@@ -608,11 +608,10 @@ class DeltaPlayer : PlayerPawn abstract
 		if (!player.onGround && !lunging && !bNoGravity && !waterLevel)
 		{
 			ApplyAirControl(moveFactor, bobFactor);
-			let airFriction = level.airFriction;
 			
-			if (airFriction)
+			if (level.airFriction)
 			{
-				let preservedXY = vel.xy / (airFriction + 0.05),
+				let preservedXY = vel.xy / (level.airFriction + 0.05),
 						// adding 0.05 to make sure speed gain isn't too crazy
 					oldXY = vel.xy,
 					oldDir = (vel.x || vel.y)? oldXY.Unit() : (0, 0);
@@ -632,7 +631,7 @@ class DeltaPlayer : PlayerPawn abstract
 				
 				if (player.mo == self)
 				{
-					let preservedPlayVel = player.vel / (airFriction + 0.05);
+					let preservedPlayVel = player.vel / (level.airFriction + 0.05);
 					player.vel = DeltaUtil.Vector2Lerp(player.vel, preservedPlayVel, t);
 				}
 			}

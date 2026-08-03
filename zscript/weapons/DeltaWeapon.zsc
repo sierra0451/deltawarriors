@@ -385,11 +385,8 @@ class DeltaWeapon : Weapon
 	
 	action void A_SwapWeapon()
 	{
-		// some code taken from A_Lower code:
-		// https://github.com/UZDoom/UZDoom/blob/41ca20c1c30decbe70da21505785fbec6bb83cd6/wadsrc/static/zscript/actors/inventory/weapons.zs#L259
-		if (player == null)
-			return;
-		if (player.ReadyWeapon == null)
+		// some code taken from A_Lower in uzdoom.pk3
+		if (!player || !player.ReadyWeapon)
 			return;
 		
 		let psp = player.GetPSprite(PSP_WEAPON);
