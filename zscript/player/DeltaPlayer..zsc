@@ -605,7 +605,7 @@ class DeltaPlayer : PlayerPawn abstract
 			forward = DeltaUtil.GetActorForward(self, false),
 			worldDesired = (right.xy * desiredMove.x) + (forward.xy * desiredMove.y);
 		
-		if (!player.onGround && !bNoGravity && !waterLevel)
+		if (!player.onGround && !lunging && !bNoGravity && !waterLevel)
 		{
 			ApplyAirControl(moveFactor, bobFactor);
 			let airFriction = level.airFriction;
@@ -615,7 +615,7 @@ class DeltaPlayer : PlayerPawn abstract
 				let preservedXY = vel.xy / (airFriction + 0.05),
 						// adding 0.05 to make sure speed gain isn't too crazy
 					oldXY = vel.xy,
-					oldDir = oldXY.Unit();
+					oldDir = (vel.x || vel.y)? oldXY.Unit() : (0, 0);
 				Vector2 desiredDir;
 				
 				if (fm || sm)
