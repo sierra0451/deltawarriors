@@ -53,19 +53,20 @@ extend class DeltaPlayer
 		let weap = player.ReadyWeapon,
 			psp = player.GetPSprite(PSP_WEAPON);
 		
+		psp.x = 0;
+		psp.y = WEAPONBOTTOM;
+		psp.bAddBob = true;
+		
 		if (weap)
 		{
 			if (player.PendingWeapon == WP_NOCHANGE)
+			{
+				weap.OnSelect();
 				psp.SetState(weap.GetUpState());
+			}
 			else
 				player.ReadyWeapon = null;
 		}
-		if (!psp)
-			return;
-		
-		psp.x = 0;
-		psp.y = WEAPONBOTTOM;
-		psp.bAddBob = psp.bAddWeapon = true;
 	}
 	
 	clearscope virtual bool CanUseOffhand()
