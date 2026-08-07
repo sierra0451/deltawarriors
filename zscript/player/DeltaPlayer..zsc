@@ -892,9 +892,11 @@ class DeltaPlayer : PlayerPawn abstract
 			
 			if (player.viewHeight == 6)
 			{
-				if (deathPitchFP != 0)
+				let targetPitchFP = -12.;
+				
+				if (deathPitchFP != targetPitchFP)
 				{
-					double lookDelta = -deathPitchFP / 8.;
+					double lookDelta = -(deathPitchFP - targetPitchFP) / 8.;
 					deathPitchFP += lookDelta;
 				}
 				
