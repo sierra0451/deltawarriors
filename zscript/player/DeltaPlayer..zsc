@@ -913,7 +913,8 @@ class DeltaPlayer : PlayerPawn abstract
 			}
 		}
 		
-		player.mo.CalcHeight();
+		if (player && player.mo == self)
+			CalcHeight();
 		
 		bool
 			playerWantsToRespawn = (player.cmd.buttons & BT_USE),
@@ -1369,12 +1370,8 @@ class DeltaPlayer : PlayerPawn abstract
 						continue;
 					
 					let pick = DeltaWeaponPickup(Spawn(replace));
-					if (!pick || !pick.GetWeapon(self))
-						continue;
-					
-					GiveInventory(pick.GetWeapon(self), 1, true);
-					Console.Printf("Got pickup! " .. pick.GetClassName()
-						.. " gave us a " .. pick.GetWeapon(self).GetClassName());
+					if (pick && pick.GetWeapon(self))
+						GiveInventory(pick.GetWeapon(self), 1, true);
 				}
 			}
 			
