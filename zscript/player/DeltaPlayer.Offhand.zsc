@@ -61,7 +61,8 @@ extend class DeltaPlayer
 		{
 			if (player.PendingWeapon == WP_NOCHANGE)
 			{
-				weap.OnSelect();
+				// [Sierra] This is 5.0 only, oops! Uncomment this when we start requiring 5.0
+				// weap.OnSelect();
 				psp.SetState(weap.GetUpState());
 			}
 			else
