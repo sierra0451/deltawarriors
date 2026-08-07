@@ -19,9 +19,11 @@ GameInfo
 	MenuFontColor_Selection = "DeltaOptMenuActive"
 	
 	DimColor = "#000000"
-	QuitMessages =	"$QUIT_DELTA_1", "$QUIT_DELTA_2", "$QUIT_DELTA_3",
-					"$QUIT_DELTA_4", "$QUIT_DELTA_5", "$QUIT_DELTA_6",
-					"$QUIT_DELTA_7"
+	QuitMessages =	"$QUIT_DELTA_THANKSFORPLAYING",	"$QUIT_DELTA_UNDERTALE2",
+					"$QUIT_DELTA_BETTER", 			"$QUIT_DELTA_SUSIE",
+					"$QUIT_DELTA_RALSEI", 			"$QUIT_DELTA_NOELLE",
+					"$QUIT_DELTA_REFERENCE", 		"$QUIT_DELTA_DESKTOP",
+					"$QUIT_DELTA_JARONA", 			"$QUIT_DELTA_PROMISE"
 	
 	PlayerClasses = "KrisPlayer"/*,
 					"SusiePlayer",
