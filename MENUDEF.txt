@@ -172,6 +172,11 @@ OptionMenu "DeltaControls"
 	Control "$MENU_INTERACT", "+use"
 	Control "$MENU_OFFHAND", "+offhand"
 	StaticText ""
+	StaticText "$MENU_CTRL_INVENTORY", "DeltaMenuHeader"
+	Control "$MENU_USEITEM", "invuse"
+	Control "$MENU_PREVITEM", "invprev"
+	Control "$MENU_NEXTITEM", "invnext"
+	StaticText ""
 	StaticText "$MENU_WEAPONS", "DeltaMenuHeader"
 	Control "$MENU_PREVWEAP", "weapprev"
 	Control "$MENU_NEXTWEAP", "weapnext"
@@ -201,7 +206,7 @@ OptionMenu "DeltaDisplayOptions"
 	StaticText "$MENU_CAMERA_HEADER", "DeltaMenuHeader"
 	
 	Slider "$MENU_FOV", "fov", 75, 160, 1, 0
-	//Option "$MENU_DEATHCAM", "r_deathcamera", "DeathCamOptions" // wanna rewrite third person camera entirely
+	Option "$MENU_GAMEOVER", "cl_delta_deathScreen", "YesNo"
 	StaticText ""
     Slider "$MENU_MOVE_BOB", "movebob", 0, 1, 0.1, 2
     Slider "$MENU_STILL_BOB", "stillbob", 0, 1, 0.1, 2
