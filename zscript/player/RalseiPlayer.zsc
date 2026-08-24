@@ -8,6 +8,11 @@ class RalseiPlayer : DeltaPlayer
 		Radius 16;
 		Speed 0.7;
 		Mass 90;
+		BloodType "DeltaNoBlood"; // this is used so blood sprites and particles
+								  // don't show up but Ralsei is still treated
+								  // like a living, bleeding actor (rather than
+								  // smth like an explosive barrel)
+		BloodColor "00 00 00";
 		
 		Health 180;
 		Player.MaxHealth 180;
@@ -17,15 +22,14 @@ class RalseiPlayer : DeltaPlayer
 		Player.ViewHeight 32;
 		
 		// Player.WeaponSlot 1, "RalseiScarf";
-		// Player.WeaponSlot 2, "RalseiPistol";
-		// Player.WeaponSlot 3, "RalseiShotgun";
-		// Player.WeaponSlot 4, "RalseiAK";
-		// Player.WeaponSlot 5, "";
+		// Player.WeaponSlot 2, "RalseiFireballs";
+		// Player.WeaponSlot 3, "RalseiFireBlast";
+		// Player.WeaponSlot 4, "RalseiAK"; 		// fnuuy
+		// Player.WeaponSlot 5, "RalseiFlameBombs";
 		// Player.WeaponSlot 6, "";
 		
 		// Player.StartItem "RalseiScarf";
-		// Player.StartItem "RalseiPistol";
-		// Player.StartItem "Clip", 15;
+		// Player.StartItem "RalseiHealing";
 		
 		DeltaPlayer.HugReactionTime 20;
 		DeltaPlayer.CharacterColor Color(0, 255, 0);
@@ -82,5 +86,14 @@ class RalseiPlayer : DeltaPlayer
 			DRAF E 1;
 			DRAF E -1;
 			Stop;
+	}
+}
+
+class DeltaNoBlood : Blood
+{
+	Default
+	{
+		+INVISIBLE;
+		-ALLOWPARTICLES;
 	}
 }
