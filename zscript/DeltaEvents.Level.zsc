@@ -21,6 +21,7 @@ class DeltaLevelEvents : EventHandler
 	protected Le_GlScreen	gl_proj;
 	protected Le_Viewport	viewport;
 	protected int			currentTime;
+	protected string		curMapset;
 	ui protected int		lastUpdate;
 	
 	private bool			_everyoneDead;
@@ -36,15 +37,17 @@ class DeltaLevelEvents : EventHandler
 	{
 		EnableNetworking(true);
 		
-		let _name = level.mapName,
-			mapset = DeltaGlobals.GetGlobals().GetMapset();
+		let _name = level.mapName;
+		curMapset = DeltaGlobals.GetGlobals().GetMapset();
 		
-		if (mapset ~== "AncientAliens" && _name ~== "map30")
+		if (curMapset ~== "AncientAliens" && _name ~== "map30")
 			Actor.Spawn("DeltaWeaponsAtEase");
-		else if (mapset ~== "BTSX1" && (_name ~== "map08" || _name ~== "map16"
+		else if (curMapset ~== "EviternityII" && _name ~== "map37")
+			Actor.Spawn("DeltaWeaponsAtEase");
+		else if (curMapset ~== "BTSX1" && (_name ~== "map08" || _name ~== "map16"
 			|| _name ~== "map23" || _name ~== "map25"))
 			Actor.Spawn("DeltaWeaponsAtEase");
-		else if (mapset ~== "BTSX2" && (_name ~== "map05" || _name ~== "map11"
+		else if (curMapset ~== "BTSX2" && (_name ~== "map05" || _name ~== "map11"
 			|| _name ~== "map16" || _name ~== "map23" || _name ~== "map27"))
 			Actor.Spawn("DeltaWeaponsAtEase");
 	}
@@ -97,6 +100,19 @@ class DeltaLevelEvents : EventHandler
 				
 				S_ChangeMusic("", force: true);
 				S_StartSound("delta/hurt", CHAN_AUTO);
+			}
+		}
+		
+		// ready our weapons if we trigger a specific super secret in evi2's credits map
+		if (!(level.time % 10) && curMapset ~== "EviternityII" && level.mapName ~== "map37")
+		{
+			if (level.Sectors[888].floorData)
+			{
+				let it = ThinkerIterator.Create("DeltaWeaponsAtEase", Thinker.STAT_DEFAULT);
+				Thinker mo;
+				
+				if (mo = it.Next())
+					mo.Destroy();
 			}
 		}
 	}
