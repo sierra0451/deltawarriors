@@ -91,7 +91,10 @@ class DeltaWarriorsIntro : ScreenJob
 			return;
 		
 		double targetAlpha = 1.,
-			sc = max(1, min(Screen.GetWidth()/1920, Screen.GetHeight()/1080));
+			sc = min(Screen.GetWidth()/1920., Screen.GetHeight()/1080.);
+		
+		if (sc > 1)
+			sc = floor(sc);
 		
 		if (introState < 1 || introState > 3)
 		{

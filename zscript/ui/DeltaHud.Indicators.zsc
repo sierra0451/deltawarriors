@@ -60,7 +60,7 @@ extend class DeltaHud
 		
 		float indicatorSize = 1;
 		float distance = 100;
-		Vector2 indicatorScale = _inverseUniversalScale / indicatorSize;
+		Vector2 indicatorScale = (1, 1) / indicatorSize;
 		
 		for (int i = 0; i < _damageIndicators.Size(); i++)
 		{
@@ -115,7 +115,7 @@ extend class DeltaHud
 		
 		let indicatorSize = 2.,
 			distance = 80.,
-			indicatorScale = _inverseUniversalScale / indicatorSize;
+			indicatorScale = (1, 1) / indicatorSize;
 		
 		for (int i = 0; i < _grazeIndicators.Size(); i++)
 		{
@@ -153,8 +153,8 @@ extend class DeltaHud
 		if (!inflictor && source == CPlayer.mo)
 			return;
 		
-		int smallestTimer = -1;
-		int smallestTimerIndex;
+		int smallestTimer = -1,
+			smallestTimerIndex;
 		
 		for (int i = 0; i < _grazeIndicators.Size(); i++)
 		{

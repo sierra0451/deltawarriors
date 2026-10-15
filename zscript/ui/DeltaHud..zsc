@@ -237,20 +237,25 @@ class DeltaHud : BaseStatusBar
 	
 	override void Draw(int state, double ticFrac)
 	{
-		Super.Draw(state, ticFrac);
-		DrawDeathSequence(ticFrac);
-		
-		if (!ply || state == HUD_None || !cl_delta_showHud)
-			return;
-		
-		_universalScale = GetHudScale() * 0.5;
-		_inverseUniversalScale = _universalScale / cl_delta_hudScale;
-		_universalScale = (1/_universalScale.x, 1/_universalScale.y) * cl_delta_hudScale;
-		
+		_universalScale = (cl_delta_hudScale, cl_delta_hudScale);
+		_inverseUniversalScale = (1 / cl_delta_hudScale, 1 / cl_delta_hudScale);
 		_hBorder = 35 * _universalScale.x;
 		_vBorder = 25 * _universalScale.y;
 		
+		if (!ply)
+			return;
+		
 		if (_deathSequence && _deathSequence.gameOverState > DeltaGameOver.FREEZE_FRAME)
+		{
+			BeginHUD(forceScaled: true, resW: 640, resH: 480);
+			DrawDeathSequence(ticFrac);
+			return;
+		}
+		
+		if (idmypos)
+			DrawMyPos();
+		
+		if (state == HUD_None || !cl_delta_showHud)
 			return;
 		
 		if (GetHealthPerc() <= 0.4
@@ -279,7 +284,7 @@ class DeltaHud : BaseStatusBar
 				DTA_Color, Color(255, 0, 0, 0));
 		}
 		
-		BeginHUD();
+		BeginHUD(forceScaled: true, resW: 640, resH: 480);
 		DrawMultiplayerUnderlay(ticFrac);
 		DrawBossBars();
 		DrawIndicators(ticFrac);
