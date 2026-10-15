@@ -126,6 +126,8 @@ class DeltaHud : BaseStatusBar
 		_tpInterp = DynamicValueInterpolator.Create(0, 0.2, 1, 30);
 		_healthInterp = DynamicValueInterpolator.Create(0, 0.2, 1, 30);
 		_bar = InventoryBarState.Create();
+		
+		_oldHealth = GetHealthPerc();
 	}
 	
 	override void Tick()
@@ -163,8 +165,11 @@ class DeltaHud : BaseStatusBar
 		
 		_tpInterp.Update(int(tpInterpTarget));
 		
-		_oldHealth = _healthInterp.GetValue();
-		_healthInterp.Update(int(GetHealthPerc() * 100));
+		if (!ply.GetDamageTics())
+		{
+			_oldHealth = _healthInterp.GetValue();
+			_healthInterp.Update(int(GetHealthPerc() * 100));
+		}
 		
 		TickIndicators();
 		TickDamagePopups();
@@ -317,6 +322,17 @@ class DeltaHud : BaseStatusBar
 		_healthInterp.Reset(int(GetHealthPerc() * 100));
 		ClearIndicators();
 		ClearDamagePopups();
+	}
+	
+	virtual void HandleDamage(Actor source, Actor inflictor, int amount)
+	{
+		_oldHealth = _healthInterp.GetValue();
+	}
+	
+	virtual void HandleTickDamage(Actor source, Actor inflictor, int amount)
+	{
+		CreateDamageIndicator(source, inflictor);
+		CreateDamagePopup(source, amount);
 	}
 	
 	protected TextureID GetMainBindingIcon(string cmd)
@@ -650,7 +666,7 @@ class DeltaHud : BaseStatusBar
 			DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM, scale: _universalScale,
 			col: ply.GetCharacterColor());
 		
-		let currentFace = GetMugshot(4, Mugshot.DISABLEOUCH | Mugshot.DISABLERAMPAGE);
+		let currentFace = GetMugshot(4, Mugshot.DISABLEOUCH);
 		DrawTexture(currentFace, (_hBorder + 8*_universalScale.x,
 			-_vBorder - 25*_universalScale.y), DI_SCREEN_LEFT_BOTTOM
 			| DI_ITEM_LEFT | DI_ITEM_VCENTER, scale: _universalScale);

@@ -145,7 +145,7 @@ class DeltaLevelEvents : EventHandler
 				{
 					EventHandler.SendInterfaceEvent(
 						playerNum: damageEvents[i].victim.PlayerNumber(),
-						name: "DeltaPlayerDamage",
+						name: "DeltaPlayerDamageTick",
 						arg1 : damageEvents[i].source ?
 							damageEvents[i].source.GetNetworkID() : 0,
 						arg2 : damageEvents[i].inflictor ?
@@ -349,6 +349,19 @@ class DeltaLevelEvents : EventHandler
 			}
 		}
 		
+		if (e.thing.player)
+		{
+			EventHandler.SendInterfaceEvent(
+				playerNum: e.thing.PlayerNumber(),
+				name: "DeltaPlayerDamage",
+				arg1 : e.damageSource ?
+					e.damageSource.GetNetworkID() : 0,
+				arg2 : e.inflictor ?
+					e.inflictor.GetNetworkID() : 0,
+				arg3: e.damage
+			);
+		}
+		
 		if (e.damageSource is "DeltaPlayer" && e.damageSource != e.thing
 			&& !(e.thing is "DeltaGrenade" || e.thing is "DeltaGrenadeHitbox"))
 		{
@@ -518,8 +531,15 @@ class DeltaLevelEvents : EventHandler
 				inflictor = Actor(GetNetworkEntity(e.args[1]));
 			let amount = e.args[2];
 			
-			hud.CreateDamageIndicator(source, inflictor);
-			hud.CreateDamagePopup(source, amount);
+			hud.HandleDamage(source, inflictor, amount);
+		}
+		else if (e.name ~== "DeltaPlayerDamageTick")
+		{
+			Actor source = Actor(GetNetworkEntity(e.args[0])),
+				inflictor = Actor(GetNetworkEntity(e.args[1]));
+			let amount = e.args[2];
+			
+			hud.HandleTickDamage(source, inflictor, amount);
 		}
 		else if (e.name ~== "DeltaPlayerGraze")
 		{
