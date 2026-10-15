@@ -52,7 +52,7 @@ skill DeltaVeryHard
 {
     SpawnFilter = Nightmare
     DamageFactor = 1.1
-    //FastMonsters
+    FastMonsters
     
     ACSReturn = 4
     TextColor = "DeltaVeryHard"
