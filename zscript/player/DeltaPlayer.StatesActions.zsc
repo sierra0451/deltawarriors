@@ -117,7 +117,7 @@ extend class DeltaPlayer
 		
 		invoker._frozenDeath = bSolid = bShootable = bNoBlood = bPushable
 			= bTelestomp = bCanPass = bSlidesOnWalls = true;
-		Height = Default.Height;
+		height = invoker.fullHeight;
 		A_StartSound("delta/freeze", CHAN_BODY);
 		
 		if (!player)

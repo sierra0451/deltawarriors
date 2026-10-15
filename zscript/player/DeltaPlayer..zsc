@@ -69,7 +69,6 @@ class DeltaPlayer : PlayerPawn abstract
 	
 	const COYOTE_TIME = 3;
 	const JUMP_BUFFER_TIME = 3;
-	const MAX_WALL_JUMPS = 3;
 	const ANIM_GROUNDED_HANG_TIME = 3;
 	const MAX_AIR_BOB_TICS = 7;
 	const DELTA_AIR_CONTROL = 0.4;
@@ -1303,7 +1302,7 @@ class DeltaPlayer : PlayerPawn abstract
 	
 	override Vector2 BobWeapon(double ticFrac)
 	{
-		if (IsFrozen())
+		if (IsFrozen() || !player || !player.ReadyWeapon)
 			return _lastBob;
 		
 		let bobFlinch = (0, 0),
@@ -1320,17 +1319,19 @@ class DeltaPlayer : PlayerPawn abstract
 			zVelFac = clamp((airBobTics*2. / MAX_AIR_BOB_TICS)**2, 0, 1);
 		
 		zVelAdd *= zVelFac;
-		double minYOffset = 0, maxYOffset = 30;
-		if (player && player.ReadyWeapon && player.ReadyWeapon is "DeltaWeapon")
-		{
-			let deltaWeap = DeltaWeapon(player.ReadyWeapon);
-			minYOffset = deltaWeap.GetMinYOffset();
-			maxYOffset = deltaWeap.GetMaxYOffset();
-		}
-		
-		let breatheBob = sin(level.time * M_PI*3/8.) * 1.5,
+		let breatheBob = sin(level.time * M_PI*3/8.) * 1.2 + 1.2,
 			result = bob + bobFlinch + shake * s
 				+ (GetTurn(ticFrac), breatheBob + zVelAdd + _landPunch);
+		
+		let minYOffset = 0.,
+			maxYOffset = 30.;
+		
+		if (player.ReadyWeapon is "DeltaWeapon")
+		{
+			let weap = DeltaWeapon(player.ReadyWeapon);
+			minYOffset = weap.GetMinYOffset();
+			maxYOffset = weap.GetMaxYOffset();
+		}
 		
 		result.y = clamp(result.y, minYOffset, maxYOffset);
 		_lastBob = result;

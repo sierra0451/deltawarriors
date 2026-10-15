@@ -888,76 +888,106 @@ class DeltaHud : BaseStatusBar
 		if (ply.CountInv("DeltaNoHud"))
 			return;
 		
-		let reticleBarOffset = (-75 * _universalScale.x, 0);
+		let reticleBarOffset = (-16 * _universalScale.x, 0);
+		int width, height;
+		[width, height] = TexMan.GetSize(_reticleBar);
+		double
+			realWidth = width * _universalScale.x * 0.5,
+			realHeight = (height + 2) * _universalScale.y * 0.5,
+			curX = reticleBarOffset.x - realWidth,
+			curY = reticleBarOffset.y + realHeight*0.5,
+			hpPerc = GetHealthPerc(),
+			healthInterpValue = DeltaUtil.Lerp(_oldHealth,
+				_healthInterp.GetValue(), ticFrac) / 100.,
+			tp = ply.tensionPoints, maxTp = ply.maxTensionPoints,
+			tpLerp = DeltaUtil.Lerp(_oldTp, _tpInterp.GetValue(), ticFrac);
+		bool overheal = hpPerc > 1;
 		
-		Screen.EnableStencil(true);
-		Screen.SetStencil(0, SOP_Increment, SF_ColorMaskOff);
-		
-		// defining stencil mask
 		DrawTexture(_reticleBar, reticleBarOffset, 
 			DI_SCREEN_CENTER | DI_ITEM_VCENTER | DI_ITEM_RIGHT,
-			scale: _universalScale * 0.5);
+			scale: _universalScale * 0.5, col: 0xc0550000);
+		
+		if (overheal)
+			DrawTexture(_reticleBar, reticleBarOffset, 
+				DI_SCREEN_CENTER | DI_ITEM_VCENTER | DI_ITEM_RIGHT,
+				scale: _universalScale * 0.5, col: ply.GetCharacterColor());
 		
 		if (!_infiniteAmmo)
 		{
 			reticleBarOffset.x *= -1;
 			DrawTextureRotated(_reticleBar, reticleBarOffset,
 				DI_SCREEN_CENTER | DI_ITEM_VCENTER | DI_ITEM_RIGHT, 180,
-				scale: _inverseUniversalScale * 2);
+				scale: _inverseUniversalScale * 2, col: 0xc0550000);
 			reticleBarOffset.x *= -1;
+		}
+		
+		// defining stencil mask
+		Screen.EnableStencil(true);
+		Screen.SetStencil(0, SOP_Increment, SF_ColorMaskOff);
+		
+		Fill(0xffffffff, curX, curY, realWidth,
+			-realHeight * (overheal? healthInterpValue - 1 : healthInterpValue),
+			DI_SCREEN_CENTER);
+		
+		if (!_infiniteAmmo)
+		{
+			curX = -reticleBarOffset.x - realWidth*0.5;
+			Fill(0xffffffff, curX, curY, realWidth,
+				-realHeight * clamp(tpLerp / maxTp, 0, 1),
+				DI_SCREEN_CENTER);
+			curX = reticleBarOffset.x - realWidth;
+		}
+		
+		// using stencil mask
+		Screen.SetStencil(1, SOP_Keep, SF_AllOn);
+		
+		DrawTexture(_reticleBar, reticleBarOffset, 
+			DI_SCREEN_CENTER | DI_ITEM_VCENTER | DI_ITEM_RIGHT,
+			scale: _universalScale * 0.5, col: 0xffff0000);
+		
+		if (!_infiniteAmmo)
+		{
+			reticleBarOffset.x *= -1;
+			DrawTextureRotated(_reticleBar, reticleBarOffset,
+				DI_SCREEN_CENTER | DI_ITEM_VCENTER | DI_ITEM_RIGHT, 180,
+				scale: _inverseUniversalScale * 2, col: 0xffff0000);
+			reticleBarOffset.x *= -1;
+		}
+		
+		// resetting and redefining stencil mask
+		Screen.ClearStencil();
+		Screen.SetStencil(0, SOP_Increment, SF_ColorMaskOff);
+		
+		Fill(0xffffffff, curX, curY, realWidth,
+			-realHeight * (overheal? (hpPerc - 1) : hpPerc),
+			DI_SCREEN_CENTER);
+		
+		if (!_infiniteAmmo)
+		{
+			curX = -reticleBarOffset.x - realWidth*0.5;
+			Fill(0xffffffff, curX, curY, realWidth,
+				-realHeight * clamp(tp/maxTp, 0, 1),
+				DI_SCREEN_CENTER);
+			curX = reticleBarOffset.x - realWidth;
 		}
 		
 		Screen.SetStencil(1, SOP_Keep, SF_AllOn);
 		
-		// using stencil mask
-		int width, height;
-		[width, height] = TexMan.GetSize(_reticleBar);
-		double
-			realWidth = width * _universalScale.x * 0.5,
-			realHeight = height * _universalScale.y * 0.5,
-			curX = reticleBarOffset.x - realWidth,
-			curY = reticleBarOffset.y + realHeight*0.5;
-		
-		Fill(0xc0550000, curX, curY, realWidth, -realHeight, DI_SCREEN_CENTER);
-		
-		let hpPerc = GetHealthPerc(),
-			healthInterpValue = DeltaUtil.Lerp(_oldHealth,
-				_healthInterp.GetValue(), ticFrac) / 100.;
-		
-		Fill(Color(255, 255, 0, 0), curX, curY, realWidth,
-			-realHeight * healthInterpValue, DI_SCREEN_CENTER);
-		Fill(ply.GetCharacterColor(), curX, curY, realWidth,
-			-realHeight * min(hpPerc, 1),
-			DI_SCREEN_CENTER);
-		
-		if (hpPerc > 1)
-		{
-			Fill(Color(255, 255, 0, 0), curX, curY, realWidth,
-				-realHeight * max(0, healthInterpValue-1), DI_SCREEN_CENTER);
-			Fill(ply.GetOverhealColor(), curX, curY, realWidth,
-				-realHeight * max(0, hpPerc-1), DI_SCREEN_CENTER);
-		}
+		DrawTexture(_reticleBar, reticleBarOffset, 
+			DI_SCREEN_CENTER | DI_ITEM_VCENTER | DI_ITEM_RIGHT, scale: _universalScale * 0.5,
+			col: overheal? ply.GetOverhealColor() : ply.GetCharacterColor());
 		
 		if (!_infiniteAmmo)
 		{
-			double tp = ply.tensionPoints, maxTp = ply.maxTensionPoints,
-				tpLerp = DeltaUtil.Lerp(_oldTp, _tpInterp.GetValue(), ticFrac);
-			curX = -reticleBarOffset.x - realWidth*0.5;
-			Fill(0xc0550000, curX, curY, realWidth, -realHeight,
-				DI_SCREEN_CENTER);
-			Fill(Color(255, 255, 0, 0), curX, curY, realWidth,
-				-realHeight * clamp(tpLerp / maxTp, 0, 1),
-				DI_SCREEN_CENTER);
-			Fill(0xffffa040, curX, curY, realWidth,
-				-realHeight * clamp(tp/maxTp, 0, 1),
-				DI_SCREEN_CENTER);
-			Fill(0xffffffff, curX,
-				curY - realHeight * clamp(tp/maxTp, 0, 1),
-				realWidth, _universalScale.y * 0.5, DI_SCREEN_CENTER);
+			reticleBarOffset.x *= -1;
+			DrawTextureRotated(_reticleBar, reticleBarOffset,
+				DI_SCREEN_CENTER | DI_ITEM_VCENTER | DI_ITEM_RIGHT, 180,
+				scale: _inverseUniversalScale * 2, col: 0xffffa040);
+			reticleBarOffset.x *= -1;
 		}
 		
-		Screen.EnableStencil(false);
 		Screen.ClearStencil();
+		Screen.EnableStencil(false);
 		
 		DrawTexture(_reticleBarOverlay, reticleBarOffset,
 			DI_SCREEN_CENTER | DI_ITEM_VCENTER | DI_ITEM_RIGHT,

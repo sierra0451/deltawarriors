@@ -62,7 +62,7 @@ class KrisPlayer : DeltaPlayer
 		DeltaPlayer.HugReactionTime 20;
 		DeltaPlayer.CharacterColor Color(0, 162, 232);
 		DeltaPlayer.OffhandIcon "graphics/hud/shieldParryIcon.png";
-		DeltaPlayer.OffhandTpCost floor(0.4 * 250);
+		DeltaPlayer.OffhandTpCost floor(0.40 * 250);
 		
 		DeltaPlayer.CharacterIcon "graphics/krisCharIcon.png";
 		DeltaPlayer.NameTag "graphics/krisNameTag.png";
@@ -773,7 +773,7 @@ class KrisPlayer : DeltaPlayer
 		
 		if (!parried.Size())
 		{
-			SetState(ResolveState("ParryMiss"));
+			SetStateSafe(ResolveState("ParryMiss"));
 			tensionDrainTimer = preOffhandTpTimer;
 			tensionPoints = preOffhandTp;
 			return;
@@ -784,7 +784,7 @@ class KrisPlayer : DeltaPlayer
 		let startHitstopTics = 7,
 			hitstopTics = 7;
 		
-		SetState(ResolveState("Parry"));
+		SetStateSafe(ResolveState("Parry"));
 		A_QuakeEx(0, 10, 5, 10, 0, 10, "dsilent", QF_RELATIVE | QF_SCALEDOWN);
 		damageTics = PARRY_IFRAMES;
 		
