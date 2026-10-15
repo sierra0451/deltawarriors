@@ -22,6 +22,10 @@ class DeltaLevelEvents : EventHandler
 	protected Le_Viewport	viewport;
 	protected int			currentTime;
 	
+	private bool			_everyoneDead;
+	private int				_deathTimer;
+	private int				_lastDeadNumber;
+	
 	override void OnRegister()
 	{
 		gl_proj = new("Le_GlScreen");
@@ -62,6 +66,38 @@ class DeltaLevelEvents : EventHandler
 		ReviveTick();
 		DamageEventTick();
 		NametagTick();
+		
+		if (_everyoneDead)
+		{
+			_deathTimer++;
+			
+			if (_deathTimer == 2)
+			{
+				level.SetFrozen(true);
+				
+				for (int i = 0; i < level.sectors.Size(); i++)
+				{
+					bool moving = level.sectors[i].PlaneMoving(Sector.floor)
+						|| level.sectors[i].PlaneMoving(Sector.ceiling);
+					if (!moving)
+						continue;
+					
+					level.sectors[i].StartSoundSequence(1, "Silence", 0);
+					level.sectors[i].StartSoundSequence(2, "Silence", 0);
+					
+					if (level.sectors[i].floorData)
+						level.sectors[i].floorData.Destroy();
+					if (level.sectors[i].ceilingData)
+						level.sectors[i].ceilingData.Destroy();
+				}
+				
+				foreach (Actor mo : ThinkerIterator.Create("Actor"))
+					mo.A_StopAllSounds();
+				
+				S_ChangeMusic("", force: true);
+				S_StartSound("delta/hurt", CHAN_AUTO);
+			}
+		}
 	}
 	
 	protected void DamageEventTick()
@@ -392,32 +428,12 @@ class DeltaLevelEvents : EventHandler
 			return;
 		}
 		
-		level.SetFrozen(true);
-		
-		for (int i = 0; i < level.sectors.Size(); i++)
-		{
-			bool moving = level.sectors[i].PlaneMoving(Sector.floor)
-				|| level.sectors[i].PlaneMoving(Sector.ceiling);
-			if (!moving)
-				continue;
-			
-			level.sectors[i].StartSoundSequence(1, "Silence", 0);
-			level.sectors[i].StartSoundSequence(2, "Silence", 0);
-			
-			if (level.sectors[i].floorData)
-				level.sectors[i].floorData.Destroy();
-			if (level.sectors[i].ceilingData)
-				level.sectors[i].ceilingData.Destroy();
-		}
-		
-		foreach (Actor mo : ThinkerIterator.Create("Actor"))
-			mo.A_StopAllSounds();
-		
-		S_ChangeMusic("", force: true);
-		S_StartSound("delta/hurt", CHAN_AUTO);
-		
+		_everyoneDead = true;
+		_deathTimer = 0;
+		_lastDeadNumber = e.playerNumber;
 		requireMouse = true;
-		EventHandler.SendInterfaceEvent(e.playerNumber, "DeltaAllPlayersDead",
+		
+		EventHandler.SendInterfaceEvent(_lastDeadNumber, "DeltaAllPlayersDead",
 			!Cvar.GetCvar("data_delta_diedFirstTime").GetBool());
 	}
 	

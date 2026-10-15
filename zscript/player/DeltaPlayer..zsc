@@ -80,7 +80,8 @@ class DeltaPlayer : PlayerPawn abstract
 	const MAX_GRAZE_TICS = 5;
 	const DEFAULT_RED_CROSSHAIR_RANGE = 500.;
 	const MAX_TURN = 10;
-	const DEATH_HANG_FRAMES = TICRATE;
+	const DEATH_PREHANG_TICS = 3;
+	const DEATH_HANG_TICS = TICRATE;
 	
 	double tensionPoints, maxTensionPoints, bobTimer;
 	int grazeTics, tensionDrainTimer, hugReactionTime;
@@ -876,7 +877,7 @@ class DeltaPlayer : PlayerPawn abstract
 		if (player.poisonCount)
 			player.poisonCount--;
 		
-		if (IsFrozen() && deathTimer < DEATH_HANG_FRAMES)
+		if (IsFrozen() && deathTimer < DEATH_HANG_TICS)
 			return;
 		
 		player.onGround = (pos.Z <= floorz);

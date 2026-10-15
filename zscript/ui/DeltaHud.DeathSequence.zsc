@@ -250,7 +250,7 @@ class DeltaGameOver : ScreenJob
 		switch (gameOverState)
 		{
 			case FREEZE_FRAME:
-				goalTicks = DeltaPlayer.DEATH_HANG_FRAMES;
+				goalTicks = DeltaPlayer.DEATH_HANG_TICS;
 				break;
 			case SOUL_BREAK:
 				goalTicks = int(TICRATE * (firstTime? 4.5 : 3.5));
