@@ -21,6 +21,7 @@ class DeltaLevelEvents : EventHandler
 	protected Le_GlScreen	gl_proj;
 	protected Le_Viewport	viewport;
 	protected int			currentTime;
+	ui protected int		lastUpdate;
 	
 	private bool			_everyoneDead;
 	private int				_deathTimer;
@@ -558,10 +559,12 @@ class DeltaLevelEvents : EventHandler
 		hud.pos = e.viewPos;
 		hud.angles = (e.viewPitch, e.viewRoll, e.viewAngle);
 		
-		if (e.fracTic > 0.01 || e.camera != players[consolePlayer].camera)
+		if (level.time == lastUpdate || e.camera != players[consolePlayer].camera)
 			return;
 		
-		EventHandler.SendNetworkEvent("DeltaUpdateViewPos", int(e.viewPos.x), int(e.viewPos.y), int(e.viewPos.z));
+		lastUpdate = level.time;
+		EventHandler.SendNetworkEvent("DeltaUpdateViewPos",
+			int(e.viewPos.x), int(e.viewPos.y), int(e.viewPos.z));
 	}
 	
 	override void PostUiTick()
@@ -578,7 +581,7 @@ class DeltaLevelEvents : EventHandler
 		if (!hud)
 			return false;
 		
-		hud.TakeInput(e);
+		hud.OnInputEvent(e);
 		return false;
 	}
 	
