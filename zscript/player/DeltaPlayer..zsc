@@ -729,7 +729,7 @@ class DeltaPlayer : PlayerPawn abstract
 				return oldDmg;
 		}
 		
-		let dmg = (damage + lastDamageTaken) * 1.,
+		let dmg = damage * 1.,
 			healthBeforeDmg = Health + lastDamageTaken;
 		
 		// if we're at 80 or more HP, damage cannot be lethal
