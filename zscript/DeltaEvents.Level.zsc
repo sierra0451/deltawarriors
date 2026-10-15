@@ -421,6 +421,24 @@ class DeltaLevelEvents : EventHandler
 			!Cvar.GetCvar("data_delta_diedFirstTime").GetBool());
 	}
 	
+	override void CheckReplacement(ReplaceEvent e)
+	{
+		let mapset = DeltaGlobals.GetGlobals().GetMapset();
+		
+		if (mapset ~== "EviternityII")
+		{
+			string hlth = "HealthBonusEvit2";
+			class<Actor> hlthCls = hlth;
+			string armr = "ArmorBonusEvit2";
+			class<Actor> armrCls = armr;
+			
+			if (hlthCls && e.Replacement == hlthCls)
+				e.Replacement = "DeltaHealthBonus";
+			else if (armrCls && e.Replacement == armrCls)
+				e.Replacement = "DeltaCourage";
+		}
+	}
+	
 	override void PlayerEntered(PlayerEvent e)
 	{
 		EventHandler.SendInterfaceEvent(e.playerNumber, "DeltaResetHUD");
