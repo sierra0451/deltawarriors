@@ -3,6 +3,7 @@ class DeltaHealthBonus : HealthBonus replaces HealthBonus
 	Default
 	{
 		Inventory.Amount 5; // make sure healing numbers pop up correctly
+		-COUNTITEM; // these counting towards the item count is bullshit >:T
 	}
 	
 	override bool TryPickup(in out Actor toucher)
