@@ -129,8 +129,12 @@ class DeltaChainsaw : Weapon replaces Chainsaw
 	
 	override string PickupMessage()
 	{
-		return String.Format(StringTable.Localize("$PICKUP_DELTA_CHAINSAW"),
-			GetDefaultByType('Chainsaw').GetTag().MakeLower());
+		let targetString = StringTable.Localize("$PICKUP_DELTA_CHAINSAW");
+		
+		if (DeltaGlobals.GetGlobals().GetMapset() ~== "NotEvenRemotelyFair")
+			targetString = StringTable.Localize("$PICKUP_DELTA_NERF_CHAINSAW");
+		
+		return String.Format(targetString, GetDefaultByType('Chainsaw').GetTag().MakeLower());
 	}
 }
 
