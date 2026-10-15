@@ -1,6 +1,11 @@
 /// base class for tension items!
 class DeltaTensionPickup : Inventory
 {
+	Default
+	{
+		+BRIGHT
+	}
+	
 	override bool TryPickup(in out Actor toucher)
 	{
 		let delta = DeltaPlayer(toucher);
