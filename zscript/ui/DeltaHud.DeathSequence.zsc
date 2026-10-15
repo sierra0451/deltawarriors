@@ -1,13 +1,10 @@
 extend class DeltaHud
 {
+	Vector2 mousePos;
 	protected DeltaGameOver _deathSequence;
 	
 	virtual void StartDeathSequence(bool firstTime)
 	{
-		if (!CPlayer.mo || !(CPlayer.mo is "DeltaPlayer"))
-			return;
-		
-		let deltaPly = DeltaPlayer(CPlayer.mo);
 		_deathSequence = DeltaGameOver.Create(_noShadowFont.mFont, firstTime);
 	}
 	
@@ -35,12 +32,20 @@ extend class DeltaHud
 		_deathSequence.Draw(ticFrac);
 	}
 	
-	virtual void TakeInput(InputEvent evt)
+	virtual void OnInputEvent(InputEvent evt)
 	{
 		if (!_deathSequence)
 			return;
 		
 		_deathSequence.OnEvent(evt);
+	}
+	
+	virtual void OnUIEvent(UIEvent evt)
+	{
+		if (!_deathSequence)
+			return;
+		
+		_deathSequence.mousePos = (evt.mouseX, evt.mouseY);
 	}
 }
 
@@ -98,6 +103,7 @@ class DeltaGameOver : ScreenJob
 		whiteStartTick,
 		skip;
 	DeltaMessageHandler messageHandler;
+	Vector2 mousePos;
 	
 	protected DeltaPlayer ply;
 	protected bool firstTime;
@@ -106,7 +112,8 @@ class DeltaGameOver : ScreenJob
 	protected DynamicValueInterpolator soulX;
 	protected Font fnt;
 	
-	private int sideInput;
+	private int _sideInput;
+	private double _globalScale;
 	
 	static DeltaGameOver Create(Font fnt, bool firstTime = false, int flags = 0)
 	{
@@ -204,10 +211,10 @@ class DeltaGameOver : ScreenJob
 				lastSoulX = soulX.GetValue();
 				soulX.Update(targetSoulX);
 				
-				if (sideInput == 0)
+				if (_sideInput == 0)
 					break;
 				
-				SetChoice(sideInput < 0? GOC_CONTINUE : GOC_GIVE_UP);
+				SetChoice(_sideInput < 0? GOC_CONTINUE : GOC_GIVE_UP);
 				break;
 			case CONTINUING:
 			case RETURN_TO_GAME:
@@ -350,6 +357,7 @@ class DeltaGameOver : ScreenJob
 		
 		let scrW = Screen.GetWidth(),
 			scrH = Screen.GetHeight();
+		_globalScale = min(scrW / 1920., scrH / 1080.);
 		
 		Screen.Dim(0xff000000, 255, 0, 0, scrW, scrH);
 		
@@ -357,7 +365,7 @@ class DeltaGameOver : ScreenJob
 			&& (gameOverState != MESSAGES || ticks > 0)
 			&& (!messageHandler.message || gameOverState == CONTINUING))
 		{
-			double sc = 4.,
+			double sc = 4. * _globalScale,
 				alpha = (gameOverState == MESSAGES)? ((ticks + smoothRatio) / GAME_OVER_FADEIN_TIME) : 1;
 			alpha = clamp(alpha, 0, 1);
 			
@@ -370,12 +378,46 @@ class DeltaGameOver : ScreenJob
 	
 	override bool OnEvent(InputEvent evt)
 	{
-		if (evt.type != InputEvent.Type_KeyDown || !messageHandler)
-			return false;
-		if (soulState < 2)
+		if (!messageHandler || soulState < 2)
 			return false;
 		
-		int curInput = -1; // 0 = left, 1 = right, 2 = enter
+		if (evt.type == InputEvent.Type_Mouse)
+		{
+			let scrW = Screen.GetWidth(),
+				scrH = Screen.GetHeight(),
+				sc = 3. * _globalScale;
+			
+			let str = StringTable.Localize("$DELTAWARRIORS_GAME_OVER_CONTINUE"),
+				strWidth = fnt.StringWidth(str) * sc;
+			
+			if (mousePos.y >= scrH*0.65 && mousePos.y < scrH*0.65 + fnt.GetHeight()*3*sc)
+			{
+				if (mousePos.x >= scrW*0.35 - strWidth/2 && mousePos.x < scrW*0.45 + strWidth/2)
+					_sideInput = -1;
+				else if (mousePos.x >= scrW*0.55 - strWidth/2 && mousePos.x < scrW*0.65 + strWidth/2)
+					_sideInput = 1;
+			}
+			return false;
+		}
+		
+		if (evt.type != InputEvent.Type_KeyDown)
+			return false;
+		
+		if (gameOverState > MAKING_CHOICE)
+			return false;
+		
+		if (gameOverState < MAKING_CHOICE)
+		{
+			if (firstTime)
+				return false;
+			if (++skip < 4)
+				return true;
+			
+			CVar.FindCVar("data_delta_diedFirstTime").SetBool(true);
+			EventHandler.SendNetworkEvent("DeltaTimeToRespawn");
+			return true;
+		}
+		
 		switch (evt.KeyScan)
 		{
 			case InputEvent.Key_Pad_DPad_Left:
@@ -383,48 +425,27 @@ class DeltaGameOver : ScreenJob
 			case InputEvent.Key_JoyAxis1Minus:
 			case InputEvent.Key_JoyPOV1_Left:
 			case InputEvent.Key_LeftArrow:
-				curInput = 0;
-				break;
+				_sideInput = -1;
+				return true;
 			
 			case InputEvent.Key_Pad_DPad_Right:
 			case InputEvent.Key_Pad_LThumb_Right:
 			case InputEvent.Key_JoyAxis1Plus:
 			case InputEvent.Key_JoyPOV1_Right:
 			case InputEvent.Key_RightArrow:
-				curInput = 1;
-				break;
+				_sideInput = 1;
+				return true;
 			
+			case InputEvent.Key_Mouse1:
 			case InputEvent.Key_Joy1:
 			case InputEvent.Key_Joy3:
 			case InputEvent.Key_Pad_A:
 			case InputEvent.Key_Enter:
-				curInput = 2;
-				break;
-		}
-		
-		if (gameOverState > MAKING_CHOICE)
-			return false;
-		else if (gameOverState < MAKING_CHOICE && !firstTime)
-		{
-			skip++;
-			
-			if (skip < 4)
+				MakeChoice();
 				return true;
-			if (!data_delta_diedFirstTime)
-				CVar.FindCVar("data_delta_diedFirstTime").SetBool(true);
-			
-			EventHandler.SendNetworkEvent("DeltaTimeToRespawn");
-			return true;
 		}
 		
-		if (curInput == 0)
-			sideInput = -1;
-		else if (curInput == 1)
-			sideInput = 1;
-		else if (curInput == 2)
-			MakeChoice();
-		
-		return true;
+		return false;
 	}
 	
 	virtual void SetChoice(int choice)
@@ -441,8 +462,7 @@ class DeltaGameOver : ScreenJob
 	{
 		if (curChoice == GOC_NO_CHOICE)
 			return;
-		
-		if (!data_delta_diedFirstTime)
+		if (firstTime)
 			CVar.FindCVar("data_delta_diedFirstTime").SetBool(true);
 		
 		S_StartSound("delta/menu_confirm", 0);
@@ -454,7 +474,7 @@ class DeltaGameOver : ScreenJob
 	{
 		let scrW = Screen.GetWidth(),
 			scrH = Screen.GetHeight(),
-			sc = 3.;
+			sc = 3. * _globalScale;
 		
 		if (gameOverState >= SOUL_BREAK)
 			DrawSoul(sc, smoothRatio);
@@ -488,7 +508,7 @@ class DeltaGameOver : ScreenJob
 			if (!soulShards[i])
 				continue;
 			
-			let pos = soulShards[i].GetInterpolatedPos(smoothRatio) + soulPos;
+			let pos = soulShards[i].GetInterpolatedPos(smoothRatio) * _globalScale + soulPos;
 			Screen.DrawTexture(soulShard, true, pos.x, pos.y,
 				DTA_ScaleX, sc, DTA_ScaleY, sc*1.1, DTA_Color, soulColor);
 		}
