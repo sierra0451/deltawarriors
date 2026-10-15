@@ -1,2 +1,2 @@
-#include "gldefs/lights.gl"
+#include "gldefs/dynLights.gl"
 #include "gldefs/titleShader.gl"
