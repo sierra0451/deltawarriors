@@ -9,7 +9,7 @@ class DeltaWeaponPickup : Weapon
 	{
 		Spawn:
 			TNT1 A 0;
-			#### A 1 A_GetWeaponSprite;
+			#### # 1 A_GetWeaponSprite;
 			Wait;
 		Ready:
 		Select:
@@ -51,6 +51,7 @@ class DeltaWeaponPickup : Weapon
 			return;
 		
 		sprite = weap.SpawnState.sprite;
+		invoker.frame = weap.SpawnState.frame;
 	}
 	
 	override string PickupMessage()
