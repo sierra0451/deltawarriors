@@ -2138,6 +2138,8 @@ class DeltaPlayer : PlayerPawn abstract
 					continue;
 				if (mis.tracer != self || !CheckSight(mis.target))
 					continue;
+				if (mis.target.health <= 0)
+					continue;
 				
 				DoGraze(mis);
 				continue;
