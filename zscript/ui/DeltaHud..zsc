@@ -868,17 +868,19 @@ class DeltaHud : BaseStatusBar
 			cl_delta_crosshairFriendlyColor : cl_delta_crosshairEnemyColor);
 		xhairColor |= 0xff000000;
 		DrawTexture(crosshair, (0, 0), DI_SCREEN_CENTER | DI_ITEM_CENTER,
-			scale: _universalScale * 0.5, col: xhairColor);
+			scale: (0.5, 0.5), col: xhairColor);
 		
-		if (!ply.CanUseOffhand()
-			|| ply.GetTension(ply.GetOffhandTpCost()) == DeltaPlayer.TP_FAIL
-			|| !cl_delta_showOffhandIndicator)
+		if (!ply.CanUseOffhand() || !cl_delta_showOffhandIndicator
+			|| ply.GetTension(ply.GetOffhandTpCost()) == DeltaPlayer.TP_FAIL)
 		{
 			return;
 		}
 		
 		DrawTexture(_offhandCrosshair, (0, 0), DI_SCREEN_CENTER | DI_ITEM_CENTER,
-			scale: _universalScale * 0.5, col: 0xff000000 | cl_delta_offhandIndicatorColor);
+			scale: (0.5, 0.5), col: 0xff000000 | cl_delta_offhandIndicatorColor);
+		DrawTexture(ply.GetOffhandIconID(), (32, 0),
+			DI_SCREEN_CENTER | DI_ITEM_VCENTER | DI_ITEM_LEFT,
+			scale: (0.5, 0.5));
 	}
 	
 	protected void DrawQuickInfo(double ticFrac)
