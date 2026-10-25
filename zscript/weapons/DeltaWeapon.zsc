@@ -36,8 +36,8 @@ class DeltaWeapon : Weapon
 	property MinYOffset: minYOffset;
 	property MaxYOffset: maxYOffset;
 	
-	flagdef NO_CONSUME_AMMO: _deltaWeaponFlags, 0;
-	flagdef NO_CONSUME_ALT_AMMO: _deltaWeaponFlags, 1;
+	flagdef NoConsumeAmmo:		_deltaWeaponFlags, 0;
+	flagdef NoConsumeAltAmmo:	_deltaWeaponFlags, 1;
 	
 	Default
 	{
@@ -239,7 +239,7 @@ class DeltaWeapon : Weapon
 		let ply = owner.player;
 		if (!ply)
 			return;
-		if (!bNO_CONSUME_AMMO && !DeltaCheckAmmo(PrimaryFire, true))
+		if (!bNoConsumeAmmo && !DeltaCheckAmmo(PrimaryFire, true))
 			return;
 		
 		ply.WeaponState &= ~WF_WEAPONBOBBING;
@@ -259,7 +259,7 @@ class DeltaWeapon : Weapon
 		let ply = owner.player;
 		if (!ply)
 			return;
-		if (!bNO_CONSUME_ALT_AMMO && !DeltaCheckAmmo(AltFire, true))
+		if (!bNoConsumeAltAmmo && !DeltaCheckAmmo(AltFire, true))
 			return;
 		
 		ply.WeaponState &= ~WF_WEAPONBOBBING;

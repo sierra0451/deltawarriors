@@ -43,8 +43,8 @@ class DeltaSkillMenu : DeltaListMenu
 			strPos = (CLIP_W * _globalScale,
 				Screen.GetHeight() - CLIP_H * _globalScale - (fontH*lines.Count()));
 		Screen.Dim(0xff000000, 0.5, int(strPos.x) - 10, int(strPos.y) - 10,
-			Screen.GetWidth() - CLIP_W * _globalScale * 2,
-			(fontH*lines.Count()) + 20);
+			Screen.GetWidth() - int(CLIP_W * 2 * _globalScale),
+			int(fontH*lines.Count()) + 20);
 		
 		for (int i = 0; i < lines.Count(); i++)
 		{

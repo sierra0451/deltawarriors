@@ -29,6 +29,9 @@ class DeltaWeaponPickup : Weapon
 	
 	class<Weapon> GetWeapon(PlayerPawn ply = null)
 	{
+		// consolePlayer used here on purpose!
+		// we WANT this to be able to look different for each player if, say,
+		// one is playing as Kris and another as Susie
 		if (!ply)
 			ply = players[consoleplayer].mo;
 		if (!ply || !(ply is "DeltaPlayer"))
@@ -39,9 +42,6 @@ class DeltaWeaponPickup : Weapon
 	
 	action void A_GetWeaponSprite()
 	{
-		// consolePlayer used here on purpose!
-		// we WANT this to be able to look different for each player if, say,
-		// one is playing as Kris and another as Susie
 		let weapClass = invoker.GetWeapon();
 		if (!weapClass)
 			return;
