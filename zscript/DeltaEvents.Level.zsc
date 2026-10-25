@@ -409,7 +409,7 @@ class DeltaLevelEvents : EventHandler
 			&& !multiplayer && !deathmatch && !level.AllowRespawn
 			&& !sv_singlePlayerRespawn && !G_SkillPropertyInt(SKILLP_PlayerRespawn);
 		
-		deltaPly.canRespawn = !gameOver;
+		deltaPly.bCanRespawn = !gameOver;
 		
 		for (int i = 0; i < MAXPLAYERS; i++)
 		{

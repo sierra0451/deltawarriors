@@ -497,7 +497,7 @@ class KrisPlayer : DeltaPlayer
 	{
 		Super.HandleRalseiHugs();
 		
-		if (beingHugged)
+		if (bBeingHugged)
 		{
 			A_SetMugshotState("Normal");	// wanna make sure blush is ALWAYS called
 			A_SetMugshotState("Blush");
