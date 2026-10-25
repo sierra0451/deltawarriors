@@ -779,6 +779,7 @@ class KrisPlayer : DeltaPlayer
 			return;
 		}
 		
+		A_AlertMonsters();
 		affected.Push(self);
 		
 		let startHitstopTics = 7,
