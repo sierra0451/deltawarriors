@@ -264,7 +264,7 @@ extend class DeltaHud
 		// Bottom bar (second place if we're leader, us otherwise)
 		let bottomFrags = -500, bottomIndex = 0;
 		barColor = 0x0;
-		characterIcon = null;
+		characterIcon = 0;
 		
 		if (leaderIsUs)
 		{

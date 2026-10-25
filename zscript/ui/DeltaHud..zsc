@@ -341,7 +341,7 @@ class DeltaHud : BaseStatusBar
 		
 		// not a mouse button!
 		if (k <= DELTA_CONTROLICON_TEXT || k >= DELTA_CONTROLICON_MAX)
-			return null;
+			return 0;
 		
 		return controlIcons.GetIfExists(k);
 	}

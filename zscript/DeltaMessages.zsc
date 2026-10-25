@@ -10,7 +10,7 @@ class DeltaMessageBox : Object ui
 	protected int curTics, curCharIndex, soundTimer;
 	
 	static DeltaMessageBox Create(string message = "", int delayTics = 0,
-		TextureID cornerTex = null, TextureID sideTex = null,
+		TextureID cornerTex = 0, TextureID sideTex = 0,
 		sound typeSound = "delta/type", bool localize = true)
 	{
 		if (localize)
