@@ -891,13 +891,12 @@ class DeltaHud : BaseStatusBar
 			return;
 		
 		let reticleBarOffset = (-16 * _universalScale.x, 0);
-		int width, height;
-		[width, height] = TexMan.GetSize(_reticleBar);
+		let [width, height] = TexMan.GetSize(_reticleBar);
 		double
-			realWidth = width * _universalScale.x * 0.5,
-			realHeight = (height + 2) * _universalScale.y * 0.5,
+			realWidth = width * 0.5,
+			realHeight = (height + 2) * 0.5,
 			curX = reticleBarOffset.x - realWidth,
-			curY = reticleBarOffset.y + realHeight*0.5,
+			curY = realHeight * 0.5,
 			hpPerc = GetHealthPerc(),
 			healthInterpValue = DeltaUtil.Lerp(_oldHealth,
 				_healthInterp.GetValue(), ticFrac) / 100.,
@@ -905,103 +904,80 @@ class DeltaHud : BaseStatusBar
 			tpLerp = DeltaUtil.Lerp(_oldTp, _tpInterp.GetValue(), ticFrac);
 		bool overheal = hpPerc > 1;
 		
-		DrawTexture(_reticleBar, reticleBarOffset, 
+		DrawTexture(_reticleBar, (curX, 0),
 			DI_SCREEN_CENTER | DI_ITEM_VCENTER | DI_ITEM_RIGHT,
-			scale: _universalScale * 0.5, col: 0xc0550000);
+			scale: (0.5, 0.5), col: 0xc0550000);
 		
 		if (overheal)
-			DrawTexture(_reticleBar, reticleBarOffset, 
+			DrawTexture(_reticleBar, (curX, 0), 
 				DI_SCREEN_CENTER | DI_ITEM_VCENTER | DI_ITEM_RIGHT,
-				scale: _universalScale * 0.5, col: ply.GetCharacterColor());
+				scale: (0.5, 0.5), col: ply.GetCharacterColor());
 		
 		if (!_infiniteAmmo)
-		{
-			reticleBarOffset.x *= -1;
-			DrawTextureRotated(_reticleBar, reticleBarOffset,
+			DrawTextureRotated(_reticleBar, (-curX + realWidth*0.5, 0),
 				DI_SCREEN_CENTER | DI_ITEM_VCENTER | DI_ITEM_RIGHT, 180,
-				scale: _inverseUniversalScale * 2, col: 0xc0550000);
-			reticleBarOffset.x *= -1;
-		}
+				scale: (2, 2), col: 0xc0550000);
 		
 		// defining stencil mask
 		Screen.EnableStencil(true);
 		Screen.SetStencil(0, SOP_Increment, SF_ColorMaskOff);
 		
-		Fill(0xffffffff, curX, curY, realWidth,
+		Fill(0xffffffff, curX - realWidth, curY, realWidth,
 			-realHeight * (overheal? healthInterpValue - 1 : healthInterpValue),
 			DI_SCREEN_CENTER);
 		
 		if (!_infiniteAmmo)
-		{
-			curX = -reticleBarOffset.x - realWidth*0.5;
-			Fill(0xffffffff, curX, curY, realWidth,
+			Fill(0xffffffff, -curX, curY, realWidth,
 				-realHeight * clamp(tpLerp / maxTp, 0, 1),
 				DI_SCREEN_CENTER);
-			curX = reticleBarOffset.x - realWidth;
-		}
 		
 		// using stencil mask
 		Screen.SetStencil(1, SOP_Keep, SF_AllOn);
 		
-		DrawTexture(_reticleBar, reticleBarOffset, 
+		DrawTexture(_reticleBar, (curX, 0), 
 			DI_SCREEN_CENTER | DI_ITEM_VCENTER | DI_ITEM_RIGHT,
-			scale: _universalScale * 0.5, col: 0xffff0000);
+			scale: (0.5, 0.5), col: 0xffff0000);
 		
 		if (!_infiniteAmmo)
-		{
-			reticleBarOffset.x *= -1;
-			DrawTextureRotated(_reticleBar, reticleBarOffset,
+			DrawTextureRotated(_reticleBar, (-curX + realWidth*0.5, 0),
 				DI_SCREEN_CENTER | DI_ITEM_VCENTER | DI_ITEM_RIGHT, 180,
-				scale: _inverseUniversalScale * 2, col: 0xffff0000);
-			reticleBarOffset.x *= -1;
-		}
+				scale: (2, 2), col: 0xffff0000);
 		
 		// resetting and redefining stencil mask
 		Screen.ClearStencil();
 		Screen.SetStencil(0, SOP_Increment, SF_ColorMaskOff);
 		
-		Fill(0xffffffff, curX, curY, realWidth,
+		Fill(0xffffffff, curX - realWidth, curY, realWidth,
 			-realHeight * (overheal? (hpPerc - 1) : hpPerc),
 			DI_SCREEN_CENTER);
 		
 		if (!_infiniteAmmo)
-		{
-			curX = -reticleBarOffset.x - realWidth*0.5;
-			Fill(0xffffffff, curX, curY, realWidth,
+			Fill(0xffffffff, -curX, curY, realWidth,
 				-realHeight * clamp(tp/maxTp, 0, 1),
 				DI_SCREEN_CENTER);
-			curX = reticleBarOffset.x - realWidth;
-		}
 		
 		Screen.SetStencil(1, SOP_Keep, SF_AllOn);
 		
-		DrawTexture(_reticleBar, reticleBarOffset, 
-			DI_SCREEN_CENTER | DI_ITEM_VCENTER | DI_ITEM_RIGHT, scale: _universalScale * 0.5,
+		DrawTexture(_reticleBar, (curX, 0), 
+			DI_SCREEN_CENTER | DI_ITEM_VCENTER | DI_ITEM_RIGHT, scale: (0.5, 0.5),
 			col: overheal? ply.GetOverhealColor() : ply.GetCharacterColor());
 		
 		if (!_infiniteAmmo)
-		{
-			reticleBarOffset.x *= -1;
-			DrawTextureRotated(_reticleBar, reticleBarOffset,
+			DrawTextureRotated(_reticleBar, (-curX + realWidth*0.5, 0),
 				DI_SCREEN_CENTER | DI_ITEM_VCENTER | DI_ITEM_RIGHT, 180,
-				scale: _inverseUniversalScale * 2, col: 0xffffa040);
-			reticleBarOffset.x *= -1;
-		}
+				scale: (2, 2), col: 0xffffa040);
 		
 		Screen.ClearStencil();
 		Screen.EnableStencil(false);
 		
-		DrawTexture(_reticleBarOverlay, reticleBarOffset,
+		DrawTexture(_reticleBarOverlay, (curX, 0),
 			DI_SCREEN_CENTER | DI_ITEM_VCENTER | DI_ITEM_RIGHT,
-			scale: _universalScale * 0.5);
+			scale: (0.5, 0.5));
 		
 		if (!_infiniteAmmo)
-		{
-			reticleBarOffset.x *= -1;
-			DrawTextureRotated(_reticleBarOverlay, reticleBarOffset,
+			DrawTextureRotated(_reticleBarOverlay, (-curX + realWidth*0.5, 0),
 				DI_SCREEN_CENTER | DI_ITEM_VCENTER | DI_ITEM_RIGHT, 180,
-				scale: _inverseUniversalScale * 2);
-		}
+				scale: (2, 2));
 	}
 	
 	protected void DrawOxygen()
