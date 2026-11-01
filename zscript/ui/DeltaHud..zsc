@@ -153,9 +153,6 @@ class DeltaHud : BaseStatusBar
 			return;
 		}
 		
-		_infiniteAmmo = sv_infiniteAmmo
-			|| (ply.FindInventory('PowerInfiniteAmmo', true) != null);
-		
 		_oldTp = _tpInterp.GetValue();
 		
 		double tpInterpTarget = 0.;
@@ -215,9 +212,9 @@ class DeltaHud : BaseStatusBar
 					continue;
 				
 				Weapon inv = Weapon(ply.FindInventory(weaps.GetWeapon(i, j)));
-				
 				if (!inv)
 					continue;
+				
 				if (inv.AmmoType1 && _ammos.Find(inv.AmmoType1) == _ammos.Size())
 					_ammos.Push(inv.AmmoType1);
 				if (inv.AmmoType2 && _ammos.Find(inv.AmmoType2) == _ammos.Size())
@@ -256,6 +253,9 @@ class DeltaHud : BaseStatusBar
 			DrawDeathSequence(ticFrac);
 			return;
 		}
+		
+		_infiniteAmmo = sv_infiniteAmmo
+			|| (ply.FindInventory('PowerInfiniteAmmo', true) != null);
 		
 		if (idmypos)
 			DrawMyPos();
@@ -761,11 +761,9 @@ class DeltaHud : BaseStatusBar
 			DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM,
 			col: ply.GetCharacterColor(), scale: _universalScale);
 		
-		int ammoW, ammoH;
-		[ammoW, ammoH] = TexMan.GetSize(_ammoBottom);
-		
+		let [ammoW, ammoH] = TexMan.GetSize(_ammoBottom);
 		double widgetWidth = ammoW * _universalScale.x,
-			hPerAmmo = 22 * _universalScale.y,
+			hPerAmmo = 32 * _universalScale.y,
 			h = _ammos.Size() * hPerAmmo + (ammoH+1)*_universalScale.y;
 		
 		Fill(Color(170, 0, 0, 0), -_hBorder - widgetWidth,
@@ -783,33 +781,38 @@ class DeltaHud : BaseStatusBar
 		
 		for (int i = 0; i < _ammos.Size(); i++)
 		{
-			let am = _ammos[_ammos.Size() - 1 - i];
-			let amCount = ply.CountInv(am);
-			let ammoIcon = ammoIcons.GetIfExists(am.GetClassName());
+			let am = _ammos[_ammos.Size() - 1 - i],
+				ammoIcon = ammoIcons.GetIfExists(am.GetClassName()),
+				weap = CPlayer.ReadyWeapon;
+			let [amCount, amMaxCount] = GetAmount(am);
 			double curAlpha = 0.2;
-			let weap = CPlayer.ReadyWeapon;
+			bool lowAmmo = !_infiniteAmmo && amCount <= max(1, amMaxCount * 0.1);
+			string trans = lowAmmo? "\c[DeltaLowHealth]" : "";
 			
 			if (weap && (am == weap.AmmoType1 || am == weap.AmmoType2))
 				curAlpha = 1;
 			
+			let textY = -_vBorder - (ammoH-2) * _universalScale.y - hPerAmmo*(i+1);
 			DrawTexture(ammoIcon, (-_hBorder - widgetWidth + 8*_universalScale.x,
-				-_vBorder - (4+ammoH)*_universalScale.y - hPerAmmo*i),
-				DI_ITEM_LEFT_BOTTOM | DI_SCREEN_RIGHT_BOTTOM,
-				alpha: curAlpha,
-				box: _universalScale*16, scale: _universalScale);
+					-_vBorder - (ammoH) * _universalScale.y - hPerAmmo*(i+0.5)),
+				DI_ITEM_LEFT | DI_ITEM_VCENTER | DI_SCREEN_RIGHT_BOTTOM,
+				alpha: curAlpha, box: _universalScale*16, scale: _universalScale);
 			
 			if (_infiniteAmmo)
-				DrawTexture(_infiniteText, (-_hBorder - 8*_universalScale.x,
-					-_vBorder - (4+ammoH)*_universalScale.y - hPerAmmo*i),
-					DI_ITEM_RIGHT_BOTTOM | DI_SCREEN_RIGHT_BOTTOM,
+				DrawTexture(_infiniteText, (-_hBorder - 8*_universalScale.x, textY),
+					DI_ITEM_RIGHT_TOP | DI_SCREEN_RIGHT_BOTTOM,
 					alpha: curAlpha, scale: _universalScale*2);
 			else
-				DrawString(_drHudFont, "" .. amCount,
-					(-_hBorder - (8*_universalScale.x), -_vBorder -
-						(i+1)*hPerAmmo - (ammoH-2)*_universalScale.y),
+				DrawString(_drHudFont, trans .. amCount,
+					(-_hBorder - 8*_universalScale.x, textY),
 					DI_SCREEN_RIGHT_BOTTOM | DI_TEXT_ALIGN_RIGHT,
-					alpha: curAlpha,
-					scale: _universalScale*3);
+					alpha: curAlpha, scale: _universalScale*3);
+			
+			DrawString(_drHudFont, trans .. amMaxCount,
+				(-_hBorder - 9*_universalScale.x,
+					-_vBorder - (ammoH-3)*_universalScale.y - hPerAmmo*(i+0.5)),
+				DI_SCREEN_RIGHT_BOTTOM | DI_TEXT_ALIGN_RIGHT,
+				alpha: curAlpha, scale: _universalScale*2);
 		}
 	}
 	
@@ -881,6 +884,13 @@ class DeltaHud : BaseStatusBar
 		DrawTexture(ply.GetOffhandIconID(), (32, 0),
 			DI_SCREEN_CENTER | DI_ITEM_VCENTER | DI_ITEM_LEFT,
 			scale: (0.5, 0.5));
+	}
+	
+	enum AmmoPanelId
+	{
+		SINGLE,
+		DOUBLE_LEFT,
+		DOUBLE_RIGHT
 	}
 	
 	protected void DrawQuickInfo(double ticFrac)
@@ -978,6 +988,73 @@ class DeltaHud : BaseStatusBar
 			DrawTextureRotated(_reticleBarOverlay, (-curX + realWidth*0.5, 0),
 				DI_SCREEN_CENTER | DI_ITEM_VCENTER | DI_ITEM_RIGHT, 180,
 				scale: (2, 2));
+		
+		let [am1, am2, ammoCount1, ammoCount2] = GetCurrentAmmo();
+		
+		if (!am1)
+		{
+			if (!am2)
+				return;
+			
+			am1 = am2;
+			ammoCount1 = ammoCount2;
+		}
+		
+		if (!am2 || am1 == am2)
+		{
+			DrawReticleAmmoPanel(ammoCount1, -2, 14);
+			return;
+		}
+		
+		DrawReticleAmmoPanel(ammoCount1, -4, 14, DOUBLE_LEFT);
+		DrawReticleAmmoPanel(ammoCount2, 14, 14, DOUBLE_RIGHT);
+	}
+	
+	protected void DrawReticleAmmoPanel(int ammoCount, double x, double y,
+		bool id = SINGLE)
+	{
+		let str = "" .. ammoCount,
+			strWidth = smallFont.StringWidth(str) * 0.5,
+			strHeight = smallFont.GetHeight() * 0.5;
+		
+		double widgetX;
+		switch (id)
+		{
+			case SINGLE:
+				widgetX = -0.5 * strWidth + x;
+				break;
+			case DOUBLE_LEFT:
+				widgetX = -strWidth + x;
+				break;
+			case DOUBLE_RIGHT:
+				widgetX = strWidth + x;
+				break;
+			default:
+				break;
+		}
+		
+		let widgetY = y,
+			widgetWidth = strWidth + 4,
+			widgetHeight = strHeight + 3,
+			borderX = widgetX + 1,
+			borderY = widgetY + 1,
+			thickness = 1.,
+			borderW = widgetWidth - 2,
+			borderH = widgetHeight - 2;
+		
+		Fill(0x80000000, widgetX, widgetY,
+			widgetWidth, widgetHeight, DI_SCREEN_CENTER);
+		Fill(ply.GetCharacterColor(), borderX, borderY,
+			borderW, thickness, DI_SCREEN_CENTER);
+		Fill(ply.GetCharacterColor(), borderX, borderY + widgetHeight - 3,
+			borderW, thickness, DI_SCREEN_CENTER);
+		Fill(ply.GetCharacterColor(), borderX, borderY,
+			thickness, borderH, DI_SCREEN_CENTER);
+		Fill(ply.GetCharacterColor(), borderX + borderW-1, borderY,
+			thickness, borderH, DI_SCREEN_CENTER);
+		
+		DrawString(_drHudFont, str, (widgetX + 2, widgetY+3.5),
+			DI_SCREEN_CENTER | DI_TEXT_ALIGN_LEFT);
 	}
 	
 	protected void DrawOxygen()
