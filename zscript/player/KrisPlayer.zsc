@@ -469,6 +469,40 @@ class KrisPlayer : DeltaPlayer
 		return Super.CanCollideWith(other, passive);
 	}
 	
+	override void CollidedWith(Actor other, bool passive)
+	{
+		Super.CollidedWith(other, passive);
+		
+		if (passive || crouchState != CS_SLIDING || !other.bIsMonster || other.health <= 0)
+			return;
+		if (other.player && other.player.cheats & CF_PREDICTING)
+			return;
+		
+		A_StartSound("delta/use", CHAN_AUTO);
+		A_StartSound("delta/land", CHAN_AUTO);
+		
+		let slidePerc = _currentSlideSpeed / slideSpeed,
+			diff = level.Vec3Diff(pos, other.pos),
+			dir = diff.Unit();
+		
+		dir *= slidePerc * -10.;
+		if (IsGrounded())
+		{
+			dir.z = jumpZ * 0.75;
+			TryMove(pos.xy + dir.xy, 0.);
+		}
+		
+		EndSlide();
+		crouchState = CS_STANDING;
+		_currentSlideSpeed = 0;
+		_savedSlideSpeed = slideSpeed;
+		vel = dir;
+		
+		other.vel.XY += -dir.XY / other.mass;
+		other.DamageMobj(self, self, random[slideKickDamage](2, 5), 'Melee',
+			DMG_NO_PAIN);
+	}
+	
 	override void Step(double curVel)
 	{
 		if (crouchState != CS_SLIDING)
