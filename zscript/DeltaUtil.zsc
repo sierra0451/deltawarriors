@@ -167,7 +167,7 @@ class DeltaUtil
 		
 		if (flash)
 		{
-			originator.A_StartSound("delta/kris/shield_parry");
+			originator.A_StartSound("delta/kris/shield_parry", CHAN_AUTO);
 			if (originator.player)
 				originator.A_SetBlend("white", 0.3, tics, "white", 0.15);
 		}
