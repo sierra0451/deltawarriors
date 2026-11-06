@@ -187,16 +187,27 @@ class DeltaLevelEvents : EventHandler
 		
 		for (int i = reviving.Size() - 1; i >= 0; i--)
 		{
-			Actor revivee = reviving[i];
-			if (!revivee)
-				continue;
-			if (revivee.InStateSequence(revivee.curState, revivee.FindState("Raise")))
-				continue;
-			if (revivee.Health <= 0)
+			if (!reviving[i])
 				continue;
 			
-			SpawnHealEffects(revivee, 1); // using 1 because it'll get overridden for us being at maxHealth
+			Actor rev = reviving[i];
+			if (rev.Health != rev.SpawnHealth())
+			{
+				let healEffect = Actor.Spawn("DeltaHealEffect", rev.pos);
+				healEffect.A_SetSize(rev.radius, rev.height);
+				healEffect.master = rev;
+				healEffect.A_StartSound("delta/heal");
+				
+				reviving[i] = null;
+				continue;
+			}
+			if (rev.InStateSequence(rev.curState, rev.FindState("Raise")))
+				continue;
+			if (rev.Health <= 0) // make sure effects don't spawn if we're
+				continue;			 // killed again mid-resurrection
+			
 			reviving[i] = null;
+			SpawnHealEffects(rev, 1);
 		}
 	}
 	
