@@ -97,6 +97,8 @@ DeltaNightmare
 // Misc
 DeltaLowHealth
 { #FFFF00 #FFFF00 }
+DeltaNoHealth
+{ #FF0000 #FF0000 }
 KrisPlayer_damage
 { #000000 #82FFFF }
 SusiePlayer_damage Susie_damage
