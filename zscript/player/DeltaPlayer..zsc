@@ -188,12 +188,12 @@ class DeltaPlayer : PlayerPawn abstract
 	property BackAtYouObituary: backAtYouObituary;	// used specifically if we kill by parrying a projectile back into its original owner
 	property ParryObituary: parryObituary;			// used if we kill by parrying otherwise
 	
+	// all of these are currently used for temporary status markers
 	flagdef BeingHugged:			deltaPlayerFlags, 0;
 	flagdef CanRespawn: 			deltaPlayerFlags, 1;
 	flagdef FrozenDeath:			deltaPlayerFlags, 2;
 	flagdef IsLunging:				deltaPlayerFlags, 3;
 	flagdef IsUsingOffhand: 		deltaPlayerFlags, 4;
-	flagdef NoOffhandSpend: 		deltaPlayerFlags, 5;
 	
 	Default
 	{
@@ -1776,7 +1776,7 @@ class DeltaPlayer : PlayerPawn abstract
 		}
 		
 		if (playSound)
-			A_StartSound("delta/tp_fail", CHAN_ITEM, CHANF_LOCAL | CHANF_NOSTOP);
+			A_StartSound("delta/tp_fail", CHAN_WEAPON, CHANF_LOCAL | CHANF_NOSTOP);
 		return false;
 	}
 	

@@ -3,8 +3,6 @@ extend class DeltaPlayer
 	protected bool isUsingOffhand;
 	protected string offhandIcon;
 	protected double offhandTpCost;
-	protected double preOffhandTp;	// used for refunding TP if offhand fails
-	protected int preOffhandTpTimer;
 	
 	private TextureID _offhandIconId;
 	
@@ -20,11 +18,11 @@ extend class DeltaPlayer
 	
 	virtual bool TryStartOffhand()
 	{
-		preOffhandTp = tensionPoints;
-		preOffhandTpTimer = tensionDrainTimer;
-		
-		if (!TryTakeTension(offhandTpCost))
+		if (GetTension(offhandTpCost) == TP_FAIL)
+		{
+			A_StartSound("delta/tp_fail", CHAN_WEAPON, CHANF_LOCAL | CHANF_NOSTOP);
 			return false;
+		}
 		
 		StartOffhand();
 		return true;

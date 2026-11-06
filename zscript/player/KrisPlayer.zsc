@@ -808,12 +808,11 @@ class KrisPlayer : DeltaPlayer
 		if (!parried.Size())
 		{
 			SetStateSafe(ResolveState("ParryMiss"));
-			tensionDrainTimer = preOffhandTpTimer;
-			tensionPoints = preOffhandTp;
 			return;
 		}
 		
 		A_AlertMonsters();
+		TryTakeTension(offhandTpCost);	// taking TP must be done manually!!
 		affected.Push(self);
 		
 		let startHitstopTics = 7,
