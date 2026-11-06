@@ -990,72 +990,67 @@ class DeltaHud : BaseStatusBar
 				DI_SCREEN_CENTER | DI_ITEM_VCENTER | DI_ITEM_RIGHT, 180,
 				scale: (2, 2));
 		
-		let [am1, am2, ammoCount1, ammoCount2] = GetCurrentAmmo();
-		
-		if (!am1)
-		{
-			if (!am2)
-				return;
-			
-			am1 = am2;
-			ammoCount1 = ammoCount2;
-		}
-		
-		if (!am2 || am1 == am2)
-		{
-			DrawReticleAmmoPanel(ammoCount1, -2, 14);
-			return;
-		}
-		
-		DrawReticleAmmoPanel(ammoCount1, -4, 14, DOUBLE_LEFT);
-		DrawReticleAmmoPanel(ammoCount2, 14, 14, DOUBLE_RIGHT);
+		DrawReticleAmmoPanels(-2., 14.5);
 	}
 	
-	protected void DrawReticleAmmoPanel(int ammoCount, double x, double y,
-		bool id = SINGLE)
+	protected void DrawReticleAmmoPanels(double x, double y, double sc = 0.5)
 	{
-		let str = "" .. ammoCount,
-			strWidth = smallFont.StringWidth(str) * 0.5,
-			strHeight = smallFont.GetHeight() * 0.5;
+		let [am1, am2, ammoCount1, ammoCount2] = GetCurrentAmmo();
+		if (!am1 && !am2)
+			return;
 		
-		double widgetX;
-		switch (id)
+		if (am2 == am1)
+			am2 = null;
+		
+		double halfWidth = 0.,
+			padding = 4. * sc,
+			spacing = 4. * sc;
+		
+		for (int i = 0; i < 2; i++)
 		{
-			case SINGLE:
-				widgetX = -0.5 * strWidth + x;
-				break;
-			case DOUBLE_LEFT:
-				widgetX = -strWidth + x;
-				break;
-			case DOUBLE_RIGHT:
-				widgetX = strWidth + x;
-				break;
-			default:
-				break;
+			let am = (!i)? am1 : am2;
+			if (!am)
+				continue;
+			
+			let ammoCount = (!i)? ammoCount1 : ammoCount2, str = "" .. ammoCount,
+				strW = smallFont.StringWidth(str) * sc;
+			
+			halfWidth += strW*0.5 + padding;
 		}
 		
-		let widgetY = y,
-			widgetWidth = strWidth + 4,
-			widgetHeight = strHeight + 3,
-			borderX = widgetX + 1,
-			borderY = widgetY + 1,
-			thickness = 1.,
-			borderW = widgetWidth - 2,
-			borderH = widgetHeight - 2;
+		if (am1 && am2)
+			halfWidth += spacing/2.;
 		
-		Fill(0x80000000, widgetX, widgetY,
-			widgetWidth, widgetHeight, DI_SCREEN_CENTER);
-		Fill(ply.GetCharacterColor(), borderX, borderY,
-			borderW, thickness, DI_SCREEN_CENTER);
-		Fill(ply.GetCharacterColor(), borderX, borderY + widgetHeight - 3,
-			borderW, thickness, DI_SCREEN_CENTER);
-		Fill(ply.GetCharacterColor(), borderX, borderY,
-			thickness, borderH, DI_SCREEN_CENTER);
-		Fill(ply.GetCharacterColor(), borderX + borderW-1, borderY,
-			thickness, borderH, DI_SCREEN_CENTER);
-		
-		DrawString(_drHudFont, str, (widgetX + 2, widgetY+3.5),
-			DI_SCREEN_CENTER | DI_TEXT_ALIGN_LEFT);
+		let curX = -halfWidth + 2.*sc;
+		for (int i = 0; i < 2; i++)
+		{
+			let am = (!i)? am1 : am2;
+			if (!am)
+				continue;
+			
+			let ammoCount = (!i)? ammoCount1 : ammoCount2, str = "" .. ammoCount,
+				strW = _drHudFont.mFont.StringWidth(str) * sc * 2. - 2*sc,
+				strH = _drHudFont.mFont.GetGlyphHeight(int("0")) * sc * 2.,
+				curY = 26. * sc,
+				widgetW = strW + 2*padding,
+				widgetH = strH + 2*padding;
+			
+			Fill(0x80000000, curX, curY, widgetW, widgetH,
+				DI_SCREEN_CENTER);
+			Fill(ply.GetCharacterColor(), curX + sc, curY + sc,
+				widgetW - 2*sc, sc, DI_SCREEN_CENTER);
+			Fill(ply.GetCharacterColor(), curX + sc, curY + widgetH - 2*sc,
+				widgetW - 2*sc, sc, DI_SCREEN_CENTER);
+			Fill(ply.GetCharacterColor(), curX + sc, curY + sc,
+				sc, widgetH - 2*sc, DI_SCREEN_CENTER);
+			Fill(ply.GetCharacterColor(), curX + widgetW - 2*sc, curY + sc,
+				sc, widgetH - 2*sc, DI_SCREEN_CENTER);
+			
+			DrawString(_drHudFont, str, (curX + padding - 2*sc, curY + padding),
+				DI_SCREEN_CENTER | DI_TEXT_ALIGN_LEFT, scale: (sc*2, sc*2));
+			
+			curX += halfWidth + spacing;
+		}
 	}
 	
 	protected void DrawOxygen()
