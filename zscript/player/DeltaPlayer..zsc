@@ -1346,21 +1346,23 @@ class DeltaPlayer : PlayerPawn abstract
 		return result;
 	}
 	
-	override void CheatGive(string name, int amount)
+	override void CheatGive(string _name, int amount)
 	{
-		if (name ~== "armor")
+		if (_name ~== "armor")
 			return;
+		if (_name ~== "hp")
+			_name = "health";
 		
-		if (name ~== "tensionPoints" || name ~== "tension" || name ~== "tp")
+		if (_name ~== "tensionPoints" || _name ~== "tension" || _name ~== "tp")
 		{
 			AddTension(amount? amount : maxTensionPoints);
 			return;
 		}
 		
-		if (name ~== "all" || name ~== "everything" || name ~== "ammo")
+		if (_name ~== "all" || _name ~== "everything" || _name ~== "ammo")
 			AddTension(maxTensionPoints);
 		
-		if ((name ~== "all" || name ~== "everything" || name ~== "weapons") && player)
+		if ((_name ~== "all" || _name ~== "everything" || _name ~== "weapons") && player)
 		{
 			let savedPending = player.PendingWeapon,
 				weaps = player.weapons;
@@ -1390,15 +1392,17 @@ class DeltaPlayer : PlayerPawn abstract
 			player.PendingWeapon = savedPending;
 		}
 		
-		Super.CheatGive(name, amount);
+		Super.CheatGive(_name, amount);
 	}
 	
-	override void CheatTake(string name, int amount)
+	override void CheatTake(string _name, int amount)
 	{
-		if (name ~== "armor")
+		if (_name ~== "armor")
 			return;
-			
-		if (name ~== "tensionPoints" || name ~== "tp")
+		if (_name ~== "hp")
+			_name = "health";
+		
+		if (_name ~== "tensionPoints" || _name ~== "tp")
 		{
 			if (amount < 0)
 				return;
@@ -1413,7 +1417,7 @@ class DeltaPlayer : PlayerPawn abstract
 			tensionDrainTimer = DRAIN_TIMER_START;
 		}
 		else
-			Super.CheatTake(name, amount);
+			Super.CheatTake(_name, amount);
 	}
 	
 	override void HasReceived(Inventory item, class<Inventory> itemCls)
