@@ -809,7 +809,7 @@ class DeltaPlayer : PlayerPawn abstract
 			A_StartSound("delta/drown", CHAN_AUTO);
 		
 		double ang = (source && inflictor && inflictor != self) ?
-			DeltaAngle(self.angle, AngleTo(inflictor)) + cfrandom(-15, 15)
+			DeltaAngle(self.angle, AngleTo(inflictor)) + cfrandom(-5., 5.)
 			: 0;
 		DamageFlinch(ang, finalDamage, flags);
 		return finalDamage;
@@ -2267,10 +2267,11 @@ class DeltaPlayer : PlayerPawn abstract
 			r: yrMult * flinchMultiplier * damageMultiplier);
 	}
 	
-	void AddRecoil(DeltaRecoilType recoilType, int startTime, int leadInTime = 0, double p = 0, double y = 0, double r = 0)
+	void AddRecoil(DeltaRecoilType recoilType, int startTime,
+		int leadInTime = 0, double p = 0, double y = 0, double r = 0)
 	{
-		int targetIndex = -1;
-		int shortestTime = -1;
+		int targetIndex = -1,
+			shortestTime = -1;
 		
 		for (int i = 0; i < _recoils.Size(); i++)
 		{
@@ -2280,14 +2281,14 @@ class DeltaPlayer : PlayerPawn abstract
 				break;
 			}
 			
-			if (shortestTime < 0 || _recoils[i].curTime < shortestTime)
-			{
-				targetIndex = i;
-				shortestTime = _recoils[i].curTime;
-			}
+			if (shortestTime != -1 && _recoils[i].curTime > shortestTime)
+				continue;
+			
+			targetIndex = i;
+			shortestTime = _recoils[i].curTime;
 		}
 		
-		if (targetIndex < 0)
+		if (targetIndex == -1)
 			return;
 		
 		_recoils[targetIndex].startTime = _recoils[targetIndex].curTime = startTime;
