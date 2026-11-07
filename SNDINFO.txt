@@ -17,6 +17,7 @@ $pitchshiftrange 0
 		// Jumping/landing
 		delta/jump = "sounds/player/shared/jump/player_newJump.wav"
 		delta/land = "sounds/player/shared/land/player_newLand.wav"
+		delta/hard_land = "sounds/player/shared/land/player_hardLand.wav"
 		
 		// Heal
 		delta/heal = "sounds/player/shared/player_heal.wav"

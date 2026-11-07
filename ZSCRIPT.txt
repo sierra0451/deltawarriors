@@ -11,6 +11,7 @@ version "5.0.0"
 
 // effects
 #include "zscript/effects/DeltaBadExplosion.zsc"
+#include "zscript/effects/DeltaHardLand.zsc"
 #include "zscript/effects/DeltaHealEffects.zsc"
 #include "zscript/effects/DeltaSoul.zsc"
 #include "zscript/effects/DeltaTelegraphs.zsc"

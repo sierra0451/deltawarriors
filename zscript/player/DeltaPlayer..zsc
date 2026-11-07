@@ -863,6 +863,11 @@ class DeltaPlayer : PlayerPawn abstract
 	override void PlayerSquatView(Actor onmobj)
 	{
 		Super.PlayerSquatView(onMobj);
+		if (vel.z <= -mass/2.)
+		{
+			A_StartSound("delta/hard_land", CHAN_AUTO);
+			Spawn("DeltaHardLand", pos, ALLOW_REPLACE);
+		}
 		
 		if (health <= 0)
 			return;
