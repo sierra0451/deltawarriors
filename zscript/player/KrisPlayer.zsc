@@ -693,7 +693,10 @@ class KrisPlayer : DeltaPlayer
 			if (_slideTime > 0)
 				_slideTime = 0;
 			else if (_slideTime)
-				_slideTime++;
+			{
+				if (++_slideTime == 0)
+					_savedSlideSpeed = slideSpeed;
+			}
 			
 			if (IsActorPlayingSound(CHAN_MOVEMENT))
 				A_StopSound(CHAN_MOVEMENT);
@@ -722,17 +725,9 @@ class KrisPlayer : DeltaPlayer
 		crouchState = CS_SLIDING;
 		_stopSlideTicks = 0;
 		
-		if (!_slideTime || _savedSlideSpeed > slideSpeed)
+		if (_slideTime <= 0 || _savedSlideSpeed > slideSpeed)
 			_currentSlideSpeed = max(_savedSlideSpeed, vel.XY.Length());
-		else if (_slideTime)
-		{
-			if (_savedSlideSpeedTimer)
-				_savedSlideSpeedTimer--;
-			else
-				_currentSlideSpeed = _savedSlideSpeed;
-		}
-		
-		if (_slideTime > 0)
+		if (_slideTime != 0)
 			_slideTime = 0;
 		
 		if (IsPredicting())
