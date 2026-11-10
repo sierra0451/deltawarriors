@@ -10,7 +10,7 @@ nosave float					cl_delta_hudScale				= 1;
 nosave bool						cl_delta_showGrazeIndicators	= true;
 nosave bool						cl_delta_showDamageIndicators	= true;
 nosave bool 					cl_delta_lowHealthVignette		= true;
-nosave int 						cl_delta_heartbeatSound			= 1;			// enum: 0 = off, 1 = on, 2 = Kris only
+nosave int 						cl_delta_heartbeatSound			= 1;			// enum: 0 = off, 1 = on, 2 = lightners only
 nosave bool						cl_delta_showDeathText			= true;			// "IT APPEARS YOU HAVE REACHED  AN END" text
 nosave bool						cl_delta_showCrosshair			= true;
 nosave color					cl_delta_crosshairColor			= "ffffff";
@@ -33,10 +33,9 @@ nosave float 					cl_delta_leanIntensity 			= 1.0;
 nosave float 					cl_delta_weaponRecoil 			= 1.0;
 nosave float 					cl_delta_damageRecoil 			= 1.0;
 
-// Modifiers
-server noarchive latch bool 	sv_delta_blind					= false;		// no HUD, no on-screen weapon
+// Gameplay options
 server noarchive latch bool 	sv_delta_levelOneHp				= false;		// max HP is set to that character's max at the start of chapter 1 (i.e. kris gets 90 HP instead of 200)
-server noarchive latch bool 	sv_delta_pacifist				= false;		// no damaging enemies! a player damaging an enemy will result in an automatic game over
+server bool 					sv_delta_lunging				= true;
 
 // Background data
 nosave cheat bool				data_delta_diedFirstTime		= false;

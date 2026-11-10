@@ -129,23 +129,6 @@ class DeltaLevelEvents : EventHandler
 			if (damageEvents[i].amount <= 0)
 				continue;
 			
-			if (sv_delta_pacifist && damageEvents[i].source
-				&& damageEvents[i].source is "DeltaPlayer"
-				&& damageEvents[i].victim.bIsMonster)
-			{
-				let dummy = damageEvents[i].source.Spawn("DeltaPacifistFail");
-				
-				for (int i = 0; i < MAXPLAYERS; i++)
-				{
-					if (!playerInGame[i] || !players[i].mo)
-						continue;
-					
-					players[i].mo.DamageMobj(damageEvents[i].source, dummy,
-						random[instakill](10000, 100000), "PacifistFail", DMG_FORCED);
-				}
-				return;
-			}
-			
 			if (damageEvents[i].victim is "DeltaPlayer")
 			{
 				if (damageEvents[i].victim.health <= 0)
