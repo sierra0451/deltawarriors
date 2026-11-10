@@ -70,19 +70,25 @@ class DeltaGameOver : ScreenJob
 {
 	enum EGameOverState
 	{
-		UNINITIALIZED = -1,			// -1
-		FREEZE_FRAME,				// 0
-		SOUL_BREAK,					// 1
-		MESSAGES,					// 2
-		MAKING_CHOICE,				// 3
-		CHOICE_FILTER,				// 4
-		CONTINUING,					// 5
-		RETURN_TO_GAME,				// 6
-		WORLD_COVERED_IN_DARKNESS,	// 7
-		DARKNESS_FALLS,				// 8
-		DARKNESS_ABORT				// 9
+		UNINITIALIZED = -1,
+		FREEZE_FRAME,
+		SOUL_BREAK,
+		GAME_OVER_FADEIN,
+		MESSAGES,
+		MAKING_CHOICE,
+		CHOICE_FILTER,
+		CONTINUING,
+		RETURN_TO_GAME,
+		WORLD_COVERED_IN_DARKNESS,
+		DARKNESS_FALLS,
+		DARKNESS_ABORT
 	}
-	
+	enum EGameOverDialogue
+	{
+		DIAG_NONE = -1, 	// if susie/ralsei mods are not present OR this is our first death
+		DIAG_SUSIE,
+		DIAG_RALSEI
+	}
 	enum EGameOverChoice
 	{
 		GOC_NO_CHOICE = -1,
@@ -105,6 +111,7 @@ class DeltaGameOver : ScreenJob
 	DeltaMessageHandler messageHandler;
 	Vector2 mousePos;
 	
+	protected int dialogue;
 	protected DeltaPlayer ply;
 	protected bool firstTime;
 	protected TextureID gameOver, soul, brokenSoul, blurrySoul, soulShard;
@@ -113,7 +120,7 @@ class DeltaGameOver : ScreenJob
 	protected Font fnt;
 	
 	private int _sideInput;
-	private double _globalScale;
+	private double _globalScale, _gameOverAlpha;
 	
 	static DeltaGameOver Create(Font fnt, bool firstTime = false, int flags = 0)
 	{
@@ -127,6 +134,18 @@ class DeltaGameOver : ScreenJob
 		ply = DeltaPlayer(players[consolePlayer].mo);
 		gameOverState = UNINITIALIZED;
 		curChoice = GOC_NO_CHOICE;
+		dialogue = DIAG_NONE;
+		
+		let susieCheck = DeltaUtil.SusieIsPresent(),
+			ralseiCheck = DeltaUtil.RalseiIsPresent();
+		
+		if (!firstTime && (susieCheck || ralseiCheck))
+		{
+			if (susieCheck && ralseiCheck)
+				dialogue = crandomPick(DIAG_SUSIE, DIAG_RALSEI);
+			else
+				dialogue = susieCheck? DIAG_SUSIE : DIAG_RALSEI;
+		}
 		
 		gameOver = TexMan.CheckForTexture("graphics/hud/gameOverText.png");
 		soul = TexMan.CheckForTexture("DRSLA0");
@@ -191,20 +210,27 @@ class DeltaGameOver : ScreenJob
 					soulShards[i] = shard;
 				}
 				break;
+			case GAME_OVER_FADEIN:
+				_gameOverAlpha = ticks * 1. / GAME_OVER_FADEIN_TIME;
+				break;
 			case MESSAGES:
-				if (!messageHandler || ticks%2)
+				if (!messageHandler)
+					break;
+				if (firstTime && ticks % 2)
 					break;
 				
-				if (firstTime)
+				messageHandler.OnTick();
+				
+				if (messageHandler.GetMessageState() == MSG_STATE_HOLD_SCRIPT)
 				{
-					messageHandler.OnTick();
+					if (!firstTime)
+						messageHandler.NextMessage();
 					
-					if (messageHandler.GetMessageState() == MSG_STATE_HOLD_SCRIPT)
+					if (firstTime || !messageHandler.message)
 					{
 						ticks = 0;
 						goalTicks = 1;
 					}
-					break;
 				}
 				break;
 			case MAKING_CHOICE:
@@ -223,12 +249,12 @@ class DeltaGameOver : ScreenJob
 					break;
 				
 				messageHandler.OnTick();
-					
-				if (messageHandler.GetMessageState() == MSG_STATE_HOLD_SCRIPT)
+				if (whiteStartTick == -1 && messageHandler.GetMessageState() == MSG_STATE_HOLD_SCRIPT)
 				{
 					ticks = 0;
 					goalTicks = 1;
 				}
+				
 				break;
 			case DARKNESS_FALLS:
 				S_ChangeMusic("music/mus_shroudedInDarkness.ogg", looping: false, force: true);
@@ -262,10 +288,22 @@ class DeltaGameOver : ScreenJob
 			case SOUL_BREAK:
 				goalTicks = int(TICRATE * (firstTime? 4.5 : 3.5));
 				break;
-			case MESSAGES:
+			case GAME_OVER_FADEIN:
 				if (firstTime)
 				{
-					SetMusicVolume(1.);
+					ticks = 0;
+					goalTicks = 1;
+					break;
+				}
+				
+				goalTicks = GAME_OVER_FADEIN_TIME;
+				break;
+			case MESSAGES:
+				SetMusicVolume(1.);
+				goalTicks = -1;
+				
+				if (firstTime)
+				{
 					S_ChangeMusic("music/mus_deltaDrone.ogg");
 					
 					messageHandler.AddMessage(
@@ -276,20 +314,42 @@ class DeltaGameOver : ScreenJob
 						DeltaMessageBox.Create("$DELTAWARRIORS_GAME_OVER_FIRST_2",
 							typeSound: "")
 					);
-					
-					goalTicks = -1;
 					break;
 				}
 				
-				goalTicks = GAME_OVER_FADEIN_TIME;
-				break;
-			case MAKING_CHOICE:
-				if (!firstTime)
+				S_ChangeMusic("music/mus_deltaGameOver.ogg");
+				
+				if (dialogue == DIAG_NONE)
 				{
-					SetMusicVolume(1.);
-					S_ChangeMusic("music/mus_deltaGameOver.ogg");
+					goalTicks = 1;
+					break;
 				}
 				
+				if (dialogue == DIAG_SUSIE)
+				{
+					messageHandler.AddMessage(
+						DeltaMessageBox.Create("$DELTAWARRIORS_GAME_OVER_SUSIE_1",
+							typeSound: "delta/type/susie")
+					);
+					messageHandler.AddMessage(
+						DeltaMessageBox.Create("$DELTAWARRIORS_GAME_OVER_SUSIE_2",
+							typeSound: "delta/type/susie")
+					);
+				}
+				else
+				{
+					messageHandler.AddMessage(
+						DeltaMessageBox.Create("$DELTAWARRIORS_GAME_OVER_RALSEI_1",
+							typeSound: "delta/type/ralsei")
+					);
+					messageHandler.AddMessage(
+						DeltaMessageBox.Create("$DELTAWARRIORS_GAME_OVER_RALSEI_2",
+							typeSound: "delta/type/ralsei")
+					);
+				}
+				break;
+				
+			case MAKING_CHOICE:
 				curChoice = GOC_NO_CHOICE;
 				targetSoulX = 50;
 				soulX.Reset(50);
@@ -302,6 +362,7 @@ class DeltaGameOver : ScreenJob
 				break;
 			case CONTINUING:
 				goalTicks = -1;
+				
 				S_ChangeMusic("", force: true);
 				messageHandler.AddMessage(
 					DeltaMessageBox.Create(firstTime? "$DELTAWARRIORS_GAME_OVER_CONTINUING" : "%%",
@@ -312,7 +373,7 @@ class DeltaGameOver : ScreenJob
 					messageHandler.NextMessage();
 				break;
 			case RETURN_TO_GAME:
-				messageHandler.NextMessage();
+				messageHandler.message.messageState = MSG_STATE_TYPING;
 				whiteStartTick = ticks;
 				goalTicks = -1;
 				S_StartSound("delta/menu_persist", 0);
@@ -361,16 +422,12 @@ class DeltaGameOver : ScreenJob
 		
 		Screen.Dim(0xff000000, 255, 0, 0, scrW, scrH);
 		
-		if (!firstTime && gameOverState >= MESSAGES
-			&& (gameOverState != MESSAGES || ticks > 0)
-			&& (!messageHandler.message || gameOverState == CONTINUING))
+		if (!firstTime && gameOverState >= GAME_OVER_FADEIN
+			&& (gameOverState != GAME_OVER_FADEIN || ticks > 0))
 		{
-			double sc = 4. * _globalScale,
-				alpha = (gameOverState == MESSAGES)? ((ticks + smoothRatio) / GAME_OVER_FADEIN_TIME) : 1;
-			alpha = clamp(alpha, 0, 1);
-			
+			let sc = 4. * _globalScale;
 			Screen.DrawTexture(gameOver, false, scrW/2, scrH*0.15,
-				DTA_Alpha, alpha, DTA_ScaleX, sc, DTA_ScaleY, sc);
+				DTA_Alpha, _gameOverAlpha, DTA_ScaleX, sc, DTA_ScaleY, sc);
 		}
 		
 		DrawCurrentState(smoothRatio);
@@ -402,11 +459,10 @@ class DeltaGameOver : ScreenJob
 		
 		if (evt.type != InputEvent.Type_KeyDown)
 			return false;
-		
 		if (gameOverState > MAKING_CHOICE)
 			return false;
 		
-		if (gameOverState < MAKING_CHOICE)
+		if (gameOverState < MESSAGES)
 		{
 			if (firstTime)
 				return false;
@@ -415,6 +471,15 @@ class DeltaGameOver : ScreenJob
 			
 			CVar.FindCVar("data_delta_diedFirstTime").SetBool(true);
 			EventHandler.SendNetworkEvent("DeltaTimeToRespawn");
+			return true;
+		}
+		
+		if (gameOverState == MESSAGES)
+		{
+			if (!messageHandler)
+				return false;
+			
+			messageHandler.OnEvent(evt);
 			return true;
 		}
 		
@@ -472,9 +537,7 @@ class DeltaGameOver : ScreenJob
 	
 	virtual void DrawCurrentState(double smoothRatio)
 	{
-		let scrW = Screen.GetWidth(),
-			scrH = Screen.GetHeight(),
-			sc = 3. * _globalScale;
+		let sc = 3. * _globalScale;
 		
 		if (gameOverState >= SOUL_BREAK)
 			DrawSoul(sc, smoothRatio);
@@ -580,9 +643,17 @@ class DeltaGameOver : ScreenJob
 		
 		for (int i = 0; i < displayedLines.Count(); i++)
 		{
-			DrawMysteryText(displayedLines.StringAt(i),
-				(scrW-maxWidth) / 2, scrH*0.3 + (fnt.GetHeight()*sc) * i,
-				smoothRatio, sc: sc);
+			if (dialogue == DIAG_NONE)
+			{
+				DrawMysteryText(displayedLines.StringAt(i),
+					(scrW-maxWidth) / 2, scrH*0.3 + (fnt.GetHeight()*sc) * i,
+					smoothRatio, sc: sc);
+				continue;
+			}
+			
+			Screen.DrawText(fnt, Font.CR_UNTRANSLATED,
+				scrw * 0.3, scrH*0.55 + fnt.GetHeight() * sc * 1.5 * i,
+				displayedLines.StringAt(i), DTA_ScaleX, sc, DTA_ScaleY, sc);
 		}
 	}
 	

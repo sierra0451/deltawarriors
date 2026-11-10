@@ -1986,18 +1986,17 @@ class DeltaPlayer : PlayerPawn abstract
 	
 	protected virtual void HandleRalseiHugs()
 	{
-		string rals = "FriendsWithRalsei";
-		class<Actor> ralseiCheck = rals;
-		
-		if (ralseiCheck == null)
+		if (!DeltaUtil.RalseiIsPresent(companionOnly: true))
 			return; // don't bother with this if we don't have the ralsei mod
 		
-		if (RalseiIsHugging() && !bBeingHugged)
+		bool hugged = RalseiIsHugging();
+		
+		if (hugged && !bBeingHugged)
 		{
 			if (++hugTimer == hugReactionTime)
 				bBeingHugged = true;
 		}
-		else if (!RalseiIsHugging() && bBeingHugged)
+		else if (!hugged && bBeingHugged)
 		{
 			hugTimer = 0;
 			bBeingHugged = false;
