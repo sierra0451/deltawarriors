@@ -2372,7 +2372,7 @@ class DeltaPlayer : PlayerPawn abstract
 	
 	clearscope virtual bool CanLunge()
 	{
-		return !IsCrouching() && (player.cmd.forwardMove >= 0);
+		return sv_delta_lunging && !IsCrouching() && (player.cmd.forwardMove >= 0);
 	}
 	
 	clearscope bool IsGrounded()

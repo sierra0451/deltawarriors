@@ -545,7 +545,7 @@ class DeltaWeapon : Weapon
 	
 	clearscope float GetRedCrosshairRange()
 	{
-		return redCrosshairRange;
+		return (sv_delta_lunging && maxLungeDistance > 0)? maxLungeDistance : redCrosshairRange;
 	}
 	
 	// returns a DeltaWeaponAnimType (see enum in DeltaPlayer for more info)
