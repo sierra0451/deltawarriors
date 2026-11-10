@@ -655,7 +655,11 @@ class DeltaForceClass : EventHandler
 		
 		let newPawn = PlayerPawn(Actor.Spawn(targetPlayer, ply.mo.pos)),
 			oldPawn = ply.mo;
+		newPawn.angle = oldPawn.angle;
+		newPawn.pitch = oldPawn.pitch;
+		newPawn.roll = oldPawn.roll;
 		newPawn.player = ply;
+		
 		ply.cls = targetPlayer;
 		ply.mo = newPawn;
 		ply.camera = ply.mo;

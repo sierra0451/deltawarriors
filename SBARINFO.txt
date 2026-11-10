@@ -2,6 +2,6 @@ mugshot "Normal", health		{ NEUT0	-1; }
 mugshot "Pain",	health 			{ HURT0	 4; }
 mugshot "Grin",	health 			{ GRIN0	35; }
 mugshot "Rampage", health		{ RAMP0	 4; }
-mugshot "Blush", health			{ BLSH0	 1; }
+mugshot "Blush", health			{ BLSH0	 2; }
 mugshot "Berserk", health		{ BSRK0	 1; }
 mugshot "God" 					{ INVU0	-1; }
