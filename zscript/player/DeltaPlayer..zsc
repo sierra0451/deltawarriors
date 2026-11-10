@@ -2135,9 +2135,27 @@ class DeltaPlayer : PlayerPawn abstract
 			return;
 		}
 		
+		bool hidden = ac.bShadow;
+		
+		if (DeltaGlobals.GetGlobals().GetMapset() ~== "AncientAliens")
+		{
+			if (ac is "WolfensteinSS" && ac.curState.InStateSequence(ac.SeeState))
+				hidden = true;
+		}
+		else if (DeltaGlobals.GetGlobals().GetMapset() ~== "EviternityII")
+		{
+			string veilimpCheck = "Veilimp";
+			class<Actor> veilimp = veilimpCheck;
+			if (!veilimp)
+				return;
+			
+			if (ac is veilimp && ac.curState.InStateSequence(ac.SeeState))
+				hidden = true;
+		}
+		
 		if (IsFriend(ac))
 			_crosshairState = DELTA_XHR_FRIENDLY;
-		else if (IsHostile(ac) && !ac.bShadow)
+		else if (IsHostile(ac) && !hidden)
 			// TODO: do more thorough crosshair check, let trace pass through
 			// shadow enemies instead of just being neutral on them
 			_crosshairState = DELTA_XHR_ENEMY;
