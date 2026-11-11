@@ -69,7 +69,6 @@ class DeltaPlayer : PlayerPawn abstract
 	
 	const COYOTE_TIME = 3;
 	const JUMP_BUFFER_TIME = 3;
-	const MAX_WALL_JUMPS = 3;
 	const ANIM_GROUNDED_HANG_TIME = 3;
 	const MAX_AIR_BOB_TICS = 7;
 	const DELTA_AIR_CONTROL = 0.4;
@@ -80,11 +79,11 @@ class DeltaPlayer : PlayerPawn abstract
 	const MAX_GRAZE_TICS = 5;
 	const DEFAULT_RED_CROSSHAIR_RANGE = 500.;
 	const MAX_TURN = 10;
-	const DEATH_HANG_FRAMES = TICRATE;
+	const DEATH_PREHANG_TICS = 3;
+	const DEATH_HANG_TICS = TICRATE;
 	
 	double tensionPoints, maxTensionPoints, bobTimer;
 	int grazeTics, tensionDrainTimer, hugReactionTime;
-	bool beingHugged, canRespawn;
 	
 	protected int coyoteTimer; 						// used to handle coyote time
 	protected int jumpBuffer, airBobTics, hugTimer;
@@ -131,10 +130,9 @@ class DeltaPlayer : PlayerPawn abstract
 		gunStandSprite, meleeStandSprite, magicStandSprite,
 		gunCrouchSprite, meleeCrouchSprite, magicCrouchSprite;
 	protected double crouchFactor;
+	protected uint deltaPlayerFlags;
 	
 	private double _targetRoll;
-	private bool _frozenDeath;				// using this for custom ice death that doesn't automatically shatter us lol
-	
 	private Vector2 _currentFlinch;			// used for weapon flinching when taking damage
 	private int _flinchTics;
 	
@@ -189,6 +187,13 @@ class DeltaPlayer : PlayerPawn abstract
 	property MaxShakiness: maxShakiness;
 	property BackAtYouObituary: backAtYouObituary;	// used specifically if we kill by parrying a projectile back into its original owner
 	property ParryObituary: parryObituary;			// used if we kill by parrying otherwise
+	
+	// all of these are currently used for temporary status markers
+	flagdef BeingHugged:			deltaPlayerFlags, 0;
+	flagdef CanRespawn: 			deltaPlayerFlags, 1;
+	flagdef FrozenDeath:			deltaPlayerFlags, 2;
+	flagdef IsLunging:				deltaPlayerFlags, 3;
+	flagdef IsUsingOffhand: 		deltaPlayerFlags, 4;
 	
 	Default
 	{
@@ -251,7 +256,7 @@ class DeltaPlayer : PlayerPawn abstract
 		+FLOORCLIP;
 		+DONTGIB;
 		+SQUAREPIXELS;
-		+PLAYERPAWN.NOTHRUSTWHENINVUL;
+		+PlayerPawn.NOTHRUSTWHENINVUL;
 	}
 	
 	States
@@ -383,14 +388,16 @@ class DeltaPlayer : PlayerPawn abstract
 		maxTensionPoints = 250;
 		tensionDrainTimer = 0;
 		airBobTics = 0;
-		beingHugged = false;
-		lunging = false;
-		isUsingOffhand = false;
 		customBobPerc = 1.;
 		_turn = 0;
 		_oldTurn = 0;
 		_targetRoll = 0;
-		canRespawn = true;
+		
+		bBeingHugged = false;
+		bIsLunging = false;
+		bIsUsingOffhand = false;
+		bCanRespawn = true;
+		
 		SetUpLegs();
 		
 		if (player && player.ReadyWeapon && player.ReadyWeapon is "DeltaWeapon")
@@ -411,11 +418,12 @@ class DeltaPlayer : PlayerPawn abstract
 		tensionPoints = 0;
 		tensionDrainTimer = 0;
 		airBobTics = 0;
-		beingHugged = false;
-		lunging = false;
-		isUsingOffhand = false;
 		_turn = 0;
 		_oldTurn = 0;
+		
+		bBeingHugged = false;
+		bIsLunging = false;
+		bIsUsingOffhand = false;
 		
 		_targetRoll = 0;
 		SetUpLegs();
@@ -729,7 +737,7 @@ class DeltaPlayer : PlayerPawn abstract
 				return oldDmg;
 		}
 		
-		let dmg = (damage + lastDamageTaken) * 1.,
+		let dmg = damage * 1.,
 			healthBeforeDmg = Health + lastDamageTaken;
 		
 		// if we're at 80 or more HP, damage cannot be lethal
@@ -754,7 +762,7 @@ class DeltaPlayer : PlayerPawn abstract
 			}
 		}
 		
-		if (_frozenDeath && mod != "Ice")
+		if (bFrozenDeath && mod != "Ice")
 		{
 			Vel = (0, 0, 0);
 			A_FreezeDeathChunks();
@@ -801,7 +809,7 @@ class DeltaPlayer : PlayerPawn abstract
 			A_StartSound("delta/drown", CHAN_AUTO);
 		
 		double ang = (source && inflictor && inflictor != self) ?
-			DeltaAngle(self.angle, AngleTo(inflictor)) + cfrandom(-15, 15)
+			DeltaAngle(self.angle, AngleTo(inflictor)) + cfrandom(-5., 5.)
 			: 0;
 		DamageFlinch(ang, finalDamage, flags);
 		return finalDamage;
@@ -855,6 +863,11 @@ class DeltaPlayer : PlayerPawn abstract
 	override void PlayerSquatView(Actor onmobj)
 	{
 		Super.PlayerSquatView(onMobj);
+		if (vel.z <= -mass/2.)
+		{
+			A_StartSound("delta/hard_land", CHAN_AUTO);
+			Spawn("DeltaHardLand", pos, ALLOW_REPLACE);
+		}
 		
 		if (health <= 0)
 			return;
@@ -876,12 +889,12 @@ class DeltaPlayer : PlayerPawn abstract
 		if (player.poisonCount)
 			player.poisonCount--;
 		
-		if (IsFrozen() && deathTimer < DEATH_HANG_FRAMES)
+		if (IsFrozen() && deathTimer < DEATH_HANG_TICS)
 			return;
 		
 		player.onGround = (pos.Z <= floorz);
 		
-		if (!_frozenDeath && player.onGround && !level.IsFrozen())
+		if (!bFrozenDeath && player.onGround && !level.IsFrozen())
 		{
 			player.deltaViewHeight = 0;
 			if (player.viewHeight > 6)
@@ -921,7 +934,7 @@ class DeltaPlayer : PlayerPawn abstract
 		bool
 			playerWantsToRespawn = (player.cmd.buttons & BT_USE),
 			forcingRespawn = (deathmatch || alwaysApplyDMFlags) && sv_forceRespawn,
-			respawnAllowed = canRespawn || sv_singlePlayerRespawn,
+			respawnAllowed = bCanRespawn || sv_singlePlayerRespawn,
 			respawnDisallowed = sv_noRespawn || (!respawnAllowed && !deathmatch);
 		
 		if (!(playerWantsToRespawn || forcingRespawn) || respawnDisallowed)
@@ -1302,7 +1315,7 @@ class DeltaPlayer : PlayerPawn abstract
 	
 	override Vector2 BobWeapon(double ticFrac)
 	{
-		if (IsFrozen())
+		if (IsFrozen() || !player || !player.ReadyWeapon)
 			return _lastBob;
 		
 		let bobFlinch = (0, 0),
@@ -1319,38 +1332,55 @@ class DeltaPlayer : PlayerPawn abstract
 			zVelFac = clamp((airBobTics*2. / MAX_AIR_BOB_TICS)**2, 0, 1);
 		
 		zVelAdd *= zVelFac;
-		double minYOffset = 0, maxYOffset = 30;
-		if (player && player.ReadyWeapon && player.ReadyWeapon is "DeltaWeapon")
-		{
-			let deltaWeap = DeltaWeapon(player.ReadyWeapon);
-			minYOffset = deltaWeap.GetMinYOffset();
-			maxYOffset = deltaWeap.GetMaxYOffset();
-		}
-		
-		let breatheBob = sin(level.time * M_PI*3/8.) * 1.5,
+		let breatheBob = sin(level.time * M_PI*3/8.) * 1.2 + 1.2,
 			result = bob + bobFlinch + shake * s
 				+ (GetTurn(ticFrac), breatheBob + zVelAdd + _landPunch);
+		
+		let minYOffset = 0.,
+			maxYOffset = 30.;
+		
+		if (player.ReadyWeapon is "DeltaWeapon")
+		{
+			let weap = DeltaWeapon(player.ReadyWeapon);
+			minYOffset = weap.GetMinYOffset();
+			maxYOffset = weap.GetMaxYOffset();
+		}
 		
 		result.y = clamp(result.y, minYOffset, maxYOffset);
 		_lastBob = result;
 		return result;
 	}
 	
-	override void CheatGive(string name, int amount)
+	override void CheatGive(string _name, int amount, bool keyboard)
 	{
-		if (name ~== "armor")
+		if (!player.mo || health <= 0)
 			return;
 		
-		if (name ~== "tensionPoints" || name ~== "tension" || name ~== "tp")
+		class<Inventory> armrCls = _name;
+		if (_name ~== "armor" || (armrCls && (armrCls is "Armor" || GetDefaultByType(armrCls).bIsArmor)))
+		{
+			if (!keyboard && PlayerNumber() == consolePlayer)
+			{
+				int rand = crandom(1, 5);
+				A_Log(StringTable.Localize("$DELTAWARRIORS_ARMOR_CHEAT_" .. rand));
+				S_StartSound("delta/tp_fail", CHAN_AUTO, CHANF_UI);
+			}
+			
+			return;
+		}
+		if (_name ~== "hp")
+			_name = "health";
+		
+		if (_name ~== "tensionPoints" || _name ~== "tension" || _name ~== "tp")
 		{
 			AddTension(amount? amount : maxTensionPoints);
 			return;
 		}
 		
-		if (name ~== "all" || name ~== "everything" || name ~== "ammo")
+		if (_name ~== "all" || _name ~== "everything" || _name ~== "ammo")
 			AddTension(maxTensionPoints);
 		
-		if ((name ~== "all" || name ~== "everything" || name ~== "weapons") && player)
+		if ((_name ~== "all" || _name ~== "everything" || _name ~== "weapons") && player)
 		{
 			let savedPending = player.PendingWeapon,
 				weaps = player.weapons;
@@ -1380,15 +1410,17 @@ class DeltaPlayer : PlayerPawn abstract
 			player.PendingWeapon = savedPending;
 		}
 		
-		Super.CheatGive(name, amount);
+		Super.CheatGive(_name, amount);
 	}
 	
-	override void CheatTake(string name, int amount)
+	override void CheatTake(string _name, int amount)
 	{
-		if (name ~== "armor")
+		if (_name ~== "armor")
 			return;
-			
-		if (name ~== "tensionPoints" || name ~== "tp")
+		if (_name ~== "hp")
+			_name = "health";
+		
+		if (_name ~== "tensionPoints" || _name ~== "tp")
 		{
 			if (amount < 0)
 				return;
@@ -1403,7 +1435,7 @@ class DeltaPlayer : PlayerPawn abstract
 			tensionDrainTimer = DRAIN_TIMER_START;
 		}
 		else
-			Super.CheatTake(name, amount);
+			Super.CheatTake(_name, amount);
 	}
 	
 	override void HasReceived(Inventory item, class<Inventory> itemCls)
@@ -1762,7 +1794,7 @@ class DeltaPlayer : PlayerPawn abstract
 		}
 		
 		if (playSound)
-			A_StartSound("delta/tp_fail", CHAN_ITEM, CHANF_LOCAL | CHANF_NOSTOP);
+			A_StartSound("delta/tp_fail", CHAN_WEAPON, CHANF_LOCAL | CHANF_NOSTOP);
 		return false;
 	}
 	
@@ -1967,21 +1999,20 @@ class DeltaPlayer : PlayerPawn abstract
 	
 	protected virtual void HandleRalseiHugs()
 	{
-		string rals = "FriendsWithRalsei";
-		class<Actor> ralseiCheck = rals;
-		
-		if (ralseiCheck == null)
+		if (!DeltaUtil.RalseiIsPresent(companionOnly: true))
 			return; // don't bother with this if we don't have the ralsei mod
 		
-		if (RalseiIsHugging() && !beingHugged)
+		bool hugged = RalseiIsHugging();
+		
+		if (hugged && !bBeingHugged)
 		{
 			if (++hugTimer == hugReactionTime)
-				beingHugged = true;
+				bBeingHugged = true;
 		}
-		else if (!RalseiIsHugging() && beingHugged)
+		else if (!hugged && bBeingHugged)
 		{
 			hugTimer = 0;
-			beingHugged = false;
+			bBeingHugged = false;
 		}
 	}
 	
@@ -2104,9 +2135,27 @@ class DeltaPlayer : PlayerPawn abstract
 			return;
 		}
 		
+		bool hidden = ac.bShadow;
+		
+		if (DeltaGlobals.GetGlobals().GetMapset() ~== "AncientAliens")
+		{
+			if (ac is "WolfensteinSS" && ac.curState.InStateSequence(ac.SeeState))
+				hidden = true;
+		}
+		else if (DeltaGlobals.GetGlobals().GetMapset() ~== "EviternityII")
+		{
+			string veilimpCheck = "Veilimp";
+			class<Actor> veilimp = veilimpCheck;
+			if (!veilimp)
+				return;
+			
+			if (ac is veilimp && ac.curState.InStateSequence(ac.SeeState))
+				hidden = true;
+		}
+		
 		if (IsFriend(ac))
 			_crosshairState = DELTA_XHR_FRIENDLY;
-		else if (IsHostile(ac) && !ac.bShadow)
+		else if (IsHostile(ac) && !hidden)
 			// TODO: do more thorough crosshair check, let trace pass through
 			// shadow enemies instead of just being neutral on them
 			_crosshairState = DELTA_XHR_ENEMY;
@@ -2127,6 +2176,8 @@ class DeltaPlayer : PlayerPawn abstract
 				if (!mis.target || !mis.tracer)
 					continue;
 				if (mis.tracer != self || !CheckSight(mis.target))
+					continue;
+				if (mis.target.health <= 0)
 					continue;
 				
 				DoGraze(mis);
@@ -2246,10 +2297,11 @@ class DeltaPlayer : PlayerPawn abstract
 			r: yrMult * flinchMultiplier * damageMultiplier);
 	}
 	
-	void AddRecoil(DeltaRecoilType recoilType, int startTime, int leadInTime = 0, double p = 0, double y = 0, double r = 0)
+	void AddRecoil(DeltaRecoilType recoilType, int startTime,
+		int leadInTime = 0, double p = 0, double y = 0, double r = 0)
 	{
-		int targetIndex = -1;
-		int shortestTime = -1;
+		int targetIndex = -1,
+			shortestTime = -1;
 		
 		for (int i = 0; i < _recoils.Size(); i++)
 		{
@@ -2259,14 +2311,14 @@ class DeltaPlayer : PlayerPawn abstract
 				break;
 			}
 			
-			if (shortestTime < 0 || _recoils[i].curTime < shortestTime)
-			{
-				targetIndex = i;
-				shortestTime = _recoils[i].curTime;
-			}
+			if (shortestTime != -1 && _recoils[i].curTime > shortestTime)
+				continue;
+			
+			targetIndex = i;
+			shortestTime = _recoils[i].curTime;
 		}
 		
-		if (targetIndex < 0)
+		if (targetIndex == -1)
 			return;
 		
 		_recoils[targetIndex].startTime = _recoils[targetIndex].curTime = startTime;
@@ -2320,7 +2372,7 @@ class DeltaPlayer : PlayerPawn abstract
 	
 	clearscope virtual bool CanLunge()
 	{
-		return !IsCrouching() && (player.cmd.forwardMove >= 0);
+		return sv_delta_lunging && !IsCrouching() && (player.cmd.forwardMove >= 0);
 	}
 	
 	clearscope bool IsGrounded()

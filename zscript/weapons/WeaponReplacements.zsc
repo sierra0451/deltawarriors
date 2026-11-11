@@ -9,7 +9,7 @@ class DeltaWeaponPickup : Weapon
 	{
 		Spawn:
 			TNT1 A 0;
-			#### A 1 A_GetWeaponSprite;
+			#### # 1 A_GetWeaponSprite;
 			Wait;
 		Ready:
 		Select:
@@ -29,6 +29,9 @@ class DeltaWeaponPickup : Weapon
 	
 	class<Weapon> GetWeapon(PlayerPawn ply = null)
 	{
+		// consolePlayer used here on purpose!
+		// we WANT this to be able to look different for each player if, say,
+		// one is playing as Kris and another as Susie
 		if (!ply)
 			ply = players[consoleplayer].mo;
 		if (!ply || !(ply is "DeltaPlayer"))
@@ -39,9 +42,6 @@ class DeltaWeaponPickup : Weapon
 	
 	action void A_GetWeaponSprite()
 	{
-		// consolePlayer used here on purpose!
-		// we WANT this to be able to look different for each player if, say,
-		// one is playing as Kris and another as Susie
 		let weapClass = invoker.GetWeapon();
 		if (!weapClass)
 			return;
@@ -51,6 +51,7 @@ class DeltaWeaponPickup : Weapon
 			return;
 		
 		sprite = weap.SpawnState.sprite;
+		invoker.frame = weap.SpawnState.frame;
 	}
 	
 	override string PickupMessage()
@@ -129,8 +130,12 @@ class DeltaChainsaw : Weapon replaces Chainsaw
 	
 	override string PickupMessage()
 	{
-		return String.Format(StringTable.Localize("$PICKUP_DELTA_CHAINSAW"),
-			GetDefaultByType('Chainsaw').GetTag().MakeLower());
+		let targetString = StringTable.Localize("$PICKUP_DELTA_CHAINSAW");
+		
+		if (DeltaGlobals.GetGlobals().GetMapset() ~== "NotEvenRemotelyFair")
+			targetString = StringTable.Localize("$PICKUP_DELTA_NERF_CHAINSAW");
+		
+		return String.Format(targetString, GetDefaultByType('Chainsaw').GetTag().MakeLower());
 	}
 }
 

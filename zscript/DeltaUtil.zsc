@@ -70,6 +70,54 @@ class DeltaUtil
 		return -(GetActorForward(a) cross GetActorRight(a));
 	}
 	
+	clearscope static bool SusieIsPresent(bool companionOnly = false)
+	{
+		if (!companionOnly)
+		{
+			for (int i = 0; i < MAXPLAYERS; i++)
+			{
+				if (!playerInGame[i] || !players[i].mo)
+					continue;
+				if (players[i].mo.GetClassName() != "SusiePlayer")
+					continue;
+				
+				return true;
+			}
+		}
+		
+		string susCheck = "Susie";
+		class<Actor> susie = susCheck;
+		if (!susie)
+			return false;
+		
+		let iter = ThinkerIterator.Create(susie, Thinker.STAT_DEFAULT);
+		return iter.Next();
+	}
+	
+	clearscope static bool RalseiIsPresent(bool companionOnly = false)
+	{
+		if (!companionOnly)
+		{
+			for (int i = 0; i < MAXPLAYERS; i++)
+			{
+				if (!playerInGame[i] || !players[i].mo)
+					continue;
+				if (players[i].mo.GetClassName() != "RalseiPlayer")
+					continue;
+				
+				return true;
+			}
+		}
+		
+		string ralCheck = "Ralsei";
+		class<Actor> ralsei = ralCheck;
+		if (!ralsei)
+			return false;
+		
+		let iter = ThinkerIterator.Create(ralsei, Thinker.STAT_DEFAULT);
+		return iter.Next();
+	}
+	
 	clearscope static Color HSVtoRGB(Color hsv)
 	{
 		let h = hsv.r/255.,
@@ -167,7 +215,7 @@ class DeltaUtil
 		
 		if (flash)
 		{
-			originator.A_StartSound("delta/kris/shield_parry");
+			originator.A_StartSound("delta/kris/shield_parry", CHAN_AUTO);
 			if (originator.player)
 				originator.A_SetBlend("white", 0.3, tics, "white", 0.15);
 		}

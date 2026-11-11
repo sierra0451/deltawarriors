@@ -3,6 +3,7 @@ class DeltaHealthBonus : HealthBonus replaces HealthBonus
 	Default
 	{
 		Inventory.Amount 5; // make sure healing numbers pop up correctly
+		-COUNTITEM; // these counting towards the item count is bullshit >:T
 	}
 	
 	override bool TryPickup(in out Actor toucher)
@@ -129,7 +130,7 @@ class DeltaBerserk : DeltaHealthPickup replaces Berserk
 		
 		Inventory.MaxAmount 1;
 		Inventory.Icon "PSTRA0";
-		Inventory.UseSound "";
+		Inventory.UseSound "delta/use_powerup";
 		Inventory.PickupMessage "$GOTBERSERK";
 		DeltaHealthPickup.UseMessage "$DELTA_USE_BERSERK";
 		DeltaHealthPickup.AlwaysAllowUse true;
@@ -150,7 +151,6 @@ class DeltaBerserk : DeltaHealthPickup replaces Berserk
 		if (!Super.Use(pickup))
 			return false;
 		
-		owner.A_StartSound("delta/use_powerup", CHAN_AUTO);
 		owner.GiveInventory("PowerStrength", 1);
 		return true;
 	}

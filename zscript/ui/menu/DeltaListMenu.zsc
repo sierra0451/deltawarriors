@@ -35,24 +35,6 @@ class DeltaListMenu : ListMenu
 		oldSelect = index;
 	}
 	
-	override bool MenuEvent(int mKey, bool fromController)
-	{
-		if (!Super.MenuEvent(mKey, fromController))
-			return false;
-		
-		debugString = "key: " .. mKey .. ", fc: " .. fromController;
-		return true;
-	}
-	
-	override bool MouseEvent(int type, int mX, int mY)
-	{
-		if (!Super.MouseEvent(type, mX, mY))
-			return false;
-		
-		debugString = "type: " .. type .. ", pos: " .. (mX, mY);
-		return true;
-	}
-	
 	override void Drawer()
 	{
 		Super.Drawer();

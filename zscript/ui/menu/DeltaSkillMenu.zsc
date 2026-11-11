@@ -1,9 +1,11 @@
 class DeltaSkillMenu : DeltaListMenu
 {
-	BrokenLines lines;
 	const FONT_SCALE = 2;
 	const CLIP_W = 300;
 	const CLIP_H = 100;
+	
+	BrokenLines lines;
+	private double _globalScale;
 	
 	override void Init(Menu parent, ListMenuDescriptor desc)
 	{
@@ -32,21 +34,23 @@ class DeltaSkillMenu : DeltaListMenu
 	override void Drawer()
 	{
 		Super.Drawer();
+		_globalScale = min(Screen.GetWidth()/1920., Screen.GetHeight()/1080.);
 		
 		if (!lines.Count())
 			return;
 		
-		let fontH = smallFont.GetHeight() * FONT_SCALE,
-			strPos = (CLIP_W, Screen.GetHeight() - CLIP_H - (fontH*lines.Count()));
+		let fontH = smallFont.GetHeight() * FONT_SCALE * _globalScale,
+			strPos = (CLIP_W * _globalScale,
+				Screen.GetHeight() - CLIP_H * _globalScale - (fontH*lines.Count()));
 		Screen.Dim(0xff000000, 0.5, int(strPos.x) - 10, int(strPos.y) - 10,
-			Screen.GetWidth() - CLIP_W*2,
-			(fontH*lines.Count()) + 20);
+			Screen.GetWidth() - int(CLIP_W * 2 * _globalScale),
+			int(fontH*lines.Count()) + 20);
 		
 		for (int i = 0; i < lines.Count(); i++)
 		{
 			Screen.DrawText(smallFont, Font.CR_UNTRANSLATED, strPos.x,
-				strPos.y, lines.StringAt(i), DTA_ScaleX, FONT_SCALE,
-				DTA_ScaleY, FONT_SCALE);
+				strPos.y, lines.StringAt(i), DTA_ScaleX, FONT_SCALE * _globalScale,
+				DTA_ScaleY, FONT_SCALE * _globalScale);
 			strPos.y += fontH;
 		}
 	}
@@ -56,6 +60,8 @@ class DeltaSkillMenu : DeltaListMenu
 		int index = mDesc.mSelectedItem;
 		if (index < 1 || index >= mDesc.mItems.Size())
 			return;
+		
+		_globalScale = min(Screen.GetWidth()/1920., Screen.GetHeight()/1080.);
 		
 		string localize;
 		switch (index)
@@ -80,6 +86,7 @@ class DeltaSkillMenu : DeltaListMenu
 		}
 		
 		let descString = StringTable.Localize(localize);
-		lines = smallFont.BreakLines(descString, int((Screen.GetWidth() - CLIP_W * 2.) / FONT_SCALE));
+		lines = smallFont.BreakLines(descString,
+			int((Screen.GetWidth() - CLIP_W * _globalScale * 2.) / (FONT_SCALE * _globalScale)));
 	}
 }

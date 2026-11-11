@@ -139,6 +139,7 @@ class KrisSmgGrenade : DeltaGrenade
 	{
 		Speed 35;
 		Obituary "$OBIT_DELTA_KSMGALT";
+		SelfObituary "$OBIT_DELTA_KSMGALTSELF";
 		
 		DeltaGrenade.GrenadeType GRENADE_STICKY;
 		DeltaGrenade.FuseTime 0.75;

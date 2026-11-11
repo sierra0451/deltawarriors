@@ -13,7 +13,7 @@ Plans have changed. This'll be the version I'm releasing for the Doom mod versio
 
 ## Installation instructions
 ### Programs needed:
-- UZDoom 4.14.3 (download link [here](https://zdoom.org/downloads))
+- UZDoom 5.0.3 (download link [here](https://zdoom.org/downloads))
 - Shouldn't have to be said, but I'm gonna say it anyway: you need a version of [Doom I or Doom II]((https://store.steampowered.com/app/2280/DOOM__DOOM_II/)). [Freedoom Phase 1 or 2](https://freedoom.github.io/download.html) will also work, though the recommended experience is with the commercial Doom games.
 
 ### Steps

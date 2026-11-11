@@ -24,10 +24,13 @@ class KrisPlayer : DeltaPlayer
 		_stopSlideTicks;			// used to stop sliding if we try to slide into a wall
 	private Vector3 _oldSlideVel;
     
-	const MAX_SLIDE_TICS 		= 7;
-	const MIN_SLIDE_TIME 		= TICRATE * 2 / 5;
-	const MAX_STOP_SLIDE_TICKS	= TICRATE / 2;
-	const PARRY_IFRAMES 		= 12;
+	const MAX_SLIDE_TICS 				= 7;
+	const MIN_SLIDE_TIME 				= TICRATE * 2 / 5;
+	const SLIDE_RESET_COOLDOWN 			= -TICRATE / 2;
+	const SLIDE_SPEED_STOP_THRESHOLD 	= 1.;
+	const SLIDE_SPEED_RESET_THRESHOLD 	= 7.;
+	const MAX_STOP_SLIDE_TICKS 			= TICRATE / 2;
+	const PARRY_IFRAMES 				= 12;
 	
 	Default
 	{
@@ -62,7 +65,7 @@ class KrisPlayer : DeltaPlayer
 		DeltaPlayer.HugReactionTime 20;
 		DeltaPlayer.CharacterColor Color(0, 162, 232);
 		DeltaPlayer.OffhandIcon "graphics/hud/shieldParryIcon.png";
-		DeltaPlayer.OffhandTpCost floor(0.4 * 250);
+		DeltaPlayer.OffhandTpCost floor(0.40 * 250);
 		
 		DeltaPlayer.CharacterIcon "graphics/krisCharIcon.png";
 		DeltaPlayer.NameTag "graphics/krisNameTag.png";
@@ -399,7 +402,11 @@ class KrisPlayer : DeltaPlayer
 		Super.DoJump();
 		
 		if (crouchState == CS_SLIDING)
+		{
 			EndSlide();
+			if (_slideTime < 0)
+				_slideTime = 0;
+		}
 	}
 	
 	override void CheckCrouch(bool totallyFrozen)
@@ -423,8 +430,11 @@ class KrisPlayer : DeltaPlayer
 		}
 		else if (crouchDir == -1 && crouchState == CS_SLIDING)
 			CrouchMove(-2);
-		else if ((crouchDir == 1 && _slideTime >= MIN_SLIDE_TIME) && crouchState == CS_SLIDING)
+		else if ((crouchDir == 1 && (_slideTime >= MIN_SLIDE_TIME || _slideTime < 0))
+			&& crouchState == CS_SLIDING)
+		{
 			EndSlide();
+		}
 		
 		if (coyoteTimer <= COYOTE_TIME && crouchState != CS_SLIDING && buttons & BT_CROUCH)
 			_lastCrouchedWhileGrounded = true;
@@ -469,6 +479,39 @@ class KrisPlayer : DeltaPlayer
 		return Super.CanCollideWith(other, passive);
 	}
 	
+	override void CollidedWith(Actor other, bool passive)
+	{
+		Super.CollidedWith(other, passive);
+		
+		if (passive || crouchState != CS_SLIDING || !other.bIsMonster || other.health <= 0)
+			return;
+		if (other.player && other.player.cheats & CF_PREDICTING)
+			return;
+		
+		A_StartSound("delta/use", CHAN_AUTO);
+		A_StartSound("delta/land", CHAN_AUTO);
+		
+		let slidePerc = _currentSlideSpeed / slideSpeed,
+			diff = level.Vec3Diff(pos, other.pos),
+			dir = diff.Unit();
+		
+		dir *= slidePerc * -10.;
+		if (IsGrounded())
+		{
+			dir.z = jumpZ * 0.75;
+			TryMove(pos.xy + dir.xy, 0.);
+		}
+		
+		EndSlide();
+		_slideTime = 0;
+		crouchState = CS_STANDING;
+		vel = dir;
+		
+		other.vel.XY += -dir.XY / other.mass;
+		other.DamageMobj(self, self, random[slideKickDamage](2, 5), 'Melee',
+			DMG_NO_PAIN);
+	}
+	
 	override void Step(double curVel)
 	{
 		if (crouchState != CS_SLIDING)
@@ -497,7 +540,7 @@ class KrisPlayer : DeltaPlayer
 	{
 		Super.HandleRalseiHugs();
 		
-		if (beingHugged)
+		if (bBeingHugged)
 		{
 			A_SetMugshotState("Normal");	// wanna make sure blush is ALWAYS called
 			A_SetMugshotState("Blush");
@@ -525,8 +568,8 @@ class KrisPlayer : DeltaPlayer
 			maxTics = 15,
 			targetTics = maxTics;
 		
-		if (abs(Vel.Z) != 0 && GetGravity() != 0)
-			targetTics = clamp(int(maxTics / GetGravity() / abs(Vel.Z)), minTics, maxTics);
+		if (abs(vel.z) != 0 && GetGravity() != 0)
+			targetTics = clamp(int(maxTics / GetGravity() / abs(vel.z)), minTics, maxTics);
 		
 		if (tics == -1 || tics > targetTics)
 			tics = targetTics;
@@ -547,6 +590,8 @@ class KrisPlayer : DeltaPlayer
 		{
 			if (_slideTics < MAX_SLIDE_TICS)
 				_slideTics++;
+			if (_slideTime == -1)
+				_slideTime = 0;
 			
 			_slideTime++;
 			
@@ -605,7 +650,7 @@ class KrisPlayer : DeltaPlayer
 				if (_currentSlideSpeed < 0)
 					_currentSlideSpeed = 0;
 				
-				speedPerc = _slideTime > 1?
+				speedPerc = _slideTime != 1?
 					clamp((prevSpeed + speedDiff/2) / slideSpeed, 0, 1) : 1.;
 				
 				if (!(player.cheats & CF_CHASECAM))
@@ -615,20 +660,25 @@ class KrisPlayer : DeltaPlayer
 						QF_RELATIVE|QF_GROUNDONLY);
 				}
 				
+				// pitch down as we slow down further
+				let targetPitch = DeltaUtil.Map(speedPerc, 0., 0.35, 0.75, 1.);
+				
 				if (!IsActorPlayingSound(CHAN_MOVEMENT))
 					A_StartSound("delta/kris/slide_loop", CHAN_MOVEMENT,
-						CHANF_LOOPING, speedPerc);
+						CHANF_LOOPING, speedPerc, pitch: targetPitch);
 				else
-					A_SoundVolume(CHAN_MOVEMENT, speedPerc);
-				
-				if (_currentSlideSpeed < 1 || _stopSlideTicks >= MAX_STOP_SLIDE_TICKS)
 				{
-					EndSlide();
-					_currentSlideSpeed = 0;
-					_savedSlideSpeed = slideSpeed;
+					A_SoundVolume(CHAN_MOVEMENT, speedPerc);
+					A_SoundPitch(CHAN_MOVEMENT, targetPitch);
 				}
+				
+				if (_currentSlideSpeed <= SLIDE_SPEED_STOP_THRESHOLD
+					|| _stopSlideTicks >= MAX_STOP_SLIDE_TICKS)
+						EndSlide();
 				else
-					_savedSlideSpeed = (_currentSlideSpeed > 1)? _currentSlideSpeed : slideSpeed;
+					_savedSlideSpeed =
+						(_currentSlideSpeed <= SLIDE_SPEED_RESET_THRESHOLD)?
+							slideSpeed : _currentSlideSpeed;
 				
 				_savedSlideSpeedTimer = GameTicRate / 10;
 			}
@@ -640,32 +690,45 @@ class KrisPlayer : DeltaPlayer
 			if (_slideTics > 0)
 				_slideTics--;
 			
-			_slideTime = 0;
+			if (_slideTime > 0)
+				_slideTime = 0;
+			else if (_slideTime)
+			{
+				if (++_slideTime == 0)
+					_savedSlideSpeed = slideSpeed;
+			}
+			
 			if (IsActorPlayingSound(CHAN_MOVEMENT))
 				A_StopSound(CHAN_MOVEMENT);
 			
-			if (-vel.z * 0.75 > _savedSlideSpeed)
-				_savedSlideSpeed = -vel.z * 0.75;
-			else
-				_savedSlideSpeed = max(slideSpeed, _savedSlideSpeed - (slideSlowing / GameTicRate));
+			if (_slideTime >= 0)
+			{
+				let targetSavedSpeed = -vel.z * 0.75;
+				
+				if (targetSavedSpeed > _savedSlideSpeed)
+					_savedSlideSpeed = targetSavedSpeed;
+				else
+					_savedSlideSpeed = max(slideSpeed, _savedSlideSpeed/2.);
+			}
 		}
 		
-		customBobPerc = 1 - (double(_slideTics) / MAX_SLIDE_TICS);
+		customBobPerc = 1. - _slideTics*1./MAX_SLIDE_TICS;
 		customBobPerc *= customBobPerc;
 	}
 	
-	protected void StartSlide(double angOffset, bool resetSpeed = true)
+	protected void StartSlide(double angOffset)
 	{
 		if (coyoteTimer > COYOTE_TIME || GetIsUsingOffhand())
 			return;
 		
 		slideAngleOffset = angOffset;
 		crouchState = CS_SLIDING;
-		_slideTime = 0;
 		_stopSlideTicks = 0;
 		
-		if (resetSpeed)
+		if (_slideTime <= 0 || _savedSlideSpeed > slideSpeed)
 			_currentSlideSpeed = max(_savedSlideSpeed, vel.XY.Length());
+		if (_slideTime != 0)
+			_slideTime = 0;
 		
 		if (IsPredicting())
 			return;
@@ -690,7 +753,8 @@ class KrisPlayer : DeltaPlayer
 	
 	protected void EndSlide()
 	{
-		_slideTime = 0;
+		if (_slideTime > 0)
+			_slideTime = 0;
 		
 		// prevent legs reappearing if we stop sliding as result of death
 		if (Health <= 0)
@@ -699,7 +763,18 @@ class KrisPlayer : DeltaPlayer
 			return;
 		}
 		
+		if (_currentSlideSpeed > SLIDE_SPEED_RESET_THRESHOLD
+			&& _currentSlideSpeed < slideSpeed)
+		{
+			_slideTime = SLIDE_RESET_COOLDOWN;
+			_savedSlideSpeed = _currentSlideSpeed;
+		}
+		else
+			_savedSlideSpeed = slideSpeed;
+		
+		_currentSlideSpeed = 0;
 		crouchState = CS_CROUCHING;
+		
 		let psp = player.FindPSprite(PSP_LEGS);
 		if (!psp)
 			return;
@@ -773,18 +848,18 @@ class KrisPlayer : DeltaPlayer
 		
 		if (!parried.Size())
 		{
-			SetState(ResolveState("ParryMiss"));
-			tensionDrainTimer = preOffhandTpTimer;
-			tensionPoints = preOffhandTp;
+			SetStateSafe(ResolveState("ParryMiss"));
 			return;
 		}
 		
+		A_AlertMonsters();
+		TryTakeTension(offhandTpCost);	// taking TP must be done manually!!
 		affected.Push(self);
 		
 		let startHitstopTics = 7,
 			hitstopTics = 7;
 		
-		SetState(ResolveState("Parry"));
+		SetStateSafe(ResolveState("Parry"));
 		A_QuakeEx(0, 10, 5, 10, 0, 10, "dsilent", QF_RELATIVE | QF_SCALEDOWN);
 		damageTics = PARRY_IFRAMES;
 		

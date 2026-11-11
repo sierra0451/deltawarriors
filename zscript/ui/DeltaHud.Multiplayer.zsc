@@ -264,12 +264,11 @@ extend class DeltaHud
 		// Bottom bar (second place if we're leader, us otherwise)
 		let bottomFrags = -500, bottomIndex = 0;
 		barColor = 0x0;
-		characterIcon = null;
+		characterIcon = 0;
 		
 		if (leaderIsUs)
 		{
 			if (teamplay)
-			{
 				for (int i = 0; i < teams.Size(); i++)
 				{
 					if (teamsFound.Find(i) == teamsFound.Size())
@@ -285,9 +284,7 @@ extend class DeltaHud
 					nameShown = teams[i].mName;
 					barColor = teams[i].GetPlayerColor();
 				}
-			}
 			else
-			{
 				for (int i = 0; i < players.Size(); i++)
 				{
 					if (i == leaderIndex)
@@ -311,24 +308,13 @@ extend class DeltaHud
 					characterIcon = deltaPly.GetCharacterIconId();
 					barColor = deltaPly.GetCharacterColor();
 				}
-			}
 		}
 		else
 		{
-			if (teamplay)
-			{
-				int teamIndex = CPlayer.GetTeam();
-				nameShown = teams[CPlayer.GetTeam()].mName;
-				barColor = teams[teamIndex].GetPlayerColor();
-				bottomFrags = GetTeamFrags(teamIndex);
-			}
-			else
-			{
-				bottomFrags = CPlayer.fragCount;
-				characterIcon = ply.GetCharacterIconId();
-				barColor = ply.GetCharacterColor();
-				nameShown = CPlayer.GetUserName();
-			}
+			int teamIndex = CPlayer.GetTeam();
+			nameShown = teamplay? teams[teamIndex].mName : CPlayer.GetUserName();
+			barColor = teamplay? teams[teamIndex].GetPlayerColor() : ply.GetCharacterColor();
+			bottomFrags = teamplay? GetTeamFrags(teamIndex) : CPlayer.fragCount;
 		}
 		
 		DrawTexture(_deathmatchCurrentPlayer, deathmatchPos +

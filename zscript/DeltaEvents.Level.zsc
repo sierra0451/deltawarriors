@@ -21,6 +21,12 @@ class DeltaLevelEvents : EventHandler
 	protected Le_GlScreen	gl_proj;
 	protected Le_Viewport	viewport;
 	protected int			currentTime;
+	protected string		curMapset;
+	ui protected int		lastUpdate;
+	
+	private bool			_everyoneDead;
+	private int				_deathTimer;
+	private int				_lastDeadNumber;
 	
 	override void OnRegister()
 	{
@@ -31,15 +37,17 @@ class DeltaLevelEvents : EventHandler
 	{
 		EnableNetworking(true);
 		
-		let _name = level.mapName,
-			mapset = DeltaGlobals.GetGlobals().GetMapset();
+		let _name = level.mapName;
+		curMapset = DeltaGlobals.GetGlobals().GetMapset();
 		
-		if (mapset ~== "AncientAliens" && _name ~== "map30")
+		if (curMapset ~== "AncientAliens" && _name ~== "map30")
 			Actor.Spawn("DeltaWeaponsAtEase");
-		else if (mapset ~== "BTSX1" && (_name ~== "map08" || _name ~== "map16"
+		else if (curMapset ~== "EviternityII" && _name ~== "map37")
+			Actor.Spawn("DeltaWeaponsAtEase");
+		else if (curMapset ~== "BTSX1" && (_name ~== "map08" || _name ~== "map16"
 			|| _name ~== "map23" || _name ~== "map25"))
 			Actor.Spawn("DeltaWeaponsAtEase");
-		else if (mapset ~== "BTSX2" && (_name ~== "map05" || _name ~== "map11"
+		else if (curMapset ~== "BTSX2" && (_name ~== "map05" || _name ~== "map11"
 			|| _name ~== "map16" || _name ~== "map23" || _name ~== "map27"))
 			Actor.Spawn("DeltaWeaponsAtEase");
 	}
@@ -62,6 +70,51 @@ class DeltaLevelEvents : EventHandler
 		ReviveTick();
 		DamageEventTick();
 		NametagTick();
+		
+		if (_everyoneDead)
+		{
+			_deathTimer++;
+			
+			if (_deathTimer == 2)
+			{
+				level.SetFrozen(true);
+				
+				for (int i = 0; i < level.sectors.Size(); i++)
+				{
+					bool moving = level.sectors[i].PlaneMoving(Sector.floor)
+						|| level.sectors[i].PlaneMoving(Sector.ceiling);
+					if (!moving)
+						continue;
+					
+					level.sectors[i].StartSoundSequence(1, "Silence", 0);
+					level.sectors[i].StartSoundSequence(2, "Silence", 0);
+					
+					if (level.sectors[i].floorData)
+						level.sectors[i].floorData.Destroy();
+					if (level.sectors[i].ceilingData)
+						level.sectors[i].ceilingData.Destroy();
+				}
+				
+				foreach (Actor mo : ThinkerIterator.Create("Actor"))
+					mo.A_StopAllSounds();
+				
+				S_ChangeMusic("", force: true);
+				S_StartSound("delta/hurt", CHAN_AUTO);
+			}
+		}
+		
+		// ready our weapons if we trigger a specific super secret in evi2's credits map
+		if (!(level.time % 10) && curMapset ~== "EviternityII" && level.mapName ~== "map37")
+		{
+			if (level.Sectors[888].floorData)
+			{
+				let it = ThinkerIterator.Create("DeltaWeaponsAtEase", Thinker.STAT_DEFAULT);
+				Thinker mo;
+				
+				if (mo = it.Next())
+					mo.Destroy();
+			}
+		}
 	}
 	
 	protected void DamageEventTick()
@@ -75,23 +128,6 @@ class DeltaLevelEvents : EventHandler
 				continue;
 			if (damageEvents[i].amount <= 0)
 				continue;
-			
-			if (sv_delta_pacifist && damageEvents[i].source
-				&& damageEvents[i].source is "DeltaPlayer"
-				&& damageEvents[i].victim.bIsMonster)
-			{
-				let dummy = damageEvents[i].source.Spawn("DeltaPacifistFail");
-				
-				for (int i = 0; i < MAXPLAYERS; i++)
-				{
-					if (!playerInGame[i] || !players[i].mo)
-						continue;
-					
-					players[i].mo.DamageMobj(damageEvents[i].source, dummy,
-						random[instakill](10000, 100000), "PacifistFail", DMG_FORCED);
-				}
-				return;
-			}
 			
 			if (damageEvents[i].victim is "DeltaPlayer")
 			{
@@ -108,7 +144,7 @@ class DeltaLevelEvents : EventHandler
 				{
 					EventHandler.SendInterfaceEvent(
 						playerNum: damageEvents[i].victim.PlayerNumber(),
-						name: "DeltaPlayerDamage",
+						name: "DeltaPlayerDamageTick",
 						arg1 : damageEvents[i].source ?
 							damageEvents[i].source.GetNetworkID() : 0,
 						arg2 : damageEvents[i].inflictor ?
@@ -134,16 +170,27 @@ class DeltaLevelEvents : EventHandler
 		
 		for (int i = reviving.Size() - 1; i >= 0; i--)
 		{
-			Actor revivee = reviving[i];
-			if (!revivee)
-				continue;
-			if (revivee.InStateSequence(revivee.curState, revivee.FindState("Raise")))
-				continue;
-			if (revivee.Health <= 0)
+			if (!reviving[i])
 				continue;
 			
-			SpawnHealEffects(revivee, 1); // using 1 because it'll get overridden for us being at maxHealth
+			Actor rev = reviving[i];
+			if (rev.Health != rev.SpawnHealth())
+			{
+				let healEffect = Actor.Spawn("DeltaHealEffect", rev.pos);
+				healEffect.A_SetSize(rev.radius, rev.height);
+				healEffect.master = rev;
+				healEffect.A_StartSound("delta/heal");
+				
+				reviving[i] = null;
+				continue;
+			}
+			if (rev.InStateSequence(rev.curState, rev.FindState("Raise")))
+				continue;
+			if (rev.Health <= 0) // make sure effects don't spawn if we're
+				continue;			 // killed again mid-resurrection
+			
 			reviving[i] = null;
+			SpawnHealEffects(rev, 1);
 		}
 	}
 	
@@ -312,6 +359,19 @@ class DeltaLevelEvents : EventHandler
 			}
 		}
 		
+		if (e.thing.player)
+		{
+			EventHandler.SendInterfaceEvent(
+				playerNum: e.thing.PlayerNumber(),
+				name: "DeltaPlayerDamage",
+				arg1 : e.damageSource ?
+					e.damageSource.GetNetworkID() : 0,
+				arg2 : e.inflictor ?
+					e.inflictor.GetNetworkID() : 0,
+				arg3: e.damage
+			);
+		}
+		
 		if (e.damageSource is "DeltaPlayer" && e.damageSource != e.thing
 			&& !(e.thing is "DeltaGrenade" || e.thing is "DeltaGrenadeHitbox"))
 		{
@@ -343,7 +403,7 @@ class DeltaLevelEvents : EventHandler
 			&& !multiplayer && !deathmatch && !level.AllowRespawn
 			&& !sv_singlePlayerRespawn && !G_SkillPropertyInt(SKILLP_PlayerRespawn);
 		
-		deltaPly.canRespawn = !gameOver;
+		deltaPly.bCanRespawn = !gameOver;
 		
 		for (int i = 0; i < MAXPLAYERS; i++)
 		{
@@ -392,33 +452,31 @@ class DeltaLevelEvents : EventHandler
 			return;
 		}
 		
-		level.SetFrozen(true);
-		
-		for (int i = 0; i < level.sectors.Size(); i++)
-		{
-			bool moving = level.sectors[i].PlaneMoving(Sector.floor)
-				|| level.sectors[i].PlaneMoving(Sector.ceiling);
-			if (!moving)
-				continue;
-			
-			level.sectors[i].StartSoundSequence(1, "Silence", 0);
-			level.sectors[i].StartSoundSequence(2, "Silence", 0);
-			
-			if (level.sectors[i].floorData)
-				level.sectors[i].floorData.Destroy();
-			if (level.sectors[i].ceilingData)
-				level.sectors[i].ceilingData.Destroy();
-		}
-		
-		foreach (Actor mo : ThinkerIterator.Create("Actor"))
-			mo.A_StopAllSounds();
-		
-		S_ChangeMusic("", force: true);
-		S_StartSound("delta/hurt", CHAN_AUTO);
-		
+		_everyoneDead = true;
+		_deathTimer = 0;
+		_lastDeadNumber = e.playerNumber;
 		requireMouse = true;
-		EventHandler.SendInterfaceEvent(e.playerNumber, "DeltaAllPlayersDead",
+		
+		EventHandler.SendInterfaceEvent(_lastDeadNumber, "DeltaAllPlayersDead",
 			!Cvar.GetCvar("data_delta_diedFirstTime").GetBool());
+	}
+	
+	override void CheckReplacement(ReplaceEvent e)
+	{
+		let mapset = DeltaGlobals.GetGlobals().GetMapset();
+		
+		if (mapset ~== "EviternityII")
+		{
+			string hlth = "HealthBonusEvit2";
+			class<Actor> hlthCls = hlth;
+			string armr = "ArmorBonusEvit2";
+			class<Actor> armrCls = armr;
+			
+			if (hlthCls && e.Replacement == hlthCls)
+				e.Replacement = "DeltaHealthBonus";
+			else if (armrCls && e.Replacement == armrCls)
+				e.Replacement = "DeltaCourage";
+		}
 	}
 	
 	override void PlayerEntered(PlayerEvent e)
@@ -483,8 +541,15 @@ class DeltaLevelEvents : EventHandler
 				inflictor = Actor(GetNetworkEntity(e.args[1]));
 			let amount = e.args[2];
 			
-			hud.CreateDamageIndicator(source, inflictor);
-			hud.CreateDamagePopup(source, amount);
+			hud.HandleDamage(source, inflictor, amount);
+		}
+		else if (e.name ~== "DeltaPlayerDamageTick")
+		{
+			Actor source = Actor(GetNetworkEntity(e.args[0])),
+				inflictor = Actor(GetNetworkEntity(e.args[1]));
+			let amount = e.args[2];
+			
+			hud.HandleTickDamage(source, inflictor, amount);
 		}
 		else if (e.name ~== "DeltaPlayerGraze")
 		{
@@ -524,10 +589,12 @@ class DeltaLevelEvents : EventHandler
 		hud.pos = e.viewPos;
 		hud.angles = (e.viewPitch, e.viewRoll, e.viewAngle);
 		
-		if (e.fracTic > 0.01 || e.camera != players[consolePlayer].camera)
+		if (level.time == lastUpdate || e.camera != players[consolePlayer].camera)
 			return;
 		
-		EventHandler.SendNetworkEvent("DeltaUpdateViewPos", int(e.viewPos.x), int(e.viewPos.y), int(e.viewPos.z));
+		lastUpdate = level.time;
+		EventHandler.SendNetworkEvent("DeltaUpdateViewPos",
+			int(e.viewPos.x), int(e.viewPos.y), int(e.viewPos.z));
 	}
 	
 	override void PostUiTick()
@@ -544,7 +611,7 @@ class DeltaLevelEvents : EventHandler
 		if (!hud)
 			return false;
 		
-		hud.TakeInput(e);
+		hud.OnInputEvent(e);
 		return false;
 	}
 	
@@ -588,7 +655,11 @@ class DeltaForceClass : EventHandler
 		
 		let newPawn = PlayerPawn(Actor.Spawn(targetPlayer, ply.mo.pos)),
 			oldPawn = ply.mo;
+		newPawn.angle = oldPawn.angle;
+		newPawn.pitch = oldPawn.pitch;
+		newPawn.roll = oldPawn.roll;
 		newPawn.player = ply;
+		
 		ply.cls = targetPlayer;
 		ply.mo = newPawn;
 		ply.camera = ply.mo;

@@ -17,6 +17,7 @@ $pitchshiftrange 0
 		// Jumping/landing
 		delta/jump = "sounds/player/shared/jump/player_newJump.wav"
 		delta/land = "sounds/player/shared/land/player_newLand.wav"
+		delta/hard_land = "sounds/player/shared/land/player_hardLand.wav"
 		
 		// Heal
 		delta/heal = "sounds/player/shared/player_heal.wav"
@@ -44,7 +45,10 @@ $pitchshiftrange 0
 		delta/tp_fail = "sounds/player/shared/player_tpfail.wav"
 		delta/falling_wind = "sounds/player/shared/player_fallingWind.wav"
 		
+		// Message typing sounds
 		delta/type = "sounds/messages/type.wav"
+		delta/type/susie = "sounds/messages/type_susie.wav"
+		delta/type/ralsei = "sounds/messages/type_ralsei.wav"
 		
 		// Footstep sounds
 			// Generic

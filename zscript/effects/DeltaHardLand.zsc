@@ -1,0 +1,14 @@
+class DeltaHardLand : Actor
+{
+	States
+	{
+		Spawn:
+			TNT1 A 1 NoDelay A_SpawnEffect;
+			Stop;
+	}
+	
+	action void A_SpawnEffect()
+	{
+		
+	}
+}

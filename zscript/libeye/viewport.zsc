@@ -25,7 +25,8 @@ struct Le_Viewport {
 	private double					scale_f;
 	private vector2					scene_to_viewport;
 	
-	ui void FromHud () const {
+	// [S0451] why in the hell was this marked as const?? it changes variable values, wtf??
+	ui void FromHud () {
 		scene_aspect = Screen.GetAspectRatio();
 		
 		vector2 hud_origin;

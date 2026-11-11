@@ -126,6 +126,8 @@ class DeltaHud : BaseStatusBar
 		_tpInterp = DynamicValueInterpolator.Create(0, 0.2, 1, 30);
 		_healthInterp = DynamicValueInterpolator.Create(0, 0.2, 1, 30);
 		_bar = InventoryBarState.Create();
+		
+		_oldHealth = GetHealthPerc();
 	}
 	
 	override void Tick()
@@ -151,9 +153,6 @@ class DeltaHud : BaseStatusBar
 			return;
 		}
 		
-		_infiniteAmmo = sv_infiniteAmmo
-			|| (ply.FindInventory('PowerInfiniteAmmo', true) != null);
-		
 		_oldTp = _tpInterp.GetValue();
 		
 		double tpInterpTarget = 0.;
@@ -163,8 +162,11 @@ class DeltaHud : BaseStatusBar
 		
 		_tpInterp.Update(int(tpInterpTarget));
 		
-		_oldHealth = _healthInterp.GetValue();
-		_healthInterp.Update(int(GetHealthPerc() * 100));
+		if (!ply.GetDamageTics())
+		{
+			_oldHealth = _healthInterp.GetValue();
+			_healthInterp.Update(int(GetHealthPerc() * 100));
+		}
 		
 		TickIndicators();
 		TickDamagePopups();
@@ -210,9 +212,9 @@ class DeltaHud : BaseStatusBar
 					continue;
 				
 				Weapon inv = Weapon(ply.FindInventory(weaps.GetWeapon(i, j)));
-				
 				if (!inv)
 					continue;
+				
 				if (inv.AmmoType1 && _ammos.Find(inv.AmmoType1) == _ammos.Size())
 					_ammos.Push(inv.AmmoType1);
 				if (inv.AmmoType2 && _ammos.Find(inv.AmmoType2) == _ammos.Size())
@@ -237,20 +239,28 @@ class DeltaHud : BaseStatusBar
 	
 	override void Draw(int state, double ticFrac)
 	{
-		Super.Draw(state, ticFrac);
-		DrawDeathSequence(ticFrac);
-		
-		if (!ply || state == HUD_None || !cl_delta_showHud)
-			return;
-		
-		_universalScale = GetHudScale() * 0.5;
-		_inverseUniversalScale = _universalScale / cl_delta_hudScale;
-		_universalScale = (1/_universalScale.x, 1/_universalScale.y) * cl_delta_hudScale;
-		
+		_universalScale = (cl_delta_hudScale, cl_delta_hudScale);
+		_inverseUniversalScale = (1 / cl_delta_hudScale, 1 / cl_delta_hudScale);
 		_hBorder = 35 * _universalScale.x;
 		_vBorder = 25 * _universalScale.y;
 		
+		if (!ply)
+			return;
+		
 		if (_deathSequence && _deathSequence.gameOverState > DeltaGameOver.FREEZE_FRAME)
+		{
+			BeginHUD(forceScaled: true, resW: 640, resH: 480);
+			DrawDeathSequence(ticFrac);
+			return;
+		}
+		
+		_infiniteAmmo = sv_infiniteAmmo
+			|| (ply.FindInventory('PowerInfiniteAmmo', true) != null);
+		
+		if (idmypos)
+			DrawMyPos();
+		
+		if (state == HUD_None || !cl_delta_showHud)
 			return;
 		
 		if (GetHealthPerc() <= 0.4
@@ -279,7 +289,7 @@ class DeltaHud : BaseStatusBar
 				DTA_Color, Color(255, 0, 0, 0));
 		}
 		
-		BeginHUD();
+		BeginHUD(forceScaled: true, resW: 640, resH: 480);
 		DrawMultiplayerUnderlay(ticFrac);
 		DrawBossBars();
 		DrawIndicators(ticFrac);
@@ -314,13 +324,24 @@ class DeltaHud : BaseStatusBar
 		ClearDamagePopups();
 	}
 	
+	virtual void HandleDamage(Actor source, Actor inflictor, int amount)
+	{
+		_oldHealth = _healthInterp.GetValue();
+	}
+	
+	virtual void HandleTickDamage(Actor source, Actor inflictor, int amount)
+	{
+		CreateDamageIndicator(source, inflictor);
+		CreateDamagePopup(source, amount);
+	}
+	
 	protected TextureID GetMainBindingIcon(string cmd)
 	{
 		int k = Bindings.GetKeysForCommand(cmd);
 		
 		// not a mouse button!
 		if (k <= DELTA_CONTROLICON_TEXT || k >= DELTA_CONTROLICON_MAX)
-			return null;
+			return 0;
 		
 		return controlIcons.GetIfExists(k);
 	}
@@ -373,9 +394,9 @@ class DeltaHud : BaseStatusBar
 				barHeight, DI_SCREEN_LEFT_BOTTOM);
 		}
 		
-		bool showLowHealth = hpPerc <= 0.33;
-		let trns = showLowHealth? "\c[DeltaLowHealth]" : "",
-			hpText = trns .. max(0, ply.health),
+		let trns = hpPerc <= 0? "\c[DeltaNoHealth]"
+				: (hpPerc <= 0.33? "\c[DeltaLowHealth]" : ""),
+			hpText = trns .. max(-999, ply.health),
 			maxHpText = trns .. max(0, ply.GetMaxHealth()),
 			maxHpWidth = _drHudFont.mFont.StringWidth(maxHpText) * 2,
 			slashWidth = _drHudFont.mFont.GetCharWidth("/");
@@ -383,7 +404,8 @@ class DeltaHud : BaseStatusBar
 		DrawTexture(_hpText, (_hBorder + 46*_universalScale.x,
 			-_vBorder - 20*_universalScale.y), DI_SCREEN_LEFT_BOTTOM
 			| DI_ITEM_LEFT_TOP, scale: _universalScale,
-			col: showLowHealth ? 0xffffff00 : 0xffffffff);
+			col: hpPerc <= 0? 0xffff0000
+				: hpPerc <= 0.33? 0xffffff00 : 0xffffffff);
 		DrawString(_drHudFont, maxHpText, (_hBorder + 183*_universalScale.x,
 			-_vBorder - 35*_universalScale.y), DI_SCREEN_LEFT_BOTTOM
 			| DI_TEXT_ALIGN_RIGHT, scale: _universalScale*2);
@@ -645,7 +667,7 @@ class DeltaHud : BaseStatusBar
 			DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM, scale: _universalScale,
 			col: ply.GetCharacterColor());
 		
-		let currentFace = GetMugshot(4, Mugshot.DISABLEOUCH | Mugshot.DISABLERAMPAGE);
+		let currentFace = GetMugshot(4, Mugshot.DISABLEOUCH);
 		DrawTexture(currentFace, (_hBorder + 8*_universalScale.x,
 			-_vBorder - 25*_universalScale.y), DI_SCREEN_LEFT_BOTTOM
 			| DI_ITEM_LEFT | DI_ITEM_VCENTER, scale: _universalScale);
@@ -740,11 +762,9 @@ class DeltaHud : BaseStatusBar
 			DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM,
 			col: ply.GetCharacterColor(), scale: _universalScale);
 		
-		int ammoW, ammoH;
-		[ammoW, ammoH] = TexMan.GetSize(_ammoBottom);
-		
+		let [ammoW, ammoH] = TexMan.GetSize(_ammoBottom);
 		double widgetWidth = ammoW * _universalScale.x,
-			hPerAmmo = 22 * _universalScale.y,
+			hPerAmmo = 32 * _universalScale.y,
 			h = _ammos.Size() * hPerAmmo + (ammoH+1)*_universalScale.y;
 		
 		Fill(Color(170, 0, 0, 0), -_hBorder - widgetWidth,
@@ -762,33 +782,38 @@ class DeltaHud : BaseStatusBar
 		
 		for (int i = 0; i < _ammos.Size(); i++)
 		{
-			let am = _ammos[_ammos.Size() - 1 - i];
-			let amCount = ply.CountInv(am);
-			let ammoIcon = ammoIcons.GetIfExists(am.GetClassName());
+			let am = _ammos[_ammos.Size() - 1 - i],
+				ammoIcon = ammoIcons.GetIfExists(am.GetClassName()),
+				weap = CPlayer.ReadyWeapon;
+			let [amCount, amMaxCount] = GetAmount(am);
 			double curAlpha = 0.2;
-			let weap = CPlayer.ReadyWeapon;
+			bool lowAmmo = !_infiniteAmmo && amCount <= max(1, amMaxCount * 0.1);
+			string trans = (!amCount)? "\c[DeltaNoHealth]" : (lowAmmo? "\c[DeltaLowHealth]" : "");
 			
 			if (weap && (am == weap.AmmoType1 || am == weap.AmmoType2))
 				curAlpha = 1;
 			
+			let textY = -_vBorder - (ammoH-2) * _universalScale.y - hPerAmmo*(i+1);
 			DrawTexture(ammoIcon, (-_hBorder - widgetWidth + 8*_universalScale.x,
-				-_vBorder - (4+ammoH)*_universalScale.y - hPerAmmo*i),
-				DI_ITEM_LEFT_BOTTOM | DI_SCREEN_RIGHT_BOTTOM,
-				alpha: curAlpha,
-				box: _universalScale*16, scale: _universalScale);
+					-_vBorder - (ammoH) * _universalScale.y - hPerAmmo*(i+0.5)),
+				DI_ITEM_LEFT | DI_ITEM_VCENTER | DI_SCREEN_RIGHT_BOTTOM,
+				alpha: curAlpha, box: _universalScale*16, scale: _universalScale);
 			
 			if (_infiniteAmmo)
-				DrawTexture(_infiniteText, (-_hBorder - 8*_universalScale.x,
-					-_vBorder - (4+ammoH)*_universalScale.y - hPerAmmo*i),
-					DI_ITEM_RIGHT_BOTTOM | DI_SCREEN_RIGHT_BOTTOM,
+				DrawTexture(_infiniteText, (-_hBorder - 8*_universalScale.x, textY),
+					DI_ITEM_RIGHT_TOP | DI_SCREEN_RIGHT_BOTTOM,
 					alpha: curAlpha, scale: _universalScale*2);
 			else
-				DrawString(_drHudFont, "" .. amCount,
-					(-_hBorder - (8*_universalScale.x), -_vBorder -
-						(i+1)*hPerAmmo - (ammoH-2)*_universalScale.y),
+				DrawString(_drHudFont, trans .. amCount,
+					(-_hBorder - 8*_universalScale.x, textY),
 					DI_SCREEN_RIGHT_BOTTOM | DI_TEXT_ALIGN_RIGHT,
-					alpha: curAlpha,
-					scale: _universalScale*3);
+					alpha: curAlpha, scale: _universalScale*3);
+			
+			DrawString(_drHudFont, trans .. amMaxCount,
+				(-_hBorder - 9*_universalScale.x,
+					-_vBorder - (ammoH-3)*_universalScale.y - hPerAmmo*(i+0.5)),
+				DI_SCREEN_RIGHT_BOTTOM | DI_TEXT_ALIGN_RIGHT,
+				alpha: curAlpha, scale: _universalScale*2);
 		}
 	}
 	
@@ -847,17 +872,26 @@ class DeltaHud : BaseStatusBar
 			cl_delta_crosshairFriendlyColor : cl_delta_crosshairEnemyColor);
 		xhairColor |= 0xff000000;
 		DrawTexture(crosshair, (0, 0), DI_SCREEN_CENTER | DI_ITEM_CENTER,
-			scale: _universalScale * 0.5, col: xhairColor);
+			scale: (0.5, 0.5), col: xhairColor);
 		
-		if (!ply.CanUseOffhand()
-			|| ply.GetTension(ply.GetOffhandTpCost()) == DeltaPlayer.TP_FAIL
-			|| !cl_delta_showOffhandIndicator)
+		if (!ply.CanUseOffhand() || !cl_delta_showOffhandIndicator
+			|| ply.GetTension(ply.GetOffhandTpCost()) == DeltaPlayer.TP_FAIL)
 		{
 			return;
 		}
 		
 		DrawTexture(_offhandCrosshair, (0, 0), DI_SCREEN_CENTER | DI_ITEM_CENTER,
-			scale: _universalScale * 0.5, col: 0xff000000 | cl_delta_offhandIndicatorColor);
+			scale: (0.5, 0.5), col: 0xff000000 | cl_delta_offhandIndicatorColor);
+		DrawTexture(ply.GetOffhandIconID(), (32, 0),
+			DI_SCREEN_CENTER | DI_ITEM_VCENTER | DI_ITEM_LEFT,
+			scale: (0.5, 0.5));
+	}
+	
+	enum AmmoPanelId
+	{
+		SINGLE,
+		DOUBLE_LEFT,
+		DOUBLE_RIGHT
 	}
 	
 	protected void DrawQuickInfo(double ticFrac)
@@ -867,87 +901,155 @@ class DeltaHud : BaseStatusBar
 		if (ply.CountInv("DeltaNoHud"))
 			return;
 		
-		let reticleBarOffset = (-75 * _universalScale.x, 0);
+		let reticleBarOffset = (-16 * _universalScale.x, 0);
+		let [width, height] = TexMan.GetSize(_reticleBar);
+		double
+			realWidth = width * 0.5,
+			realHeight = (height + 2) * 0.5,
+			curX = reticleBarOffset.x - realWidth,
+			curY = realHeight * 0.5,
+			hpPerc = GetHealthPerc(),
+			healthInterpValue = DeltaUtil.Lerp(_oldHealth,
+				_healthInterp.GetValue(), ticFrac) / 100.,
+			tp = ply.tensionPoints, maxTp = ply.maxTensionPoints,
+			tpLerp = DeltaUtil.Lerp(_oldTp, _tpInterp.GetValue(), ticFrac);
+		bool overheal = hpPerc > 1;
 		
+		DrawTexture(_reticleBar, (curX, 0),
+			DI_SCREEN_CENTER | DI_ITEM_VCENTER | DI_ITEM_RIGHT,
+			scale: (0.5, 0.5), col: 0xc0550000);
+		
+		if (overheal)
+			DrawTexture(_reticleBar, (curX, 0), 
+				DI_SCREEN_CENTER | DI_ITEM_VCENTER | DI_ITEM_RIGHT,
+				scale: (0.5, 0.5), col: ply.GetCharacterColor());
+		
+		if (!_infiniteAmmo)
+			DrawTextureRotated(_reticleBar, (-curX + realWidth*0.5, 0),
+				DI_SCREEN_CENTER | DI_ITEM_VCENTER | DI_ITEM_RIGHT, 180,
+				scale: (2, 2), col: 0xc0550000);
+		
+		// defining stencil mask
 		Screen.EnableStencil(true);
 		Screen.SetStencil(0, SOP_Increment, SF_ColorMaskOff);
 		
-		// defining stencil mask
-		DrawTexture(_reticleBar, reticleBarOffset, 
-			DI_SCREEN_CENTER | DI_ITEM_VCENTER | DI_ITEM_RIGHT,
-			scale: _universalScale * 0.5);
+		Fill(0xffffffff, curX - realWidth, curY, realWidth,
+			-realHeight * (overheal? healthInterpValue - 1 : healthInterpValue),
+			DI_SCREEN_CENTER);
 		
 		if (!_infiniteAmmo)
-		{
-			reticleBarOffset.x *= -1;
-			DrawTextureRotated(_reticleBar, reticleBarOffset,
+			Fill(0xffffffff, -curX, curY, realWidth,
+				-realHeight * clamp(tpLerp / maxTp, 0, 1),
+				DI_SCREEN_CENTER);
+		
+		// using stencil mask
+		Screen.SetStencil(1, SOP_Keep, SF_AllOn);
+		
+		DrawTexture(_reticleBar, (curX, 0), 
+			DI_SCREEN_CENTER | DI_ITEM_VCENTER | DI_ITEM_RIGHT,
+			scale: (0.5, 0.5), col: 0xffff0000);
+		
+		if (!_infiniteAmmo)
+			DrawTextureRotated(_reticleBar, (-curX + realWidth*0.5, 0),
 				DI_SCREEN_CENTER | DI_ITEM_VCENTER | DI_ITEM_RIGHT, 180,
-				scale: _inverseUniversalScale * 2);
-			reticleBarOffset.x *= -1;
-		}
+				scale: (2, 2), col: 0xffff0000);
+		
+		// resetting and redefining stencil mask
+		Screen.ClearStencil();
+		Screen.SetStencil(0, SOP_Increment, SF_ColorMaskOff);
+		
+		Fill(0xffffffff, curX - realWidth, curY, realWidth,
+			-realHeight * (overheal? (hpPerc - 1) : hpPerc),
+			DI_SCREEN_CENTER);
+		
+		if (!_infiniteAmmo)
+			Fill(0xffffffff, -curX, curY, realWidth,
+				-realHeight * clamp(tp/maxTp, 0, 1),
+				DI_SCREEN_CENTER);
 		
 		Screen.SetStencil(1, SOP_Keep, SF_AllOn);
 		
-		// using stencil mask
-		int width, height;
-		[width, height] = TexMan.GetSize(_reticleBar);
-		double
-			realWidth = width * _universalScale.x * 0.5,
-			realHeight = height * _universalScale.y * 0.5,
-			curX = reticleBarOffset.x - realWidth,
-			curY = reticleBarOffset.y + realHeight*0.5;
-		
-		Fill(0xc0550000, curX, curY, realWidth, -realHeight, DI_SCREEN_CENTER);
-		
-		let hpPerc = GetHealthPerc(),
-			healthInterpValue = DeltaUtil.Lerp(_oldHealth,
-				_healthInterp.GetValue(), ticFrac) / 100.;
-		
-		Fill(Color(255, 255, 0, 0), curX, curY, realWidth,
-			-realHeight * healthInterpValue, DI_SCREEN_CENTER);
-		Fill(ply.GetCharacterColor(), curX, curY, realWidth,
-			-realHeight * min(hpPerc, 1),
-			DI_SCREEN_CENTER);
-		
-		if (hpPerc > 1)
-		{
-			Fill(Color(255, 255, 0, 0), curX, curY, realWidth,
-				-realHeight * max(0, healthInterpValue-1), DI_SCREEN_CENTER);
-			Fill(ply.GetOverhealColor(), curX, curY, realWidth,
-				-realHeight * max(0, hpPerc-1), DI_SCREEN_CENTER);
-		}
+		DrawTexture(_reticleBar, (curX, 0), 
+			DI_SCREEN_CENTER | DI_ITEM_VCENTER | DI_ITEM_RIGHT, scale: (0.5, 0.5),
+			col: overheal? ply.GetOverhealColor() : ply.GetCharacterColor());
 		
 		if (!_infiniteAmmo)
-		{
-			double tp = ply.tensionPoints, maxTp = ply.maxTensionPoints,
-				tpLerp = DeltaUtil.Lerp(_oldTp, _tpInterp.GetValue(), ticFrac);
-			curX = -reticleBarOffset.x - realWidth*0.5;
-			Fill(0xc0550000, curX, curY, realWidth, -realHeight,
-				DI_SCREEN_CENTER);
-			Fill(Color(255, 255, 0, 0), curX, curY, realWidth,
-				-realHeight * clamp(tpLerp / maxTp, 0, 1),
-				DI_SCREEN_CENTER);
-			Fill(0xffffa040, curX, curY, realWidth,
-				-realHeight * clamp(tp/maxTp, 0, 1),
-				DI_SCREEN_CENTER);
-			Fill(0xffffffff, curX,
-				curY - realHeight * clamp(tp/maxTp, 0, 1),
-				realWidth, _universalScale.y * 0.5, DI_SCREEN_CENTER);
-		}
-		
-		Screen.EnableStencil(false);
-		Screen.ClearStencil();
-		
-		DrawTexture(_reticleBarOverlay, reticleBarOffset,
-			DI_SCREEN_CENTER | DI_ITEM_VCENTER | DI_ITEM_RIGHT,
-			scale: _universalScale * 0.5);
-		
-		if (!_infiniteAmmo)
-		{
-			reticleBarOffset.x *= -1;
-			DrawTextureRotated(_reticleBarOverlay, reticleBarOffset,
+			DrawTextureRotated(_reticleBar, (-curX + realWidth*0.5, 0),
 				DI_SCREEN_CENTER | DI_ITEM_VCENTER | DI_ITEM_RIGHT, 180,
-				scale: _inverseUniversalScale * 2);
+				scale: (2, 2), col: 0xffffa040);
+		
+		Screen.ClearStencil();
+		Screen.EnableStencil(false);
+		
+		DrawTexture(_reticleBarOverlay, (curX, 0),
+			DI_SCREEN_CENTER | DI_ITEM_VCENTER | DI_ITEM_RIGHT,
+			scale: (0.5, 0.5));
+		
+		if (!_infiniteAmmo)
+			DrawTextureRotated(_reticleBarOverlay, (-curX + realWidth*0.5, 0),
+				DI_SCREEN_CENTER | DI_ITEM_VCENTER | DI_ITEM_RIGHT, 180,
+				scale: (2, 2));
+		
+		DrawReticleAmmoPanels(-2., 14.5);
+	}
+	
+	protected void DrawReticleAmmoPanels(double x, double y, double sc = 0.5)
+	{
+		let [am1, am2, ammoCount1, ammoCount2] = GetCurrentAmmo();
+		if (!am1 && !am2)
+			return;
+		
+		if (am2 == am1)
+			am2 = null;
+		
+		double halfWidth = 0.,
+			padding = 4. * sc,
+			spacing = 4. * sc;
+		
+		for (int i = 0; i < 2; i++)
+		{
+			let am = (!i)? am1 : am2;
+			if (!am)
+				continue;
+			
+			let ammoCount = (!i)? ammoCount1 : ammoCount2, str = "" .. ammoCount,
+				strW = smallFont.StringWidth(str) * sc;
+			
+			halfWidth += strW*0.5 + padding;
+		}
+		
+		if (am1 && am2)
+			halfWidth += spacing/2.;
+		
+		let curX = -halfWidth + 2.*sc;
+		for (int i = 0; i < 2; i++)
+		{
+			let am = (!i)? am1 : am2;
+			if (!am)
+				continue;
+			
+			let ammoCount = (!i)? ammoCount1 : ammoCount2, str = "" .. ammoCount,
+				strW = _drHudFont.mFont.StringWidth(str) * sc * 2. - 2*sc,
+				strH = _drHudFont.mFont.GetGlyphHeight(int("0")) * sc * 2.,
+				curY = 26. * sc,
+				widgetW = strW + 2*padding,
+				widgetH = strH + 2*padding;
+			
+			Fill(0x80000000, curX, curY, widgetW, widgetH,
+				DI_SCREEN_CENTER);
+			Fill(ply.GetCharacterColor(), curX + sc, curY + sc,
+				widgetW - 2*sc, sc, DI_SCREEN_CENTER);
+			Fill(ply.GetCharacterColor(), curX + sc, curY + widgetH - 2*sc,
+				widgetW - 2*sc, sc, DI_SCREEN_CENTER);
+			Fill(ply.GetCharacterColor(), curX + sc, curY + sc,
+				sc, widgetH - 2*sc, DI_SCREEN_CENTER);
+			Fill(ply.GetCharacterColor(), curX + widgetW - 2*sc, curY + sc,
+				sc, widgetH - 2*sc, DI_SCREEN_CENTER);
+			
+			DrawString(_drHudFont, str, (curX + padding - 2*sc, curY + padding),
+				DI_SCREEN_CENTER | DI_TEXT_ALIGN_LEFT, scale: (sc*2, sc*2));
+			
+			curX += halfWidth + spacing;
 		}
 	}
 	

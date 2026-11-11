@@ -260,6 +260,7 @@ class DeltaGrenadeHitbox : Actor abstract
 		Radius 10;
 		Height 12;
 		Health 20;
+		DamageFactor "Melee", 4;
 		
 		+SHOOTABLE		// not immune to hitscans!
 		+NONSHOOTABLE	// can't be hit by projectiles <3

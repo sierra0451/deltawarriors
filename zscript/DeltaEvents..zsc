@@ -8,7 +8,9 @@ class DeltaGlobals : StaticEventHandler
 	// - BTSX1,
 	// - BTSX2,
 	// - BTSX3,
-	// - Sunlust
+	// - Sunlust,
+	// - Eviternity,
+	// - EviternityII
 	
 	override void OnRegister()
 	{
@@ -35,6 +37,10 @@ class DeltaGlobals : StaticEventHandler
 				_curMapset = "BTSX2";
 			else if (checksum == "4efe4658dc515d0eac6b5b11e4c98ae5")
 				_curMapset = "AncientAliens";
+			else if (checksum == "9831c412420f16fa0de000fd1dbfe901")
+				_curMapset = "Eviternity";
+			else if (checksum == "8eb38d5289c47bb68d64f2832efa096d")
+				_curMapset = "EviternityII";
 			else if (checksum == "56f7ec7f82136186fd133d644d36c28d")
 				_curMapset = "Sunlust";
 			else if (checksum == "6d1c95a2b07af77823c42500d96277c3")

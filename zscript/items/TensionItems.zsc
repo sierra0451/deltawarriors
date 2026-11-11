@@ -1,6 +1,11 @@
 /// base class for tension items!
 class DeltaTensionPickup : Inventory
 {
+	Default
+	{
+		+BRIGHT
+	}
+	
 	override bool TryPickup(in out Actor toucher)
 	{
 		let delta = DeltaPlayer(toucher);
@@ -23,7 +28,6 @@ class DeltaCourage : DeltaTensionPickup replaces ArmorBonus
 		Inventory.Amount -5; // 5% i.e. 12.5 TP, not actually 5 TP
 		Inventory.PickupMessage "$PICKUP_DELTA_COURAGE";
 		
-		+COUNTITEM
 		+Inventory.ALWAYSPICKUP
 	}
 	
