@@ -199,14 +199,15 @@ $pitchshiftrange 0
 		$alias delta/smg/holster delta/shotgun/holster
 
 // Player sounds
-	$playeralias	delta	neutral	*usefail	delta/use
-	$playeralias	delta	neutral	*grunt		dssilent
-	
 	// Overriding UZDoom sounds!
 	misc/i_pkup 		= 	"sounds/player/shared/player_pickupitem.wav"
 	misc/w_pkup 		= 	"sounds/player/shared/player_pickupweapon.wav"
 	misc/k_pkup 		= 	"sounds/player/shared/player_pickupkey.wav"
 	misc/secret			=	"sounds/player/shared/player_findsecret.wav"
+	
+	$playeralias	delta	neutral	*usefail	delta/use
+	$playeralias	delta	neutral	*grunt		delta/use
+	
 	$alias misc/invchange	delta/menu_change
 	
 	$alias menu/activate	delta/menu_confirm
