@@ -114,7 +114,11 @@ extend class DeltaPlayer
 			inAir = LegsInAirState(),
 			inCrouchWalk = LegsInCrouchWalkState(),
 			crouching = IsCrouching(),
-			running = player ? ((player.buttons & BT_RUN) && waterLevel < 2) : false;
+			running = false;
+		
+		if (player && waterLevel < 2)
+			running = player.cmd.forwardMove > gameInfo.normForwardMove[0]*256
+				|| player.cmd.sideMove > gameInfo.normSideMove[0]*256;
 		
 		let psp = player.FindPSprite(PSP_LEGS);
 		state targetState;
