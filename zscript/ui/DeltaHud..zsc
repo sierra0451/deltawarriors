@@ -310,12 +310,6 @@ class DeltaHud : BaseStatusBar
 		DrawOxygen();
 	}
 	
-	override void ShowPop(int popNum)
-	{
-		Super.ShowPop(popNum);
-		Console.Printf("ShowPop called, popNum is " .. popNum);
-	}
-	
 	void ResetHUD()
 	{
 		_tpInterp.Reset(0);
@@ -995,6 +989,9 @@ class DeltaHud : BaseStatusBar
 	
 	protected void DrawReticleAmmoPanels(double x, double y, double sc = 0.5)
 	{
+		if (_infiniteAmmo)
+			return;
+		
 		let [am1, am2, ammoCount1, ammoCount2] = GetCurrentAmmo();
 		if (!am1 && !am2)
 			return;
