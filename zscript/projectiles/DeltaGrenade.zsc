@@ -231,7 +231,11 @@ class DeltaGrenade : Actor abstract
 				if (victim.DamageMobj(self, target, random[stickyDamage](5, 10), meansOfDamage) <= 0)
 					break;
 				
-				victim.TriggerPainChance(meansOfDamage, true);
+				// rolling pain chance four times (including the roll from the
+				// DamageMobj call) instead of ONLY the one from DamageMobj
+				victim.TriggerPainChance(meansOfDamage);
+				victim.TriggerPainChance(meansOfDamage);
+				victim.TriggerPainChance(meansOfDamage);
 				break;
 			
 			case GRENADE_CONTACT:

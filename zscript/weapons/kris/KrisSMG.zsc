@@ -160,7 +160,7 @@ class KrisSmgGrenade : DeltaGrenade
 		Super.Explode();
 		
 		double range = 70;
-		RadiusAttack(target, 220 + dmgTaken, range, 'KrisSmgGrenade',
+		RadiusAttack(target, 240 + dmgTaken, range, 'KrisSmgGrenade',
 			RADF_THRUSTZ, range*0.2);
 		
 		let diff = level.Vec3Diff(pos, target.pos),
