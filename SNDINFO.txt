@@ -137,6 +137,7 @@ $pitchshiftrange 0
 		delta/sword/holster = "sounds/weapons/kris/sword/sword_sheathe.wav"
 		$alias delta/sword/swing delta/generic_attack
 		$alias delta/sword/hit delta/generic_hit
+		$alias delta/sword/berserk delta/generic_heavyAttack
 		
 		// Revolver
 		delta/revolver/deploy1 = "sounds/weapons/kris/revolver/revolver_deploy1.wav"
