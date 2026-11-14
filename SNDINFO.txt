@@ -10,6 +10,7 @@ $pitchshiftrange 0
 	// Shared
 		// Generic weapon sounds
 		delta/generic_attack = "sounds/weapons/generic_attack.wav"
+		delta/generic_heavyAttack = "sounds/weapons/generic_heavyAttack.wav"
 		delta/generic_hit = "sounds/weapons/generic_hit.wav"
 		delta/generic_pullWeapon = "sounds/weapons/generic_pullWeapon.wav"
 		delta/generic_badExplosion = "sounds/weapons/generic_badExplosion.wav"

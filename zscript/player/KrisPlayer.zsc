@@ -536,15 +536,16 @@ class KrisPlayer : DeltaPlayer
 		return _roll;
 	}
 	
-	override void HandleRalseiHugs()
+	override bool HandleCustomMugshot()
 	{
-		Super.HandleRalseiHugs();
-		
 		if (bBeingHugged)
 		{
-			A_SetMugshotState("Normal");	// wanna make sure blush is ALWAYS called
+			A_SetMugshotState("Normal");
 			A_SetMugshotState("Blush");
+			return true;
 		}
+		
+		return Super.HandleCustomMugshot();
 	}
 	
 	override double GetGrazeMultiplier()

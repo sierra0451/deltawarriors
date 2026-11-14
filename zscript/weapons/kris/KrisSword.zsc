@@ -120,15 +120,23 @@ class KrisSword : DeltaWeapon
 		A_StartSound("delta/sword/swing", CHAN_WEAPON, CHANF_OVERLAP,
 			pitch: cfrandom(0.95, 1.05));
 		
-		int dmg, TRACER_COUNT = 16;
+		int dmg, dmgMult = 1, shakeDuration = 5, TRACER_COUNT = 16;
 		bool hitSomething = false;
 		double distance = 80, puffDist = 40,
 			zOffset = player.viewz - player.mo.pos.z;
 		Array<Actor> targets;
 		
+		if (CountInv("PowerStrength"))
+		{
+			dmgMult = 3;
+			shakeDuration = 8;
+			A_StartSound("delta/sword/berserk", CHAN_WEAPON, CHANF_OVERLAP,
+				pitch: cfrandom(0.95, 1.05));
+		}
+		
 		for (double ang = -45; ang <= 45; ang += 45./TRACER_COUNT)
 		{
-			dmg = random[swordDamage](35, 50);
+			dmg = random[swordDamage](35, 50) * dmgMult;
 			FTranslatedLineTarget t;
 			FLineTraceData l;
 			
@@ -159,7 +167,8 @@ class KrisSword : DeltaWeapon
 		
 		if (targets.Size())
 		{
-			A_QuakeEx(0, 4, 2, 5, 0, 1, "dssilent", QF_RELATIVE | QF_SCALEDOWN);
+			A_QuakeEx(0, 4 * dmgMult, 2 * dmgMult, shakeDuration, 0, 1,
+				"dssilent", QF_RELATIVE | QF_SCALEDOWN);
 			A_StartSound("delta/sword/hit", CHAN_WEAPON, CHANF_OVERLAP);
 		}
 		else
