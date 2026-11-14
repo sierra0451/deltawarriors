@@ -29,6 +29,7 @@ class KrisPlayer : DeltaPlayer
 	const SLIDE_RESET_COOLDOWN 			= -TICRATE / 2;
 	const SLIDE_SPEED_STOP_THRESHOLD 	= 1.;
 	const SLIDE_SPEED_RESET_THRESHOLD 	= 7.;
+	const SLIDE_SPEED_TIMER_SAVE 		= TICRATE / 10;
 	const MAX_STOP_SLIDE_TICKS 			= TICRATE / 2;
 	const PARRY_IFRAMES 				= 12;
 	
@@ -680,8 +681,6 @@ class KrisPlayer : DeltaPlayer
 					_savedSlideSpeed =
 						(_currentSlideSpeed <= SLIDE_SPEED_RESET_THRESHOLD)?
 							slideSpeed : _currentSlideSpeed;
-				
-				_savedSlideSpeedTimer = GameTicRate / 10;
 			}
 			else if (IsActorPlayingSound(CHAN_MOVEMENT))
 				A_StopSound(CHAN_MOVEMENT);
@@ -699,6 +698,9 @@ class KrisPlayer : DeltaPlayer
 					_savedSlideSpeed = slideSpeed;
 			}
 			
+			if (_savedSlideSpeedTimer)
+				_savedSlideSpeedTimer--;
+			
 			if (IsActorPlayingSound(CHAN_MOVEMENT))
 				A_StopSound(CHAN_MOVEMENT);
 			
@@ -707,9 +709,12 @@ class KrisPlayer : DeltaPlayer
 				let targetSavedSpeed = -vel.z * 0.75;
 				
 				if (targetSavedSpeed > _savedSlideSpeed)
+				{
 					_savedSlideSpeed = targetSavedSpeed;
-				else
-					_savedSlideSpeed = max(slideSpeed, _savedSlideSpeed/2.);
+					_savedSlideSpeedTimer = SLIDE_SPEED_TIMER_SAVE;
+				}
+				else if (!_savedSlideSpeedTimer)
+					_savedSlideSpeed = max(slideSpeed, _savedSlideSpeed * 0.95);
 			}
 		}
 		
@@ -728,8 +733,10 @@ class KrisPlayer : DeltaPlayer
 		
 		if (_slideTime <= 0 || _savedSlideSpeed > slideSpeed)
 			_currentSlideSpeed = max(_savedSlideSpeed, vel.XY.Length());
-		if (_slideTime != 0)
+		if (_slideTime)
 			_slideTime = 0;
+		if (_savedSlideSpeedTimer)
+			_savedSlideSpeedTimer = 0;
 		
 		if (IsPredicting())
 			return;
