@@ -33,7 +33,7 @@ class DeltaSoul : Actor
 			}
 			Goto SoulBreak;
 		SoulBreak:
-			TNT1 A 0
+			TNT1 A 1
 			{
 				A_StartSound("delta/soul_shatter", attenuation: 0.5);
 				
@@ -56,8 +56,7 @@ class DeltaSoul : Actor
 					);
 				}
 			}
-			TNT1 A 1;
-			Wait;
+			Stop;
 	}
 	
 	override void BeginPlay()
@@ -69,7 +68,6 @@ class DeltaSoul : Actor
 	override void Tick()
 	{
 		Super.Tick();
-		
 		if (playerParent && playerInGame[PlayerNumber()])
 			SetSoulColor();
 		if (curState && curState.InStateSequence(SpawnState))
@@ -98,7 +96,11 @@ class DeltaSoul : Actor
 	
 	virtual void CheckSoulCrush()
 	{
-		if (abs(ceilingZ - floorZ) < height)
-			SetState(ResolveState("SoulBreak"));
+		if (abs(ceilingZ - floorZ) >= height)
+			return;
+		if (!curState.frame)
+			A_StartSound("delta/soul_break", CHAN_AUTO, attenuation: 0.5);
+		
+		SetState(ResolveState("SoulBreak"));
 	}
 }

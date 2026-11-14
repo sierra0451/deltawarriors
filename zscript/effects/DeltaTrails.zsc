@@ -12,9 +12,9 @@ class DeltaTrail : Actor
 	Default
 	{
 		Speed 2;
-		Alpha 0;
+		Alpha 0.75;
 		StencilColor "ffffff";
-		RenderStyle "Add";
+		RenderStyle "AddStencil";
 		
 		DeltaTrail.FadeInTime 5;
 		DeltaTrail.TargetAlpha 1;
@@ -78,14 +78,16 @@ class DeltaTrail : Actor
 	}
 }
 
-class DeltaRainbowTrail : DeltaTrail
+class DeltaRedTrail : DeltaTrail
 {
 	Default
 	{
-		Alpha 0.75;
-		RenderStyle "AddStencil";
+		StencilColor "ff0000";
 	}
-	
+}
+
+class DeltaRainbowTrail : DeltaTrail
+{
 	override void PostBeginPlay()
 	{
 		let hue = (level.time*2) % 255,

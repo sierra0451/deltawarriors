@@ -481,6 +481,7 @@ class DeltaPlayer : PlayerPawn abstract
 		HandleViewAngles();
 		HandleLegs();
 		HandlePowerupEffects();
+		HandleCustomMugshot();
 		
 		if (IsPredicting())
 			return;
@@ -1848,11 +1849,32 @@ class DeltaPlayer : PlayerPawn abstract
 		return dest;
 	}
 	
+	protected virtual bool HandleCustomMugshot()
+	{
+		if (CountInv("PowerStrength"))
+		{
+			A_SetMugshotState("Normal");
+			A_SetMugshotState("Berserk");
+			return true;
+		}
+		
+		return false;
+	}
+	
 	protected void HandlePowerupEffects()
 	{
-		if (!(level.time % 3) && CountInv("PowerInvulnerable"))
+		if (level.time % 3)
+			return;
+		
+		if (CountInv("PowerInvulnerable"))
 		{
 			let trail = DeltaTrail.SpawnTrail("DeltaRainbowTrail", pos);
+			trail.master = self;
+		}
+		
+		if (CountInv("PowerStrength"))
+		{
+			let trail = DeltaTrail.SpawnTrail("DeltaRedTrail", pos);
 			trail.master = self;
 		}
 	}
