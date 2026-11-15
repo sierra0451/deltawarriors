@@ -8,6 +8,18 @@ extend class DeltaHud
 		_deathmatchPanelBorders, _deathmatchPanelBarBorders,
 		_deathmatchCurrentPlayer;
 	
+	override void InitScoreboard()
+	{
+		ScoreboardFont = smallFont;
+		BigScoreboardFont = smallFont;
+	}
+	
+	override bool DrawScoreboard(double ticFrac)
+	{
+		bool result = Super.DrawScoreboard(ticFrac);
+		return result;
+	}
+	
 	protected void SetUpMultiplayer()
 	{
 		_coopPanelBack 				= TexMan.CheckForTexture("graphics/hud/multiplayer/coopPanel.png");
