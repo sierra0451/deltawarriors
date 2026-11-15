@@ -482,7 +482,15 @@ class DeltaWeapon : Weapon
 			return;
 		
 		let kbVec = DeltaUtil.GetActorForward(player.mo) * kb;
-		player.mo.vel -= kbVec;
+		let deltaPly = DeltaPlayer(player.mo);
+		
+		if (!deltaPly)
+		{
+			player.mo.vel -= kbVec;
+			return;
+		}
+		
+		deltaPly.ApplyKnockback(-kbVec);
 	}
 	
 	action state A_CheckOffhand(bool bob = false, statelabel dest = "Select")

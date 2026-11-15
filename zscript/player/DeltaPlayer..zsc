@@ -135,6 +135,7 @@ class DeltaPlayer : PlayerPawn abstract
 	private double _targetRoll;
 	private Vector2 _currentFlinch;			// used for weapon flinching when taking damage
 	private int _flinchTics;
+	private Vector2 _lastMoveVel;
 	
 	private Vector2 _lastBob;				// saving weapon position for hitstops or when we die
 	
@@ -446,19 +447,25 @@ class DeltaPlayer : PlayerPawn abstract
 		if (IsFrozen())
 			return;
 		
-		if (!IsPredicting())
-		{
-			if (Health <= 0)
-				AnimateDeath();
-			
-			TickFootsteps();
-			TickVoice();
-		}
-		
 		if (!IsVoodooDoll() && CanCrouch() && player.playerstate != PST_DEAD)
 			Height = FullHeight * crouchFactor;
 		else if (health > 0)
 			Height = FullHeight;
+		
+		if (IsPredicting())
+			return;
+		
+		if (Health <= 0)
+			AnimateDeath();
+		
+		TickFootsteps();
+		TickVoice();
+		
+		if (player)
+		{
+			if (player.onGround || player.cmd.forwardMove || player.cmd.sideMove)
+				_lastMoveVel = vel.xy;
+		}
 	}
 	
 	virtual void AnimateDeath()
@@ -633,9 +640,9 @@ class DeltaPlayer : PlayerPawn abstract
 					desiredDir = oldDir;
 				
 				let t = (fm || sm)? desiredDir dot oldDir : 1.,
-					preservedXY = oldXY / (level.airFriction + ((fm || sm)? 0.05 : 0.));
+					preservedXY = _lastMoveVel;
 						// adding 0.05 to make sure speed gain isn't too crazy
-				vel.xy = DeltaUtil.Vector2Lerp(oldXY, preservedXY, t);
+				vel.xy = DeltaUtil.Vector2Lerp(oldXY, _lastMoveVel, t);
 				
 				if (player.mo == self)
 				{
@@ -725,6 +732,12 @@ class DeltaPlayer : PlayerPawn abstract
 		}
 	}
 	
+	void ApplyKnockback(Vector3 kb)
+	{
+		vel += kb;
+		_lastMoveVel += kb.xy;
+	}
+	
 	override int TakeSpecialDamage(Actor inflictor, Actor source, int damage, Name mod)
 	{
 		let oldDmg = Super.TakeSpecialDamage(inflictor, source, damage, mod);
@@ -774,7 +787,8 @@ class DeltaPlayer : PlayerPawn abstract
 		int finalDamage = Super.DamageMobj(inflictor, source, damage, mod, flags, angle);
 		lastDamageTaken += finalDamage;
 		
-		if (finalDamage <= 0 && !InPainState())
+		// no red screen if we take 0 damage from anything that isn't the environment
+		if (finalDamage <= 0 && !inflictor && !source)
 			return finalDamage;
 		
 		if (source)
