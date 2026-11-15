@@ -135,11 +135,39 @@ class DeltaWarriorsIntro : ScreenJob
 	}
 }
 
+class DeltaWarriorsCredits : ScreenJob
+{
+	int currentState;
+	
+	static DeltaWarriorsCredits Create(int flags = 0)
+	{
+		return new("DeltaWarriorsCredits").Init(flags);
+	}
+	
+	DeltaWarriorsCredits Init(int flags)
+	{
+		Super.Init(flags);
+		return self;
+	}
+	
+	override void OnTick()
+	{
+		Super.OnTick();
+	}
+}
+
 class DeltaCutsceneManager ui
 {
 	static void IntroCutscene(ScreenJobRunner runner)
 	{
 		let csn = DeltaWarriorsIntro.Create();
+		runner.Append(csn);
+		runner.Init(false, true);
+	}
+	
+	static void CreditsCutscene(ScreenJobRunner runner)
+	{
+		let csn = DeltaWarriorsCredits.Create();
 		runner.Append(csn);
 		runner.Init(false, true);
 	}
