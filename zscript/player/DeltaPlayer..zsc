@@ -1365,7 +1365,8 @@ class DeltaPlayer : PlayerPawn abstract
 		return result;
 	}
 	
-	override void CheatGive(string _name, int amount, bool keyboard)
+	// 5.0.3 doesn't have the keyboard parameter yet :(
+	override void CheatGive(string _name, int amount)//, bool keyboard)
 	{
 		if (!player.mo || health <= 0)
 			return;
@@ -1373,13 +1374,14 @@ class DeltaPlayer : PlayerPawn abstract
 		class<Inventory> armrCls = _name;
 		if (_name ~== "armor" || (armrCls && (armrCls is "Armor" || GetDefaultByType(armrCls).bIsArmor)))
 		{
+			/*
 			if (!keyboard && PlayerNumber() == consolePlayer)
 			{
 				int rand = crandom(1, 5);
 				A_Log(StringTable.Localize("$DELTAWARRIORS_ARMOR_CHEAT_" .. rand));
 				S_StartSound("delta/tp_fail", CHAN_AUTO, CHANF_UI);
 			}
-			
+			*/
 			return;
 		}
 		if (_name ~== "hp")
