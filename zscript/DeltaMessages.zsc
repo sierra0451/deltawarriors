@@ -1,8 +1,30 @@
 class DeltaMessageBox : Object ui
 {
+	enum DeltaMessageType
+	{
+		MSG_TYPE_NORMAL,			// uses normal border
+		MSG_TYPE_DARKWORLD			// uses dark world border
+	}
+	
+	enum DeltaMessageState
+	{
+		MSG_STATE_INITDELAY = 0,	// (0) initial delay before a message shows
+		MSG_STATE_TYPING,			// (1) actively typing
+		MSG_STATE_SKIPPING,			// (2) skipping to the end
+		MSG_STATE_HOLD_INPUT,		// (3) message is finished, awaiting player input
+		MSG_STATE_HOLD_SCRIPT,		// (4) message is finished, awaiting dismissal from script
+		MSG_STATE_FINISHED			// (5) message is finished, we're moving to next one
+	}
+	
+	enum DeltaMessageInputResponse
+	{
+		MSG_IGNORE,					// ignore input
+		MSG_SKIP					// skip to end of message
+	}
+	
 	DeltaMessageBox nextMessage;
 	DeltaMessageHandler handler;
-	DeltaMessageState messageState;
+	int messageState;
 	
 	protected TextureID cornerTex, sideTex;
 	protected string goalMessage, displayedMessage;
@@ -287,7 +309,7 @@ class DeltaMessageBox : Object ui
 		return displayedMessage;
 	}
 	
-	DeltaMessageState GetMessageState() const
+	int GetMessageState() const
 	{
 		return messageState;
 	}
@@ -381,7 +403,7 @@ class DeltaMessageHandler : ScreenJob
 		message.Draw(smoothRatio);
 	}
 	
-	DeltaMessageState GetMessageState()
+	int GetMessageState()
 	{
 		if (!message)
 			return -1;

@@ -1,6 +1,7 @@
 extend class DeltaHud
 {
 	Vector2 mousePos;
+	
 	protected DeltaGameOver _deathSequence;
 	
 	virtual void StartDeathSequence(bool firstTime)
@@ -221,7 +222,7 @@ class DeltaGameOver : ScreenJob
 				
 				messageHandler.OnTick();
 				
-				if (messageHandler.GetMessageState() == MSG_STATE_HOLD_SCRIPT)
+				if (messageHandler.GetMessageState() == DeltaMessageBox.MSG_STATE_HOLD_SCRIPT)
 				{
 					if (!firstTime)
 						messageHandler.NextMessage();
@@ -249,7 +250,8 @@ class DeltaGameOver : ScreenJob
 					break;
 				
 				messageHandler.OnTick();
-				if (whiteStartTick == -1 && messageHandler.GetMessageState() == MSG_STATE_HOLD_SCRIPT)
+				if (whiteStartTick == -1
+					&& messageHandler.GetMessageState() == DeltaMessageBox.MSG_STATE_HOLD_SCRIPT)
 				{
 					ticks = 0;
 					goalTicks = 1;
@@ -373,7 +375,7 @@ class DeltaGameOver : ScreenJob
 					messageHandler.NextMessage();
 				break;
 			case RETURN_TO_GAME:
-				messageHandler.message.messageState = MSG_STATE_TYPING;
+				messageHandler.message.messageState = DeltaMessageBox.MSG_STATE_TYPING;
 				whiteStartTick = ticks;
 				goalTicks = -1;
 				S_StartSound("delta/menu_persist", 0);
