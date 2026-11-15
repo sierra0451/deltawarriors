@@ -1,29 +1,31 @@
 class DeltaWarriorsIntro : ScreenJob
 {
 	TextureID bySierraTex, heartTex;
-	int introState;
-	/*
-		-1 = uninitialized
-		 0 = "Made by" card fade in
-		 1 = "Made by" card hold
-		 2 = "Made by" card hold, fade in "made with love"
-		 3 = "Made by" card hold, hold "made with love"
-		 4 = Fade out
-		 5 = black screen
-	*/
-	
 	int curTics, targetTics;
+	int currentState;
 	
-	static DeltaWarriorsIntro Create(int flags)
+	enum DeltaWarriorsIntroStates
+	{
+		UNINITIALIZED,
+		MADE_BY_FADE_IN,
+		MADE_BY_HOLD,
+		MADE_WITH_LOVE_FADE_IN,
+		MADE_WITH_LOVE_HOLD,
+		FADE_OUT,
+		BLACK_SCREEN
+	}
+	
+	static DeltaWarriorsIntro Create(int flags = 0)
 	{
 		return new("DeltaWarriorsIntro").Init(flags);
 	}
 	
-	DeltaWarriorsIntro Init(int flags = 0)
+	DeltaWarriorsIntro Init(int flags)
 	{
 		bySierraTex = TexMan.CheckForTexture("graphics/sierraSign.png");
 		heartTex = TexMan.CheckForTexture("graphics/love.png");
-		introState = curTics = targetTics = -1;
+		currentState = UNINITIALIZED;
+		curTics = targetTics = -1;
 		noWipe = true;
 		Super.Init(flags);
 		return self;
@@ -38,27 +40,21 @@ class DeltaWarriorsIntro : ScreenJob
 		
 		if (curTics == targetTics)
 		{
-			introState++;
+			currentState++;
 			curTics = 0;
 			
-			switch (introState)
+			switch (currentState)
 			{
-				case 0: 	// "Made by Sierra" card fade in
+				case MADE_BY_FADE_IN:
+				case MADE_BY_HOLD:
+				case MADE_WITH_LOVE_FADE_IN:
+				case FADE_OUT:
 					targetTics = TICRATE;
 					break;
-				case 1: 	// "Made by Sierra" card hold
-					targetTics = TICRATE;
-					break;
-				case 2: 	// "Made by Sierra" card hold, fade in "made with <3"
-					targetTics = TICRATE;
-					break;
-				case 3: 	// "Made by Sierra" card hold, hold "made with <3"
+				case MADE_WITH_LOVE_HOLD:
 					targetTics = TICRATE * 3;
 					break;
-				case 4: 	// Fade out everything
-					targetTics = TICRATE;
-					break;
-				case 5: 	// Black screen
+				case BLACK_SCREEN:
 					targetTics = TICRATE / 2;
 					break;
 				default:
@@ -70,12 +66,12 @@ class DeltaWarriorsIntro : ScreenJob
 	
 	override bool OnEvent(InputEvent evt)
 	{
-		if (introState == 5)
+		if (currentState == BLACK_SCREEN)
 			return true;
 		
 		if (evt.type == InputEvent.Type_KeyDown && !System.SpecialKeyEvent(evt))
 		{
-			introState = 5;
+			currentState = BLACK_SCREEN;
 			curTics = 0;
 			targetTics = 5;
 		}
@@ -87,7 +83,7 @@ class DeltaWarriorsIntro : ScreenJob
 		Super.Draw(smoothRatio);
 		Screen.Dim(0xff000000, 1, 0, 0, Screen.GetWidth(), Screen.GetHeight());
 		
-		if (introState == 5)
+		if (currentState == BLACK_SCREEN)
 			return;
 		
 		double targetAlpha = 1.,
@@ -96,11 +92,11 @@ class DeltaWarriorsIntro : ScreenJob
 		if (sc > 1)
 			sc = floor(sc);
 		
-		if (introState < 1 || introState > 3)
+		if (currentState < MADE_BY_HOLD || currentState > MADE_WITH_LOVE_HOLD)
 		{
 			targetAlpha = double(curTics) / targetTics;
 			
-			if (introState == 4)
+			if (currentState == FADE_OUT)
 				targetAlpha = 1 - targetAlpha;
 		}
 		
@@ -121,13 +117,13 @@ class DeltaWarriorsIntro : ScreenJob
 			(Screen.GetHeight())/2, DTA_Alpha, targetAlpha,
 			DTA_ScaleX, sc*0.5, DTA_ScaleY, sc*0.5);
 		
-		if (introState < 2)
+		if (currentState < MADE_WITH_LOVE_FADE_IN)
 			return;
 		
 		str = StringTable.Localize("$DELTAWARRIORS_MADE_WITH");
 		stringW = smallFont.StringWidth(str) * sc * 2;
 		
-		if (introState == 2)
+		if (currentState == MADE_WITH_LOVE_FADE_IN)
 			targetAlpha = double(curTics) / targetTics;
 		
 		Screen.DrawText(smallFont, Font.CR_UNTRANSLATED,
@@ -143,7 +139,7 @@ class DeltaCutsceneManager ui
 {
 	static void IntroCutscene(ScreenJobRunner runner)
 	{
-		let csn = DeltaWarriorsIntro.Create(ScreenJob.transition_crossfade);
+		let csn = DeltaWarriorsIntro.Create();
 		runner.Append(csn);
 		runner.Init(false, true);
 	}
