@@ -121,41 +121,6 @@ class DeltaMedikit : DeltaHealth replaces Medikit
 	}
 }
 
-class DeltaBerserk : DeltaHealthPickup replaces Berserk
-{
-	Default
-	{
-		Health -100;
-		Tag "$TAG_BERSERK";
-		
-		Inventory.MaxAmount 1;
-		Inventory.Icon "PSTRA0";
-		Inventory.UseSound "delta/use_powerup";
-		Inventory.PickupMessage "$GOTBERSERK";
-		DeltaHealthPickup.UseMessage "$DELTA_USE_BERSERK";
-		DeltaHealthPickup.AlwaysAllowUse true;
-		
-		+COUNTITEM;
-		+Inventory.ISHEALTH;
-	}
-	
-	States
-	{
-		Spawn:
-			PSTR A -1 Bright;
-			Stop;
-	}
-	
-	override bool Use(bool pickup)
-	{
-		if (!Super.Use(pickup))
-			return false;
-		
-		owner.GiveInventory("PowerStrength", 1);
-		return true;
-	}
-}
-
 class DeltaSoulsphere : Soulsphere replaces Soulsphere
 {
 	override bool TryPickup(in out Actor toucher)

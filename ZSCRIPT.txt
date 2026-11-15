@@ -18,6 +18,7 @@ version "5.0.0"
 #include "zscript/effects/DeltaTrails.zsc"
 
 // items
+#include "zscript/items/Berserk.zsc"
 #include "zscript/items/HealthItems.zsc"
 #include "zscript/items/InventoryUtil.zsc"
 #include "zscript/items/TensionItems.zsc"
