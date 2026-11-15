@@ -481,7 +481,6 @@ class DeltaPlayer : PlayerPawn abstract
 		HandleViewAngles();
 		HandleLegs();
 		HandlePowerupEffects();
-		HandleCustomMugshot();
 		
 		if (IsPredicting())
 			return;
@@ -1857,16 +1856,23 @@ class DeltaPlayer : PlayerPawn abstract
 		return dest;
 	}
 	
-	protected virtual bool HandleCustomMugshot()
+	virtual ui bool HandleCustomMugshot()
 	{
 		if (CountInv("PowerStrength"))
 		{
-			A_SetMugshotState("Normal");
-			A_SetMugshotState("Berserk");
+			SetCustomMugshotState("Berserk");
 			return true;
 		}
 		
 		return false;
+	}
+	
+	protected ui void SetCustomMugshotState(string targetState)
+	{
+		if (targetState ~== "")
+			targetState = "Normal";
+		
+		statusBar.SetMugshotState(targetState, reset: true);
 	}
 	
 	protected void HandlePowerupEffects()

@@ -661,6 +661,8 @@ class DeltaHud : BaseStatusBar
 			DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM, scale: _universalScale,
 			col: ply.GetCharacterColor());
 		
+		ply.HandleCustomMugshot();
+		
 		let currentFace = GetMugshot(4, Mugshot.DISABLEOUCH);
 		DrawTexture(currentFace, (_hBorder + 8*_universalScale.x,
 			-_vBorder - 25*_universalScale.y), DI_SCREEN_LEFT_BOTTOM
