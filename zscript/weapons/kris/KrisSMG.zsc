@@ -168,20 +168,22 @@ class KrisSmgGrenade : DeltaGrenade
 			return;
 		
 		let damageMult = clamp(1.2 - dist/range, 0, 1),
-			dmg = int(ceil(25 * damageMult));
+			dmg = int(ceil(25. * damageMult));
 		
 		target.DamageMobj(self, target, dmg, 'KrisSmgGrenade', DMG_THRUSTLESS);
 		
-		let knockbackDmg = dmg * 0.5;
-		let deltaTarget = DeltaPlayer(target);
+		let deltaTarget = DeltaPlayer(target),
+			knockbackDmg = dmg * ((deltaTarget && !deltaTarget.IsGrounded())? 1. : 0.5);
 		
 		if (deltaTarget && !deltaTarget.IsGrounded())
 			knockbackDmg *= 2;
-		
 		if (knockbackDmg > 20)
 			knockbackDmg = 20;
 		
-		target.Vel += diff.Unit() * knockbackDmg;
+		if (deltaTarget)
+			deltaTarget.ApplyKnockback(diff.Unit() * knockbackDmg);
+		else
+			target.vel += diff.Unit() * knockbackDmg;
 	}
 	
 	override string GetObituary(Actor victim, Actor inflictor, Name mod, bool playerAttack)
