@@ -1506,6 +1506,14 @@ class DeltaPlayer : PlayerPawn abstract
 		return parryObituary;
 	}
 	
+	override string GetSelfObituary(Actor inflictor, Name mod)
+	{
+		if (inflictor != self || mod != 'Suicide')
+			return Super.GetSelfObituary(inflictor, mod);
+		
+		return "$OB_SUICIDE";
+	}
+	
 	override void PlayIdle()
 	{
 		let curAnimType = DELTA_WEAPONANIM_MELEE;

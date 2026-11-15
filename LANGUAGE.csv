@@ -216,7 +216,7 @@ OBIT_DELTA_KSMGALTSELF,(%o didn't back up far enough.),Obituary if you kill your
 OBIT_DELTA_KPARRY,(%o took a projectile intended for %k.),,
 OBIT_DELTA_KPARRYBACK,(%o got a taste of %p own medicine from %k.),,
 OBIT_DELTA_AXE,(%o was cleaved in half by %k's axe.),,
-OB_SUICIDE,(%o died. The explosion seemed to suck bad.),,
+OB_SUICIDE,(%o literally exploded and died. The explosion seemed to suck bad.),,
 OB_KILLEDSELF,(%o killed %hself.),,
 OB_EXIT,(%o tried to escape.),,
 OB_WATER,(%o drowned.),,
