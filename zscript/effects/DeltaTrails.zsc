@@ -43,7 +43,7 @@ class DeltaTrail : Actor
 		if (holdTime < 0)
 			holdTime = 0;
 		
-		SetOrigin(master.pos, false);
+		SetOrigin(master.prev, false);
 		angle = master.angle;
 		vel = DeltaUtil.GetActorForward(master, false) * -speed;
 	}
