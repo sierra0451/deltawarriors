@@ -5,7 +5,6 @@ class KrisSmg : DeltaWeapon
 		Tag "$TAG_DELTA_SMG";
 		Obituary "$OBIT_DELTA_KSMG";
 		Inventory.PickupMessage "$PICKUP_DELTA_KSMG";
-		
 		Weapon.SlotNumber 4;
 		Weapon.SelectionOrder 600;
 		Weapon.AmmoUse 1;

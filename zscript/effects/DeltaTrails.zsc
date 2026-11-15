@@ -1,6 +1,7 @@
 class DeltaTrail : Actor
 {
 	int fadeInTime, holdTime, fadeTime;
+	
 	protected int time;
 	protected double targetAlpha;
 	

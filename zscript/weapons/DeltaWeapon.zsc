@@ -1,5 +1,8 @@
 class DeltaWeapon : Weapon
 {
+	const EASE_TICS_SET_ATTACK = -25;
+	const TP_FAIL_SOUND = "delta/tp_fail";
+	
 	protected int animType;					// (DeltaWeaponAnimType) used to determine if third person sprite uses melee, gun, or magic animations when holding this weapon
 	protected double redCrosshairRange;		// maximum distance an enemy can be at from player and still have red crosshairs when aimed at
 	protected double maxLungeDistance;		// maximum distance the lunge check will detect targets from
@@ -20,9 +23,6 @@ class DeltaWeapon : Weapon
 	private bool _lungeReadyToStop;
 	private TextureID _altFireIconId, _crosshairId;
 	private int _deltaWeaponFlags, _backpackTics;
-	
-	const EASE_TICS_SET_ATTACK = -25;
-	const TP_FAIL_SOUND = "delta/tp_fail";
 	
 	property AnimType: animType;
 	property RedCrosshairRange: redCrosshairRange;

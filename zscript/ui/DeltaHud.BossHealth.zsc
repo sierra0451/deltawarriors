@@ -1,9 +1,9 @@
 extend class DeltaHud
 {
+	const MAX_BOSS_BARS = 5;
+	
 	private Array<Actor> _bosses;
 	private TextureID _bossBarBack;
-	
-	const MAX_BOSS_BARS = 5;
 	
 	protected void SetUpBossBars()
 	{

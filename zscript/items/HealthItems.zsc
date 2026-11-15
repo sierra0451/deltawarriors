@@ -40,6 +40,7 @@ class DeltaHealth : Health abstract
 class DeltaHealthPickup : HealthPickup abstract
 {
 	int maxHealth;
+	
 	private bool _alwaysAllowUse;
 	private string _useMessage, _lowUseMessage;
 	private int _prevHealth;

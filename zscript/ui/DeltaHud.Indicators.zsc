@@ -13,14 +13,13 @@ struct GrazeIndicatorInfo
 
 extend class DeltaHud
 {
-	private TextureID _damageIndicator, _grazeStencil, _grazeMarker;
+	const DAMAGE_INDICATOR_TIME = int(TICRATE * 2);
+	const DAMAGE_INDICATOR_FADE_TIME = int(TICRATE * 0.75);
+	const GRAZE_INDICATOR_TIME = int(TICRATE * 0.25);
 	
+	private TextureID _damageIndicator, _grazeStencil, _grazeMarker;
 	private DamageIndicatorInfo[10] _damageIndicators;
 	private GrazeIndicatorInfo[10] _grazeIndicators;
-	
-	const DAMAGE_INDICATOR_TIME = floor(TICRATE * 2);
-	const DAMAGE_INDICATOR_FADE_TIME = floor(TICRATE * 0.75);
-	const GRAZE_INDICATOR_TIME = floor(TICRATE * 0.25);
 	
 	protected void SetUpIndicatorTextures()
 	{

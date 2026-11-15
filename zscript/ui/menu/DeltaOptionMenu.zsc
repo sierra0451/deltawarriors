@@ -1,10 +1,10 @@
 class DeltaOptionMenu : OptionMenu
 {
+	const SOUND_TIMER_SET = 2;
+	
 	protected string debugString;
 	protected int oldSelect;
 	protected int selectSoundTimer;
-	
-	const SOUND_TIMER_SET = 2;
 	
 	override void Init(Menu parent, OptionMenuDescriptor desc)
 	{

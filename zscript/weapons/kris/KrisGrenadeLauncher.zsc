@@ -4,7 +4,6 @@ class KrisGrenadeLauncher : DeltaWeapon
 	{
 		Tag "$TAG_DELTA_GRENADELAUNCHER";
 		Inventory.PickupMessage "$PICKUP_DELTA_GRENADELAUNCHER";
-		
 		Weapon.SlotNumber 5;
 		Weapon.SelectionOrder 1000;
 		Weapon.AmmoUse 1;

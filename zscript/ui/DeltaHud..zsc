@@ -26,9 +26,24 @@ class DeltaHud : BaseStatusBar
 		SMT_NEVER = 0,
 		SMT_ALWAYS
 	}
+	enum CONTROL_ICON_IDS
+	{
+		DELTA_CONTROLICON_TEXT = 0xff, // use text for this key and keys below it!
+		
+		DELTA_CONTROLICON_MOUSE1, DELTA_CONTROLICON_MOUSE2, DELTA_CONTROLICON_MOUSE3,
+		DELTA_CONTROLICON_MOUSE4, DELTA_CONTROLICON_MOUSE5, DELTA_CONTROLICON_MOUSE6,
+		DELTA_CONTROLICON_MOUSE7, DELTA_CONTROLICON_MOUSE8,
+		
+		DELTA_CONTROLICON_MAX
+	}
+	
+	const WEAPON_SLOTS_WRAPAROUND = 9;
 	
 	DeltaPlayer ply;
 	Vector3 pos, angles;
+	Map<int, TextureID> controlIcons;
+	Map<name, TextureID> ammoIcons;
+	
 	protected bool _infiniteAmmo;
 	protected double _hBorder, _vBorder, _oldTp, _oldHealth;
 	protected Vector2 _universalScale, _inverseUniversalScale;
@@ -45,22 +60,6 @@ class DeltaHud : BaseStatusBar
 	
 	private Array<class<Ammo> > _ammos;
 	private Array<class<Key> > _keys;
-	
-	const WEAPON_SLOTS_WRAPAROUND = 9;
-	
-	enum CONTROL_ICON_IDS
-	{
-		DELTA_CONTROLICON_TEXT = 0xff, // use text for this key and keys below it!
-		
-		DELTA_CONTROLICON_MOUSE1, DELTA_CONTROLICON_MOUSE2, DELTA_CONTROLICON_MOUSE3,
-		DELTA_CONTROLICON_MOUSE4, DELTA_CONTROLICON_MOUSE5, DELTA_CONTROLICON_MOUSE6,
-		DELTA_CONTROLICON_MOUSE7, DELTA_CONTROLICON_MOUSE8,
-		
-		DELTA_CONTROLICON_MAX
-	}
-	
-	Map<int, TextureID> controlIcons;
-	Map<name, TextureID> ammoIcons;
 	
 	override void Init()
 	{

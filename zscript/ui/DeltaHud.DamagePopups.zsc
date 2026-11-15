@@ -8,11 +8,12 @@ struct DeltaHudDamagePopup
 
 extend class DeltaHud
 {
-	private DeltaHudDamagePopup[10] _damagePopups;
-	int totalTimeRef;
-	
 	const POPUP_IS_INACTIVE = -1;
 	const VEL_SCALE = 1;
+	
+	int totalTimeRef;
+	
+	private DeltaHudDamagePopup[10] _damagePopups;
 	
 	protected void SetUpDamagePopups()
 	{

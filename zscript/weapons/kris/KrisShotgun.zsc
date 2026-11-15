@@ -11,7 +11,6 @@ class KrisShotgun : DeltaWeapon
 	{
 		Tag "$TAG_DELTA_SHOTGUN";
 		Inventory.PickupMessage "$PICKUP_DELTA_KSHOTGUN";
-		
 		Weapon.SlotNumber 3;
 		Weapon.SelectionOrder 700;
 		Weapon.AmmoUse 1;

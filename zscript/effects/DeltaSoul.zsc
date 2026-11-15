@@ -1,11 +1,12 @@
 class DeltaSoul : Actor
 {
-	double alpha;
-	PlayerInfo playerParent;
-	Color defaultColor;
-	protected double prevZ;
 	const BASE_LINGER_TIME = floor(TICRATE * 0.75);
 	const SOUL_SHARD_COUNT = 6;
+	
+	PlayerInfo playerParent;
+	Color defaultColor;
+	
+	protected double prevZ;
 	
 	Default
 	{

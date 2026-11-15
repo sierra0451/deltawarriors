@@ -1,9 +1,5 @@
 class DeltaWarriorsIntro : ScreenJob
 {
-	TextureID bySierraTex, heartTex;
-	int curTics, targetTics;
-	int currentState;
-	
 	enum DeltaWarriorsIntroStates
 	{
 		UNINITIALIZED,
@@ -14,6 +10,9 @@ class DeltaWarriorsIntro : ScreenJob
 		FADE_OUT,
 		BLACK_SCREEN
 	}
+	
+	TextureID bySierraTex, heartTex;
+	int curTics, targetTics, currentState;
 	
 	static DeltaWarriorsIntro Create(int flags = 0)
 	{

@@ -1,17 +1,17 @@
 class KrisRevolver : DeltaWeapon
 {
-	int chargeTics;
-	protected ui Vector2 _oldShake, _shake;
-	protected ui double _lastTime;
-	
 	const MAX_CHARGE_TICS = 20;
 	const CHAN_CHARGE = 15;
+	
+	int chargeTics;
+	
+	protected ui Vector2 _oldShake, _shake;
+	protected ui double _lastTime;
 	
 	Default
 	{
 		Tag "$TAG_DELTA_REVOLVER";
 		Inventory.PickupMessage "$PICKUP_DELTA_REVOLVER";
-		
 		Weapon.SlotNumber 2;
 		Weapon.SelectionOrder 900;
 		Weapon.AmmoUse 1;

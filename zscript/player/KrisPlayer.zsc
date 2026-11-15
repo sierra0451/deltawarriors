@@ -1,5 +1,14 @@
 class KrisPlayer : DeltaPlayer
 {
+	const MAX_SLIDE_TICS 				= 7;
+	const MIN_SLIDE_TIME 				= TICRATE * 2 / 5;
+	const SLIDE_RESET_COOLDOWN 			= -TICRATE / 2;
+	const SLIDE_SPEED_STOP_THRESHOLD 	= 1.;
+	const SLIDE_SPEED_RESET_THRESHOLD 	= 7.;
+	const SLIDE_SPEED_TIMER_SAVE 		= TICRATE / 10;
+	const MAX_STOP_SLIDE_TICKS 			= TICRATE / 2;
+	const PARRY_IFRAMES 				= 12;
+	
 	protected double
 		slideAngleOffset,
 		slideSpeed,					// normal slide speed
@@ -25,15 +34,6 @@ class KrisPlayer : DeltaPlayer
 	private Vector3 _oldSlideVel;
 	private bool _isBlushing;
     
-	const MAX_SLIDE_TICS 				= 7;
-	const MIN_SLIDE_TIME 				= TICRATE * 2 / 5;
-	const SLIDE_RESET_COOLDOWN 			= -TICRATE / 2;
-	const SLIDE_SPEED_STOP_THRESHOLD 	= 1.;
-	const SLIDE_SPEED_RESET_THRESHOLD 	= 7.;
-	const SLIDE_SPEED_TIMER_SAVE 		= TICRATE / 10;
-	const MAX_STOP_SLIDE_TICKS 			= TICRATE / 2;
-	const PARRY_IFRAMES 				= 12;
-	
 	Default
 	{
 		Height 46;

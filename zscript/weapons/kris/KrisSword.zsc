@@ -7,10 +7,8 @@ class KrisSword : DeltaWeapon
 		Tag "$TAG_DELTA_SWORD";
 		Obituary "$OBIT_DELTA_SWORD";
 		Inventory.PickupMessage "$PICKUP_DELTA_SWORD";
-		
 		Weapon.SlotNumber 1;
 		Weapon.SelectionOrder 1200;
-		
 		DeltaWeapon.AnimType DeltaPlayer.DELTA_WEAPONANIM_MELEE;
 		DeltaWeapon.RedCrosshairRange 80;
 		DeltaWeapon.MaxLungeDistance 150;

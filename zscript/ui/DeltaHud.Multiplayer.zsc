@@ -1,6 +1,7 @@
 extend class DeltaHud
 {
 	Array<int> playersSeen;
+	
 	protected Le_GlScreen gl_proj;
 	protected Le_Viewport viewport;
 	

@@ -8,8 +8,8 @@ class KrisRevolverChargeShot : FastProjectile
 	{
 		Radius 7;
 		Height 4;
-		Projectile;
 		Speed 150;
+		Projectile;
 		DamageFunction random[revolverChargeDamage](100, 120);
 		RenderStyle "Translucent";
 		Alpha 0.9;
