@@ -118,6 +118,7 @@ class DeltaUtil
 		return iter.Next();
 	}
 	
+	// returns the rgb values as a Color
 	clearscope static Color HSVtoRGB(Color hsv)
 	{
 		let h = hsv.r/255.,
@@ -170,12 +171,37 @@ class DeltaUtil
 		return col;
 	}
 	
-	/*
+	// returns a color with red set to hue, green
+	// set to saturation, and blue set to value
 	clearscope static Color RGBtoHSV(Color rgb)
 	{
+		let r = rgb.r/255.,
+			g = rgb.g/255.,
+			b = rgb.b/255.,
+			C_max = max(r, g, b),
+			C_min = min(r, g, b),
+			delta = C_max - C_min;
 		
+		let h = 0.,
+			s = (C_max ~== 0)? 0. : (delta/C_max),
+			v = C_max;
+		
+		if (delta != 0)
+		{
+			if (C_max == r)
+				h = 1/6. * ((g - b)/delta % 6);
+			else if (C_max == g)
+				h = 1/6. * ((b - r)/delta + 2);
+			else if (C_max == b)
+				h = 1/6. * ((r - g)/delta + 4);
+		}
+		
+		let h2 = int(h * 255),
+			s2 = int(s * 255),
+			v2 = int(v * 255);
+		
+		return Color(rgb.a, h2, s2, v2);
 	}
-	*/
 	
 	clearscope static string GetTimeString(double tics, int showMsecs = DeltaHud.SMT_ONLY_IF_NO_MINS)
 	{
