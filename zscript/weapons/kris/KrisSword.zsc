@@ -94,8 +94,17 @@ class KrisSword : DeltaWeapon
 			DKSW L 1 A_KrisSwordSwing(true);
 			DKSW L 1 A_AddRecoil(5, 1, p: 2,
 				y: cl_delta_weaponHandedness ? -5 : 5);
-			DKSW MN 1;
-			DKSW O 4;
+			DKSW M 1;
+			DKSW N 1
+			{
+				if (self.CountInv("PowerStrength"))
+					A_SetTics(2);
+			}
+			DKSW O 4
+			{
+				if (self.CountInv("PowerStrength"))
+					A_SetTics(6);
+			}
 			DSKW P 1;
 			DKSW QQRRSSTTAAA 1 A_ReFire;
 			Goto Ready;
@@ -106,8 +115,16 @@ class KrisSword : DeltaWeapon
 			DKSW C 1 A_KrisSwordSwing;
 			DKSW C 1 A_AddRecoil(5, 1, p: 2,
 				y: cl_delta_weaponHandedness ? 5 : -5);
-			DKSW D 1;
-			DKSW E 6;
+			DKSW D 1
+			{
+				if (self.CountInv("PowerStrength"))
+					A_SetTics(2);
+			}
+			DKSW E 6
+			{
+				if (self.CountInv("PowerStrength"))
+					A_SetTics(8);
+			}
 			DKSW FFGGHHIIJJAAA 1 A_ReFire;
 			Goto Ready;
 	}
@@ -131,7 +148,7 @@ class KrisSword : DeltaWeapon
 			dmgMult = 3;
 			shakeDuration = 8;
 			A_StartSound("delta/sword/berserk", CHAN_WEAPON, CHANF_OVERLAP,
-				pitch: cfrandom(0.95, 1.05));
+				volume: 0.75, pitch: cfrandom(0.95, 1.05));
 		}
 		
 		for (double ang = -45; ang <= 45; ang += 45./TRACER_COUNT)
