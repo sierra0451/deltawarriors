@@ -137,7 +137,8 @@ extend class DeltaPlayer
 	
 	void StopLunge(bool resetVelocity = false)
 	{
-		Vel = resetVelocity ? (0, 0, 0) : preLungeVel;
+		vel = resetVelocity ? (0, 0, 0) : preLungeVel;
+		_lastMoveVel = vel;
 		lunging = bNoGravity = false;
 		
 		if (health > 0)
