@@ -145,6 +145,7 @@ class DeltaPlayer : PlayerPawn abstract
 	private TextureID _characterIconId;		// used for health displays in co-op and team deathmatch
 	private TextureID _nameTagId;			// used for character name display in HUD
 	private int _automapIcon;
+	private int _mugshotPainTics;			// used to ensure we don't try to overwrite mugshot's pain state
 	
 	private DeltaCrosshairState _crosshairState;
 	
@@ -461,11 +462,16 @@ class DeltaPlayer : PlayerPawn abstract
 		TickFootsteps();
 		TickVoice();
 		
-		if (player)
-		{
-			if (player.onGround || player.cmd.forwardMove || player.cmd.sideMove)
-				_lastMoveVel = vel.xy;
-		}
+		if (!player)
+			return;
+		
+		if (player.onGround || player.cmd.forwardMove || player.cmd.sideMove)
+			_lastMoveVel = vel.xy;
+		
+		if (player.damageCount)
+			_mugshotPainTics = 10;
+		else if (_mugshotPainTics)
+			_mugshotPainTics--;
 	}
 	
 	virtual void AnimateDeath()
@@ -1874,6 +1880,9 @@ class DeltaPlayer : PlayerPawn abstract
 	
 	virtual ui bool HandleCustomMugshot()
 	{
+		if (_mugshotPainTics)
+			return true; // don't try to override pain state
+		
 		if (CountInv("PowerStrength"))
 		{
 			SetCustomMugshotState("Berserk");
@@ -1883,12 +1892,17 @@ class DeltaPlayer : PlayerPawn abstract
 		return false;
 	}
 	
+	virtual ui int GetMugshotStateFlags()
+	{
+		return Mugshot.DISABLEOUCH;
+	}
+	
 	protected ui void SetCustomMugshotState(string targetState)
 	{
 		if (targetState ~== "")
 			targetState = "Normal";
 		
-		statusBar.SetMugshotState(targetState, reset: true);
+		statusBar.SetMugshotState(targetState, reset: false);
 	}
 	
 	protected void HandlePowerupEffects()

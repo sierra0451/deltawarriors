@@ -32,7 +32,7 @@ class KrisPlayer : DeltaPlayer
 		_slideTime,					// used for nerfing slide spamming
 		_stopSlideTicks;			// used to stop sliding if we try to slide into a wall
 	private Vector3 _oldSlideVel;
-	private bool _isBlushing;
+	private ui bool _isBlushing;
     
 	Default
 	{
@@ -546,10 +546,29 @@ class KrisPlayer : DeltaPlayer
 		if (bBeingHugged)
 		{
 			SetCustomMugshotState("Blush");
+			_isBlushing = true;
+			return true;
+		}
+		else if (_isBlushing)
+		{
+			SetCustomMugshotState("");
+			_isBlushing = false;
 			return true;
 		}
 		
 		return false;
+	}
+	
+	override int GetMugshotStateFlags()
+	{
+		let maxHp = GetMaxHealth(true);
+		
+		if (health < maxHp/4)
+			return Mugshot.DISABLEOUCH;
+		if (health < maxHp*3/4)
+			return Mugshot.DISABLEOUCH | Mugshot.DISABLERAMPAGE;
+		
+		return Mugshot.DISABLEOUCH | Mugshot.DISABLERAMPAGE | Mugshot.DISABLEPAIN;
 	}
 	
 	override double GetGrazeMultiplier()
