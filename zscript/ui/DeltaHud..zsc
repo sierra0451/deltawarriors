@@ -238,8 +238,9 @@ class DeltaHud : BaseStatusBar
 	
 	override void Draw(int state, double ticFrac)
 	{
-		_universalScale = (cl_delta_hudScale, cl_delta_hudScale);
-		_inverseUniversalScale = (1 / cl_delta_hudScale, 1 / cl_delta_hudScale);
+		let actualHudScale = max(0.01, cl_delta_hudScale);
+		_universalScale = (actualHudScale, actualHudScale);
+		_inverseUniversalScale = (1 / actualHudScale, 1 / actualHudScale);
 		_hBorder = 35 * _universalScale.x;
 		_vBorder = 25 * _universalScale.y;
 		
@@ -819,8 +820,8 @@ class DeltaHud : BaseStatusBar
 		
 		let spacing = 1.,
 			keyBox = 16.,
-			totalWidth = spacing + keyBox;
-		int rowLimit = int(maxW / (totalWidth * _universalScale.x));
+			totalWidth = spacing + keyBox,
+			rowLimit = int(maxW / (totalWidth * _universalScale.x));
 		
 		for (int j = 0; j < _keys.Size(); j++)
 		{
