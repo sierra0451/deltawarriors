@@ -212,14 +212,10 @@ class DeltaMessageBox : Object ui
 	
 	virtual void TakeInput(InputEvent evt)
 	{
-		/*if (messageState == MSG_STATE_TYPING)
+		if (messageState == MSG_STATE_TYPING)
 			messageState = MSG_STATE_SKIPPING;
-		else */
-		if (messageState == MSG_STATE_HOLD_INPUT)
-		{
-			Console.Printf("input received.");
+		else if (messageState == MSG_STATE_HOLD_INPUT)
 			messageState = MSG_STATE_TYPING;
-		}
 	}
 	
 	virtual void PlayTypeSound()
