@@ -425,6 +425,7 @@ class DeltaGameOver : ScreenJob
 		Screen.Dim(0xff000000, 255, 0, 0, scrW, scrH);
 		
 		if (!firstTime && gameOverState >= GAME_OVER_FADEIN
+			&& gameOverState < WORLD_COVERED_IN_DARKNESS
 			&& (gameOverState != GAME_OVER_FADEIN || ticks > 0))
 		{
 			let sc = 4. * _globalScale;
