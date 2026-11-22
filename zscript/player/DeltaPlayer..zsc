@@ -785,7 +785,7 @@ class DeltaPlayer : PlayerPawn abstract
 		{
 			Vel = (0, 0, 0);
 			A_FreezeDeathChunks();
-		}	
+		}
 		
 		if (damageTics > 0 && !ignoreIFrames)
 			return 0;
@@ -794,7 +794,7 @@ class DeltaPlayer : PlayerPawn abstract
 		lastDamageTaken += finalDamage;
 		
 		// no red screen if we take 0 damage from anything that isn't the environment
-		if (finalDamage <= 0 && !inflictor && !source)
+		if (finalDamage <= 0 && (inflictor || source))
 			return finalDamage;
 		
 		if (source)
